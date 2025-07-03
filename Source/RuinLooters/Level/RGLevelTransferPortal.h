@@ -15,11 +15,11 @@ public:
 	ARGLevelTransferPortal();
 
 protected:
-	//  Mesh¿Í Material º¯°æ ºÒ°¡ ¼³Á¤ 
+	//  Meshï¿½ï¿½ Material ï¿½ï¿½ï¿½ï¿½ ï¿½Ò°ï¿½ ï¿½ï¿½ï¿½ï¿½ 
 	UPROPERTY(VisibleDefaultsOnly)
 	UStaticMeshComponent* MeshComponent;
 
-	// ¿ùµå¿¡ ¹èÄ¡µÈ °´Ã¼ÀÇ µðÅ×ÀÏ ÆÐ³Î¿¡¼­ ¹Ù²Ù±â À§ÇØ Custom Á¸Àç
+	// ï¿½ï¿½ï¿½å¿¡ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ð³Î¿ï¿½ï¿½ï¿½ ï¿½Ù²Ù±ï¿½ ï¿½ï¿½ï¿½ï¿½ Custom ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, Category = "Visual")
 	UStaticMesh* CustomMesh;
 
@@ -27,7 +27,7 @@ protected:
 	UMaterialInterface* CustomMaterial;
 
 private:
-	// ÇÑ¹ø¿¡ ·ÎµåµÇ´Â °ÍÀ» ¹æÁöÇÏ±â À§ÇØ Soft·Î ¼±¾ð
+	// ï¿½Ñ¹ï¿½ï¿½ï¿½ ï¿½Îµï¿½Ç´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ Softï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
 	TSoftObjectPtr<UWorld> TransferLevelName;
 

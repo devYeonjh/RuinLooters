@@ -15,7 +15,7 @@ class RUINLOOTERS_API URGAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 
 protected:
-    // ¾Ö´Ô ºí·çÇÁ¸°Æ®¿¡¼­ »ç¿ë °¡´ÉÇÑ ¼Ó¼º
+    // ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ó¼ï¿½
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
     float GroundSpeed;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
@@ -31,10 +31,10 @@ public:
     FORCEINLINE void SetShouldMove(bool ShouldMove) { bShouldMove = ShouldMove; };
 
 protected:
-    // ¾Ö´Ô ÃÊ±âÈ­ ½ÃÁ¡¿¡ È£Ãâ
+    // ï¿½Ö´ï¿½ ï¿½Ê±ï¿½È­ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½
     virtual void NativeInitializeAnimation() override;
 
-    // ¸Å ÇÁ·¹ÀÓ µ¨Å¸Å¸ÀÓ¸¸Å­ È£Ãâ
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å¸Å¸ï¿½Ó¸ï¿½Å­ È£ï¿½ï¿½
     virtual void NativeUpdateAnimation(float DeltaTimeX) override;
 	
     APawn* OwningPawn = nullptr;

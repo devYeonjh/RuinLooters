@@ -13,10 +13,10 @@ void ARGWeaponNPC::OnDetectPlayerBoxBeginOverlap(UPrimitiveComponent* Overlapped
 {
 	ARGNPC::OnDetectPlayerBoxBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-	// NPC¿Í »óÈ£ÀÛ¿ë ½ÃÀÛ ½Ã ÇÑ ¹ø¸¸ ¶ç¿ì±â
+	// NPCï¿½ï¿½ ï¿½ï¿½È£ï¿½Û¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (!ActiveStoreWidget && StoreClass && PlayerController)
 	{
-		// CreateWidget: PlayerController ¸¦ WorldContext·Î ³Ñ°Ü¾ß ÇÕ´Ï´Ù
+		// CreateWidget: PlayerController ï¿½ï¿½ WorldContextï¿½ï¿½ ï¿½Ñ°Ü¾ï¿½ ï¿½Õ´Ï´ï¿½
 		if (World && GameInstance)
 		{
 			Weapon = GameInstance->GetRamdomWeapon();

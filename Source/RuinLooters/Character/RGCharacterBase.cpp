@@ -16,7 +16,7 @@
 
 ARGCharacterBase::ARGCharacterBase() : WeaponRowName(TEXT("First WeaponRowName Text"))
 {
-    // ±âº» ½ºÅÈ ÃÊ±âÈ­ (¿øÇÏ½Ã´Â °ªÀ¸·Î Á¶Á¤)
+    // ï¿½âº» ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­ (ï¿½ï¿½ï¿½Ï½Ã´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
     MaxHp = 100;
     CurrentHp = MaxHp;
     AttackDamage = 0;
@@ -26,11 +26,11 @@ ARGCharacterBase::ARGCharacterBase() : WeaponRowName(TEXT("First WeaponRowName T
     bIsCanAttack = true;
 
 
-    // 1) WeaponMeshComponent »ý¼º
+    // 1) WeaponMeshComponent ï¿½ï¿½ï¿½ï¿½
     WeaponMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
-    // 2) Ä³¸¯ÅÍ ¼Õ ¼ÒÄÏ¿¡ ºÙÀÌ±â ("hand_rSocket" Àº º»¿¡ ¹Ì¸® ¸¸µç ¼ÒÄÏ ÀÌ¸§)
+    // 2) Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½Ì±ï¿½ ("hand_rSocket" ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½)
     WeaponMeshComponent->SetupAttachment(GetMesh(), TEXT("hand_rSwordSocket"));
-    // 3) ÃÊ±â¿¡´Â ¸Þ½Ã ¾øÀ½
+    // 3) ï¿½Ê±â¿¡ï¿½ï¿½ ï¿½Þ½ï¿½ ï¿½ï¿½ï¿½ï¿½
     WeaponMeshComponent->SetSkeletalMesh(nullptr);
     WeaponMeshComponent->SetCastShadow(false);
 
@@ -40,7 +40,7 @@ void ARGCharacterBase::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ¿ùµå, °ÔÀÓ¸ðµå Ã£±â
+    // ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½Ó¸ï¿½ï¿½ Ã£ï¿½ï¿½
     World = GetWorld();
     GameInstance = Cast<URGGameInstance>(UGameplayStatics::GetGameInstance(World));
     ARGCharacterPlayer* Player = Cast<ARGCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
@@ -48,7 +48,7 @@ void ARGCharacterBase::BeginPlay()
 
 void ARGCharacterBase::TakeCharacterDamage(int32 RecieveDamage)
 {
-    // ¹æ¾î·Â¸¸Å­ µ¥¹ÌÁö °æ°¨
+    // ï¿½ï¿½ï¿½Â¸ï¿½Å­ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½æ°¨
     int32 DamageApplied = FMath::Max(1, RecieveDamage - Defence);
     CurrentHp -= DamageApplied;
 
@@ -100,14 +100,14 @@ void ARGCharacterBase::Attack()
     {
         bIsCanAttack = false;
 
-        // ¸ùÅ¸ÁÖ ±³Ã¼ & Àç»ý
+        // ï¿½ï¿½Å¸ï¿½ï¿½ ï¿½ï¿½Ã¼ & ï¿½ï¿½ï¿½
         AnimInstance = GetMesh()->GetAnimInstance();
         if (AnimInstance)
         {
-            // ¸ùÅ¸ÁÖ Àç»ý
+            // ï¿½ï¿½Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½
             AnimInstance->Montage_Play(CurrentMontage, AttackSpeed);
 
-            // ³¡³µÀ» ¶§ È£ÃâµÉ µ¨¸®°ÔÀÌÆ® ¹ÙÀÎµù
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½Îµï¿½
             FOnMontageEnded EndDelegate;
             EndDelegate.BindUObject(this, &ARGCharacterBase::OnMontageEnded);
             AnimInstance->Montage_SetEndDelegate(EndDelegate, CurrentMontage);
@@ -119,19 +119,19 @@ void ARGCharacterBase::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
     UE_LOG(LogTemp, Warning, TEXT("Montage ended. Timer will stop."));
 
-    // °ø°Ý °¡´É
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     bIsCanAttack = true;
 }
 
 void ARGCharacterBase::SwordAttackLineTrace()
 {
-    // Àü¹æ¿¡ ¶óÀÎ Æ®·¹ÀÌ½º¸¦ °É¾î ¸ÂÀº Ä³¸¯ÅÍ¿¡ µ¥¹ÌÁö Àû¿ë ¿¹½Ã
+    // ï¿½ï¿½ï¿½æ¿¡ ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½Ì½ï¿½ï¿½ï¿½ ï¿½É¾ï¿½ ï¿½ï¿½ï¿½ï¿½ Ä³ï¿½ï¿½ï¿½Í¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     FVector Start = GetActorLocation();
-    FVector End = Start + GetActorForwardVector() * Range;  // »ç°Å¸® ´ÜÀ§
+    FVector End = Start + GetActorForwardVector() * Range;  // ï¿½ï¿½Å¸ï¿½ ï¿½ï¿½ï¿½ï¿½
 
-    FHitResult Hit;     // Æ®·¹ÀÌ½º, Ãæµ¹ÀÇ °á°ú¸¦ ´ã´Â ±¸Á¶Ã¼
-    FCollisionQueryParams Params;   // ¶óÀÎ Æ®·¹ÀÌ½º, ½ºÀ¬, ¿À¹ö·¦À» ¾î¶»°Ô ½òÁö ¼³Á¤ÇÏ´Â ±¸Á¶Ã¼
-    Params.AddIgnoredActor(this);   // ¹«½ÃÇÒ ¾×ÅÍ ¼±ÅÃ (ÀÚ½Å ¹«½Ã)
+    FHitResult Hit;     // Æ®ï¿½ï¿½ï¿½Ì½ï¿½, ï¿½æµ¹ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ã¼
+    FCollisionQueryParams Params;   // ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½Ì½ï¿½, ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½î¶»ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½Ã¼
+    Params.AddIgnoredActor(this);   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½Ú½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 
     bool bHit = GetWorld()->LineTraceSingleByChannel(
         Hit,
@@ -145,7 +145,7 @@ void ARGCharacterBase::SwordAttackLineTrace()
 
     if (bHit)
     {
-        // µ¥¹ÌÁö Àû¿ë
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         ARGCharacterBase* HitChar = Cast<ARGCharacterBase>(Hit.GetActor());
         if (HitChar)
         {
@@ -164,11 +164,11 @@ void ARGCharacterBase::PlayAttackSound()
 
 void ARGCharacterBase::ChangeWeapon(FWeaponTableRow* ChangeWeapon)
 {
-    // ¹«±â ´É·ÂÄ¡ Àû¿ë, ½ºÄÌ·¹Å» ¸Þ½Ã Àû¿ë
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½É·ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½Ì·ï¿½Å» ï¿½Þ½ï¿½ ï¿½ï¿½ï¿½ï¿½
     ApplyWeaponAbility(ChangeWeapon);
     WeaponMeshComponent->SetSkeletalMesh(ChangeWeapon->SkeletalMesh);
 
-    // ¹«±âº° È¸ÀüÀ¸·Î °¢µµ Á¶Àý
+    // ï¿½ï¿½ï¿½âº° È¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     if (ChangeWeapon->WeaponIndex == 4 || ChangeWeapon->WeaponIndex == 5)
     {
         WeaponMeshComponent->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
@@ -182,7 +182,7 @@ void ARGCharacterBase::ChangeWeapon(FWeaponTableRow* ChangeWeapon)
         WeaponMeshComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
     }
 
-    // µ¥ÀÌÅÍ Å×ÀÌºíÀÇ ¹«±â ¿­ ÁöÁ¤
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     RowWeapon = ChangeWeapon;
 }
 

@@ -18,15 +18,15 @@ protected:
 	virtual void BeginPlay() override;
 
 protected:
-	// Player¿Í ¿À¹ö·¦ÇÒ ¹Ú½º
+	// Playerï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ú½ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	class UBoxComponent* DroppedItemOverlapBox;
 
-	// ¾ÆÀÌÅÛ ÇüÃ¼
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	class UStaticMeshComponent* DroppedItemMainBody;
 
-	// ¾ÆÀÌÅÛ ÀÌ¸§
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	FName DroppedItemName;
 

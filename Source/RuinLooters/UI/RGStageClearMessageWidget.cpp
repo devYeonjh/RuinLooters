@@ -15,7 +15,7 @@ void URGStageClearMessageWidget::NativeConstruct()
 
 	Player->SetMoney(Player->GetMoney() + 2000);
 
-	// 3ÃÊ ÈÄ widget »èÁ¦
+	// 3ï¿½ï¿½ ï¿½ï¿½ widget ï¿½ï¿½ï¿½ï¿½
 	World->GetTimerManager().SetTimer(ViewClearTextTimer, this, &URGStageClearMessageWidget::CloseSelf, 3.0f, false);
 
 	GameClear.Broadcast();

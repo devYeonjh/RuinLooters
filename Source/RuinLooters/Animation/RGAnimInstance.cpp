@@ -10,7 +10,7 @@ void URGAnimInstance::NativeInitializeAnimation()
 	Super::NativeInitializeAnimation();
 
 	OwningPawn = TryGetPawnOwner();
-	// nullÀÎÁö È®ÀÎÇÏÁö ¾ÊÀ¸¸é ¾Ö´Ï¸ÞÀÌ¼Ç ºí·çÇÁ¸°Æ®¸¦ »ý¼ºÇÒ ¶§ Å©·¯½¬ ¹ß»ý
+	// nullï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Å©ï¿½ï¿½ï¿½ï¿½ ï¿½ß»ï¿½
 	if (OwningPawn)
 	{
 		Velocity = FVector::ZeroVector;
@@ -25,7 +25,7 @@ void URGAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 	Super::NativeUpdateAnimation(DeltaTimeX);
 
 	OwningPawn = TryGetPawnOwner();
-	// nullÀÎÁö È®ÀÎÇÏÁö ¾ÊÀ¸¸é ¾Ö´Ï¸ÞÀÌ¼Ç ºí·çÇÁ¸°Æ®¸¦ »ý¼ºÇÒ ¶§ Å©·¯½¬ ¹ß»ý
+	// nullï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Å©ï¿½ï¿½ï¿½ï¿½ ï¿½ß»ï¿½
 	if (!OwningPawn)
 	{
 		Velocity = FVector::ZeroVector;
@@ -35,16 +35,16 @@ void URGAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 		return;
 	}
 
-	// Ä³¸¯ÅÍÀÇ ¼Óµµ ±¸ÇÏ±â
+	// Ä³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Óµï¿½ ï¿½ï¿½ï¿½Ï±ï¿½
 	Velocity = OwningPawn->GetVelocity();
 	GroundSpeed = Velocity.Size2D();
 
-	// Ä³¸¯ÅÍ ÀÌµ¿
+	// Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½
 	FVector Direction = FVector(Velocity.X, Velocity.Y, 0.0f);
 	Direction.Normalize();
 	FVector NewLocation =  Direction * GroundSpeed * DeltaTimeX;
 
-	// ³«ÇÏ »óÅÂ ÆÇº°
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Çºï¿½
 	UCharacterMovementComponent* MoveComp = Cast<UCharacterMovementComponent>(OwningPawn->GetMovementComponent());
 	if (MoveComp)
 	{

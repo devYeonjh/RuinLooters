@@ -12,10 +12,10 @@
  * 
  */
 
-// Ä³¸¯ÅÍ Ã¼·Â º¯µ¿ µ¨¸®°ÔÀÌÆ®
+// Ä³ï¿½ï¿½ï¿½ï¿½ Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
 DECLARE_MULTICAST_DELEGATE_TwoParams(FPlayerCalculateHp, int32 /*CurrentHp*/, int32 /*MaxHp*/);
 
-// Ä³¸¯ÅÍ ½ºÅ³ ÄðÅ¸ÀÓ µ¨¸®°ÔÀÌÆ®
+// Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å³ ï¿½ï¿½Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
 DECLARE_MULTICAST_DELEGATE_OneParam(FSkillCoolTime, uint8 /*CoolCheck*/);
 
 UCLASS()
@@ -51,28 +51,28 @@ protected:
 	UPROPERTY()
 	class ARGNPC* InteractiveNPC;
 
-	// ÇÃ·¹ÀÌ¾î Ã¼·Â ¹× ½ºÅ³ ÄðÅ¸ÀÓ
+	// ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ Ã¼ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Å³ ï¿½ï¿½Å¸ï¿½ï¿½
 	UPROPERTY()
 	class URGPlayerUI* PlayerUI;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<class URGPlayerUI> PlayerUIClass;
 
-	// ¼³Á¤Ã¢
+	// ï¿½ï¿½ï¿½ï¿½Ã¢
 	UPROPERTY()
 	class URGSettingsMenuWidget* SettingsWidget;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<class URGSettingsMenuWidget> SettingsWidgetClass;
 
-	// »ç¸Á UI
+	// ï¿½ï¿½ï¿½ UI
 	UPROPERTY()
 	class URGPlayerDeadWidget* PlayerDieUI;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<class URGPlayerDeadWidget> PlayerDieUIClass;
 
-	// ÇÃ·¹ÀÌ¾î´Â 0¹ø ÆÀ, ÀûÀº 1¹ø ÆÀ
+	// ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½ 0ï¿½ï¿½ ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ 1ï¿½ï¿½ ï¿½ï¿½
 	UPROPERTY(EditAnywhere, Category = "AI")
 	uint8 TeamID = 0;
 
@@ -82,18 +82,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	class URGPlayerDataAsset* PlayerStat;
 
-	// n¹øÂ° ½ºÅ×ÀÌÁö·Î nÀÌ Ä¿Áú¼ö·Ï ³­ÀÌµµ°¡ ¿Ã¶ó°¨
+	// nï¿½ï¿½Â° ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ nï¿½ï¿½ Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìµï¿½ï¿½ï¿½ ï¿½Ã¶ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	int32 StageIndex;
 
-	// ÇöÀç Level Name
+	// ï¿½ï¿½ï¿½ï¿½ Level Name
 	UPROPERTY()
 	FName LevelName;
 
-	// »ì¾ÆÀÖ´Â Àû ¼ýÀÚ
+	// ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	uint32 WorldAliveEnemys;
 
-	// Àû Á¸ÀçÇÏ´ÂÁö¸¦ È®ÀÎ
+	// ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
 	uint8 bStageExit : 1;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
@@ -111,10 +111,10 @@ protected:
 	UPROPERTY()
 	class URGPlayerDataAsset* LoadAsset;
 
-	// ¿ø·¡ ¼Óµµ¸¦ º¸°ü
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½Óµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	float OriginalMaxWalkSpeed;
 
-	// ¹öÇÁ ¸¸·á¸¦ °ü¸®ÇÏ´Â ÇÚµé
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½á¸¦ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½Úµï¿½
 	FTimerHandle SpeedBuffTimerHandle;
 
 	FTimerHandle CoolTimerHandle;
@@ -136,7 +136,7 @@ public:
 	FORCEINLINE const FTimerHandle& GetCoolTimerHandle() const { return CoolTimerHandle; }
 	FORCEINLINE void StageIndexUp() { StageIndex++; };
 
-	// ÀÎÅÍÆäÀÌ½º¿ë ¸Þ¼­µå ¿À¹ö¶óÀÌµå
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì½ï¿½ï¿½ï¿½ ï¿½Þ¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìµï¿½
 	virtual FGenericTeamId GetGenericTeamId() const override;
 
 	virtual void TakeCharacterDamage(int32 RecieveDamage) override;
@@ -149,7 +149,7 @@ public:
 
 	void PrintMoney();
 
-	// ESC ¹ÙÀÎµù
+	// ESC ï¿½ï¿½ï¿½Îµï¿½
 	void ViewSettingWidget();
 
 	void GetSaveGame();
@@ -166,12 +166,12 @@ protected:
 
 	virtual void Die() override;
 
-	// NPC¿Í ÀÎÅÍ·º¼Ç
+	// NPCï¿½ï¿½ ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½
 	void Interaction();
 
 	void ApplySpeedBuff();
 
-	// Å¸ÀÌ¸Ó ¸¸·á ½Ã ¿ø·¡ ¼Óµµ·Î º¹±¸
+	// Å¸ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Óµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	void RestoreOriginalSpeed();
 
 	void OnSkill();

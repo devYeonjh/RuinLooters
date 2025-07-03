@@ -7,7 +7,7 @@
 #include "GenericTeamAgentInterface.h"
 #include "RGCharacterEnemy.generated.h"
 
-// Àû Ã¼·Â º¯µ¿ µ¨¸®°ÔÀÌÆ®
+// ï¿½ï¿½ Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHpChange, int32 /*CurrentHp*/, int32 /*MaxHp*/);
 
 /**
@@ -31,18 +31,18 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Player")
 	class ARGCharacterPlayer* Player;
 
-	// Enemy Àü¿ë Hp À§Á¬
+	// Enemy ï¿½ï¿½ï¿½ï¿½ Hp ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TObjectPtr<class UHPWidget> HpWidget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* HealthBarComponent;
 
-	// ÇÃ·¹ÀÌ¾î´Â 0¹ø ÆÀ, ÀûÀº 1¹ø ÆÀ
+	// ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½ 0ï¿½ï¿½ ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ 1ï¿½ï¿½ ï¿½ï¿½
 	UPROPERTY(EditAnywhere, Category = "AI")
 	uint8 TeamID = 1;
 
-	// µ¥ÀÌÅÍ Å×ÀÌºí¿¡¼­ Àû Á¤º¸ °ËÃâÇÏ±â À§ÇØ »ç¿ë
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	FName EnemyName;
 
@@ -54,7 +54,7 @@ public:
 	FORCEINLINE FName GetEnemyName() { return EnemyName; };
 	FORCEINLINE void SetEnemyName(FName NewEnemyName) { EnemyName = NewEnemyName; };
 
-	// Ä³¸¯ÅÍ ÆÀ ¹ÝÈ¯
+	// Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½È¯
 	virtual FGenericTeamId GetGenericTeamId() const override;
 
 	virtual void TakeCharacterDamage(int32 RecieveDamage) override;

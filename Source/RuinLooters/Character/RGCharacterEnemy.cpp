@@ -10,24 +10,24 @@
 
 ARGCharacterEnemy::ARGCharacterEnemy()
 {
-    // ¸Þ½Ã°¡ ÄÁÆ®·Ñ·¯ È¸Àü¿¡ ¸ÂÃç µ¹¾Æº¸µµ·Ï
+    // ï¿½Þ½Ã°ï¿½ ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ È¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Æºï¿½ï¿½ï¿½ï¿½ï¿½
     bUseControllerRotationYaw = true;
 
     Money = 50;
 
-    // Àû Ã¼·Â¹Ù UI
+    // ï¿½ï¿½ Ã¼ï¿½Â¹ï¿½ UI
     static ConstructorHelpers::FClassFinder<UUserWidget> WBPClass(
         TEXT("/Game/Assassin/UI/WBP_HpBar"));
     if (WBPClass.Succeeded())
     {
-        // ÄÄÆ÷³ÍÆ® »ý¼º ¹× À§Ä¡ ¹èÄ¡
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½Ä¡
         HealthBarComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBar"));
         HealthBarComponent->SetupAttachment(GetMesh());
         HealthBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
         HealthBarComponent->SetDrawSize(FVector2D(200, 20));
         HealthBarComponent->SetRelativeLocation(FVector(0, 0, 200));
 
-        // ÄÄÆ÷³ÍÆ®°¡ »ý¼ºÇÒ À§Á¬ ÁöÁ¤
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         HealthBarComponent->SetWidgetClass(WBPClass.Class);
         UE_LOG(LogTemp, Log, TEXT("WBPClass Load Success"));
     }
@@ -58,7 +58,7 @@ void ARGCharacterEnemy::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ¸Ê¿¡¼­ ÇÃ·¹ÀÌ¾î Ã£±â
+    // ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ Ã£ï¿½ï¿½
     Player = Cast<ARGCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(World, 0));
 
     if (UUserWidget* UserWidget = HealthBarComponent->GetUserWidgetObject())
@@ -66,11 +66,11 @@ void ARGCharacterEnemy::BeginPlay()
         UE_LOG(LogTemp, Warning, TEXT("make UUserWidget"));
         if (UHPWidget* HealthBarWidget = Cast<UHPWidget>(UserWidget))
         {
-            // µ¨¸®°ÔÀÌÆ®·Î Ã¼·Â º¯È­ Åëº¸
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ Ã¼ï¿½ï¿½ ï¿½ï¿½È­ ï¿½ëº¸
             EnemyHpChange.AddUObject(HealthBarWidget, &UHPWidget::CalculateHp);
             CharacterDie.AddUObject(HealthBarWidget, &UHPWidget::DestroyWidget);
 
-            // ... À§Á¬ ¹ÙÀÎµù ÄÚµå ...
+            // ... ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Îµï¿½ ï¿½Úµï¿½ ...
             GetWorldTimerManager().SetTimerForNextTick([this]()
                 {
                     EnemyHpChange.Broadcast(CurrentHp, MaxHp);

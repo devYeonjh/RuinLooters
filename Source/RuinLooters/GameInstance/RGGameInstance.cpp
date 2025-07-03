@@ -21,7 +21,7 @@ void URGGameInstance::Init()
         return;
     }
 
-    // ¸ðµç Row ÀÌ¸§ Á¶È¸
+    // ï¿½ï¿½ï¿½ Row ï¿½Ì¸ï¿½ ï¿½ï¿½È¸
     WeaponRowNames = WeaponDataTable->GetRowNames();
 
     PotionRowNames = PotionDataTable->GetRowNames();
@@ -34,7 +34,7 @@ void URGGameInstance::Init()
 
 FWeaponTableRow* URGGameInstance::GetWeaponInformation(FName InWeaponName)
 {
-    // ÀÌ¸§À¸·Î ¹«±â Á¤º¸ ¹ÝÈ¯¹Þ±â
+    // ï¿½Ì¸ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯ï¿½Þ±ï¿½
     if (FWeaponTableRow* WeaponInformation = WeaponDataTable->FindRow<FWeaponTableRow>(InWeaponName, ContextStr))
     {
         return WeaponInformation;
@@ -46,19 +46,19 @@ FWeaponTableRow* URGGameInstance::GetWeaponInformation(FName InWeaponName)
 
 FWeaponTableRow* URGGameInstance::GetRamdomWeapon()
 {
-    // ·£´ý ÀÎµ¦½º ¹ÝÈ¯
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½Îµï¿½ï¿½ï¿½ ï¿½ï¿½È¯
     int32 RandomIndex = FMath::RandRange(0, WeaponRowNames.Num() - 1);
 
-    // ·£´ýÇÏ°Ô ¼±ÅÃµÈ ÀÎµ¦½ºÀÇ ÀÌ¸§ °¡Á®¿À±â
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½Ãµï¿½ ï¿½Îµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     FName RandomRowName = WeaponRowNames[RandomIndex];
 
-    // ÀÌ¸§À¸·Î µ¥ÀÌÅÍ Å×ÀÌºí¿¡¼­ ÀÌ¸§À¸·Î ¿­ Ã£±â
+    // ï¿½Ì¸ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Ã£ï¿½ï¿½
     if (FWeaponTableRow* RandomWeapon = WeaponDataTable->FindRow<FWeaponTableRow>(RandomRowName, ContextStr))
     {
         return RandomWeapon;
     }
 
-    // ½ÇÆÐ ½Ã nullptr ¹ÝÈ¯
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ nullptr ï¿½ï¿½È¯
     return nullptr;
 }
 
@@ -154,34 +154,34 @@ FEnemyAbilityTableRow* URGGameInstance::GetEnemyAbilityInformation(FName InEnemy
     return nullptr;
 }
 
-// SaveGame ÀúÀå
+// SaveGame ï¿½ï¿½ï¿½ï¿½
 void URGGameInstance::SetSaveGame(URGPlayerDataAsset* NewSaveData)
 {
     SaveGameInstance = Cast<URGSaveGame>(UGameplayStatics::CreateSaveGameObject(URGSaveGame::StaticClass()));
     SaveGameInstance->SetSaveGameData(NewSaveData);
 
-    // ÀúÀå
+    // ï¿½ï¿½ï¿½ï¿½
     UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveGameInstance->SaveSlotName, SaveGameInstance->PlayerIndex);
 }
 
-// SaveGame ºÒ·¯¿À±â
+// SaveGame ï¿½Ò·ï¿½ï¿½ï¿½ï¿½ï¿½
 URGSaveGame* URGGameInstance::LoadSaveGameData()
 {
-    // ÃÊ±âÈ­
+    // ï¿½Ê±ï¿½È­
     LoadGameInstance = Cast<URGSaveGame>(UGameplayStatics::CreateSaveGameObject(URGSaveGame::StaticClass()));
 
-    // ¼¼ÀÌºê ÆÄÀÏ Ã£±â
+    // ï¿½ï¿½ï¿½Ìºï¿½ ï¿½ï¿½ï¿½ï¿½ Ã£ï¿½ï¿½
     if (UGameplayStatics::DoesSaveGameExist("PlayerSaveSlot", 0))
     {
-        // ÀÖ´Ù¸é ·Îµå
+        // ï¿½Ö´Ù¸ï¿½ ï¿½Îµï¿½
         LoadGameInstance = Cast<URGSaveGame>(UGameplayStatics::LoadGameFromSlot("PlayerSaveSlot", 0));
 
         if (LoadGameInstance)
             return LoadGameInstance;
     }
 
-    // ¼¼ÀÌºê ÆÄÀÏ Ã£±â ½ÇÆÐ ½Ã
-    // Player Stat Asset ºÒ·¯¿Í ÃÊ±âÈ­°ª ÀúÀå
+    // ï¿½ï¿½ï¿½Ìºï¿½ ï¿½ï¿½ï¿½ï¿½ Ã£ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
+    // Player Stat Asset ï¿½Ò·ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     URGPlayerDataAsset* NewPlayerStatAsset = LoadObject<URGPlayerDataAsset>(nullptr, TEXT("/Script/Roguelike123.RGPlayerDataAsset'/Game/Assassin/Blueprint/DA_PlayerStat.DA_PlayerStat'"));
     LoadGameInstance->SetSaveGameData(NewPlayerStatAsset);
 

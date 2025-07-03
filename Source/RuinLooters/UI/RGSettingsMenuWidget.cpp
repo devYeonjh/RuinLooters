@@ -22,30 +22,30 @@ void URGSettingsMenuWidget::NativeConstruct()
     Player = Cast<ARGCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 }
 
-// À§Á¬ÀÇ Å° ÀÔ·Â°ª ¹Þ¾Æ¿È
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å° ï¿½Ô·Â°ï¿½ ï¿½Þ¾Æ¿ï¿½
 FReply URGSettingsMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
     Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 
     const FKey PressedKey = InKeyEvent.GetKey();
 
-    // ESC ´­·ÈÀ» ¶§
+    // ESC ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
     if (PressedKey == EKeys::Escape)
     {
-        // À§Á¬ Á¦°Å
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         CloaseWidget();
 
-        // ÀÔ·Â ¹ÝÈ¯
+        // ï¿½Ô·ï¿½ ï¿½ï¿½È¯
         return FReply::Handled();
     }
 
-    // ´Ù¸¥ Å° ÀÔ·Â ½Ã ¹«½Ã
+    // ï¿½Ù¸ï¿½ Å° ï¿½Ô·ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     return FReply::Unhandled();
 }
 
 void URGSettingsMenuWidget::CheckLevelName(FName NewLevelName)
 {
-	// ½ºÅ×ÀÌÁö°¡ ¾Æ´Ï¸é À§Á¬ ¹öÆ° ¼û±è
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Æ´Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ° ï¿½ï¿½ï¿½ï¿½
 	if (NewLevelName.ToString().Contains(TEXT("Stage")))
 	{
 		ExitButton->SetVisibility(ESlateVisibility::Visible);
@@ -56,35 +56,35 @@ void URGSettingsMenuWidget::CheckLevelName(FName NewLevelName)
 	}
 }
 
-// stage ³ª°¡±â ¹öÆ°
+// stage ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ°
 void URGSettingsMenuWidget::ExitSatge()
 {
     Player->SetbStageExit(true);
 
-    // ¸¶À»·Î ÀÌµ¿
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½
     UGameplayStatics::OpenLevel(GetWorld(), "Town");
 }
 
-// Ãë¼Ò ¹öÆ°(ConfButton) OnClicked ÀÌº¥Æ® ÇÔ¼ö => À§Á¬ Á¦°Å
+// ï¿½ï¿½ï¿½ ï¿½ï¿½Æ°(ConfButton) OnClicked ï¿½Ìºï¿½Æ® ï¿½Ô¼ï¿½ => ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 void URGSettingsMenuWidget::CloaseWidget()
 {
-    // ÀÏ½ÃÁ¤Áö ÇØÁ¦ 
+    // ï¿½Ï½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ 
     UGameplayStatics::SetGamePaused(GetWorld(), false);
 
     APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
 
-    // ¸¶¿ì½º Ä¿¼­  ¼û±â±â
+    // ï¿½ï¿½ï¿½ì½º Ä¿ï¿½ï¿½  ï¿½ï¿½ï¿½ï¿½ï¿½
     PlayerController->SetShowMouseCursor(false);
 
-    // À§Á¬ Á¦°Å
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     RemoveFromParent();
 
-    // ÀÎ°ÔÀÓ ÀÔ·Â¸¸ ¹Þ±â
+    // ï¿½Î°ï¿½ï¿½ï¿½ ï¿½Ô·Â¸ï¿½ ï¿½Þ±ï¿½
     FInputModeGameOnly InputMode;
     PlayerController->SetInputMode(InputMode);
 }
 
-// ³ª°¡±â ¹öÆ°(QuitButton) OnClicked ÀÌº¥Æ® ÇÔ¼ö => °ÔÀÓ Á¾·á
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ°(QuitButton) OnClicked ï¿½Ìºï¿½Æ® ï¿½Ô¼ï¿½ => ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 void URGSettingsMenuWidget::QuitGame()
 {
     UWorld* CurrentWorld = GetWorld();

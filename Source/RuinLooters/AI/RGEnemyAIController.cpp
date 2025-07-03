@@ -17,9 +17,9 @@ ARGEnemyAIController::ARGEnemyAIController()
     Perception->ConfigureSense(*SightCfg);
     Perception->SetDominantSense(SightCfg->GetSenseImplementation());
 
-    SightCfg->DetectionByAffiliation.bDetectEnemies = true;   // ´Ù¸¥ ÆÀ¸¸
-    SightCfg->DetectionByAffiliation.bDetectFriendlies = false;  // °°Àº ÆÀ ¹«½Ã
-    SightCfg->DetectionByAffiliation.bDetectNeutrals = false;  // Áß¸³ ¹«½Ã
+    SightCfg->DetectionByAffiliation.bDetectEnemies = true;   // ï¿½Ù¸ï¿½ ï¿½ï¿½ï¿½ï¿½
+    SightCfg->DetectionByAffiliation.bDetectFriendlies = false;  // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    SightCfg->DetectionByAffiliation.bDetectNeutrals = false;  // ï¿½ß¸ï¿½ ï¿½ï¿½ï¿½ï¿½
 
     Perception->OnTargetPerceptionUpdated.AddDynamic(
         this, &ARGEnemyAIController::OnPerceptionUpdated);
@@ -29,19 +29,19 @@ void ARGEnemyAIController::OnPossess(APawn* InPawn)
 {
     Super::OnPossess(InPawn);
 
-    // ¸Ê¿¡¼­ ÇÃ·¹ÀÌ¾î Ã£±â
+    // ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ Ã£ï¿½ï¿½
     Player = Cast<ARGCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 
-    // ·ÎÄÃ raw Æ÷ÀÎÅÍ ÁØºñ
+    // ï¿½ï¿½ï¿½ï¿½ raw ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Øºï¿½
     UBlackboardComponent* BlackboardComp = nullptr;
 
-    // ÄÚµå¿Í ºí·¢º¸µå°¡ ¿¬°á
+    // ï¿½Úµï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½å°¡ ï¿½ï¿½ï¿½ï¿½
     if (UseBlackboard(BlackboardAsset, BlackboardComp))
     {
-        // TObjectPtr ¸â¹öÀÎ Blackboard ¿¡ º¹»ç
+        // TObjectPtr ï¿½ï¿½ï¿½ï¿½ï¿½ Blackboard ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         Blackboard = BlackboardComp;
 
-        // ³»ºÎ AAIController::Blackboard ¸â¹ö¿Í ¿¬µ¿µÈ »óÅÂ·Î Æ®¸® ½ÇÇà
+        // ï¿½ï¿½ï¿½ï¿½ AAIController::Blackboard ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â·ï¿½ Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         RunBehaviorTree(BehaviorTreeAsset);
         UE_LOG(LogTemp, Warning, TEXT("Controller OnPossess"));
     }
@@ -56,14 +56,14 @@ void ARGEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim)
     Player = Cast<ARGCharacterPlayer>(Actor);
     if (Player)
     {
-        // Stim: ÀÚ±Ø¿¡ ´ëÇÑ Á¤º¸¸¦ ´ãÀº °´Ã¼
+        // Stim: ï¿½Ú±Ø¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼
         if (Stim.WasSuccessfullySensed())
         {
-            // "TargetKey"ÀÇ Å°¿¡ °ªÀ» ¼³Á¤
+            // "TargetKey"ï¿½ï¿½ Å°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             Blackboard->SetValueAsObject(TEXT("TargetKey"), Player);
             UE_LOG(LogTemp, Warning, TEXT("Enemy Detected Player"));
         }
-        // ½Ã¾ß¿¡¼­ ÀÒ¾ú´Ù¸é
+        // ï¿½Ã¾ß¿ï¿½ï¿½ï¿½ ï¿½Ò¾ï¿½ï¿½Ù¸ï¿½
         else
         {
             Player = Cast<ARGCharacterPlayer>(Blackboard->GetValueAsObject(TEXT("TargetKey")));
@@ -73,16 +73,16 @@ void ARGEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim)
     }
 }
 
-// AI Á¤Áö
+// AI ï¿½ï¿½ï¿½ï¿½
 void ARGEnemyAIController::ShutdownAI()
 {
-    // ºñÇìÀÌºñ¾î Æ®¸® Á¤Áö
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Ìºï¿½ï¿½ Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     if (UBrainComponent* Brain = GetBrainComponent())
     {
         Brain->StopLogic(TEXT("PlayerDead"));
     }
 
-    // ±æÃ£±â¡¤ÀÌµ¿ Á¤Áö
+    // ï¿½ï¿½Ã£ï¿½â¡¤ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½
     StopMovement();
     ClearFocus(EAIFocusPriority::Gameplay);
 }

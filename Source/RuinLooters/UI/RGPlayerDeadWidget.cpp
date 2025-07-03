@@ -20,18 +20,18 @@ void URGPlayerDeadWidget::QuitGame()
 {
     UWorld* CurrentWorld = GetWorld();
 
-    // °ÔÀÓ Á¾·á ÇÔ¼ö(¿ùµå, ÄÁÆ®·Ñ·¯, Á¾·á ¹æ½Ä, true¸é °­Á¦Á¾·á false¸é ÇÃ·§ÆûÀÌ ¿ä±¸ÇÏ´Â ÀýÂ÷´ë·Î Á¾·á)
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½(ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½Æ®ï¿½Ñ·ï¿½, ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½, trueï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ falseï¿½ï¿½ ï¿½Ã·ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ä±¸ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
     UKismetSystemLibrary::QuitGame(CurrentWorld, CurrentWorld->GetFirstPlayerController(), EQuitPreference::Quit, false);
 }
 
 void URGPlayerDeadWidget::RestartGame()
 {
-    // ÇÃ·¹ÀÌ¾î Ã¼·ÂÀÌ 0 ÀÏ ¶§
-    // ·¹º§ ÀÌµ¿ => EndPlay() ½ÇÇà => Ã¼·Â 0 ÀÏ ¶§ => ÃÊ±âÈ­ ¹× ÀúÀå
+    // ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ Ã¼ï¿½ï¿½ï¿½ï¿½ 0 ï¿½ï¿½ ï¿½ï¿½
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ => EndPlay() ï¿½ï¿½ï¿½ï¿½ => Ã¼ï¿½ï¿½ 0 ï¿½ï¿½ ï¿½ï¿½ => ï¿½Ê±ï¿½È­ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         
     if (Player)
     {
-        //  Å¸¿îÀ¸·Î ·¹º§ ÀÌµ¿
+        //  Å¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½
         UGameplayStatics::OpenLevel(GetWorld(), "Town");
     }
 }

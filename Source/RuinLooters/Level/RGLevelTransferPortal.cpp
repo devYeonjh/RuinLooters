@@ -14,17 +14,17 @@ ARGLevelTransferPortal::ARGLevelTransferPortal()
 
 	TransferPortal->SetRelativeScale3D(FVector(4.0f, 1.0f, 6.0f));
 
-	// StaticMeshComponent »ý¼º ¹× ·çÆ® ¼³Á¤
+	// StaticMeshComponent ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetCollisionProfileName(TEXT("OverlapOnlyPawn"));
-	MeshComponent->SetupAttachment(TransferPortal); // BoxComp¿¡ ÀÚ½ÄÀ¸·Î µé¾î°¨
+	MeshComponent->SetupAttachment(TransferPortal); // BoxCompï¿½ï¿½ ï¿½Ú½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½î°¨
 
 	Wall = CreateDefaultSubobject<UBoxComponent>(TEXT("Wall"));
 	Wall->SetCollisionProfileName(TEXT("BlockAll"));
-	Wall->SetupAttachment(TransferPortal); // BoxComp¿¡ ÀÚ½ÄÀ¸·Î µé¾î°¨
+	Wall->SetupAttachment(TransferPortal); // BoxCompï¿½ï¿½ ï¿½Ú½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½î°¨
 	Wall->SetRelativeScale3D(FVector(4.0f, 1.0f, 6.0f));
 
-	// ±âº» ¼¼ÆÃ
+	// ï¿½âº» ï¿½ï¿½ï¿½ï¿½
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshAsset(TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (MeshAsset.Succeeded())
 	{
@@ -40,45 +40,45 @@ void ARGLevelTransferPortal::NotifyActorBeginOverlap(AActor* OtherAcotr)
 
 	if (Player)
 	{
-		// ¸¸¾à ½ºÅ×ÀÌÁö¶ó¸é Àû Á¸Àç ¿©ºÎ È®ÀÎ
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
 		FName GetPlayeLevelName = Player->GetLevelName();
 		if (GetPlayeLevelName.ToString().Contains(TEXT("Stage")))
 		{
 			if (Player->GetWorldAliveEnemyCount() > 0)
 			{
-				// ÀûÀÌ Á¸ÀçÇÒ ¶§
+				// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
 				Player->SetbStageExit(true);
 			}
 			else
 			{
-				// ÀûÀÌ Á¸ÀçÇÏÁö ¾ÊÀ» ¶§ 
+				// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ 
 				Player->SetbStageExit(false);
 			}
 
-			// Æ÷Å»¿¡ ¿À¹ö·¦ ÇßÀ» ¶§ À§Á¬ ¶ç¿ì±â
+			// ï¿½ï¿½Å»ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 			Player->ShowStagePortalWidget();
 		}
 		else
 		{
 			Player->SetbStageExit(false);
 
-			// ·¹º§ ÀÌµ¿
+			// ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½
 			UGameplayStatics::OpenLevelBySoftObjectPtr(GetWorld(), TransferLevelName);
 		}
 	}
 }
 
-// ¿ùµå ³»¿¡ ¹èÄ¡ µÇ¾úÀ» ¶§ È£Ãâ
+// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ ï¿½Ç¾ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½
 void ARGLevelTransferPortal::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
-	// static Mesh ¼³Á¤
+	// static Mesh ï¿½ï¿½ï¿½ï¿½
 	if (CustomMesh)
 	{
 		MeshComponent->SetStaticMesh(CustomMesh);
 	}
-	// ¸ÓÆ¼¸®¾ó ¼³Á¤
+	// ï¿½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (CustomMaterial)
 	{
 		MeshComponent->SetMaterial(0, CustomMaterial);

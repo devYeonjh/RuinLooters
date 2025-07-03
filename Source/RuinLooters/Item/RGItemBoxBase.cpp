@@ -26,10 +26,10 @@ ARGItemBoxBase::ARGItemBoxBase()
 
 	DroppedItemOverlapBox->SetGenerateOverlapEvents(true);
 
-	// Query(°ãÄ§)¸¸ °Ë»ç
+	// Query(ï¿½ï¿½Ä§)ï¿½ï¿½ ï¿½Ë»ï¿½
 	DroppedItemOverlapBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
-	// Ãæµ¹ ¿ÀºêÁ§Æ® Å¸ÀÔ
+	// ï¿½æµ¹ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® Å¸ï¿½ï¿½
 	DroppedItemOverlapBox->SetCollisionProfileName(TEXT("WeaponBox"));
 
 }

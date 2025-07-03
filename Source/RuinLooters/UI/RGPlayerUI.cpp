@@ -12,7 +12,7 @@ void URGPlayerUI::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// ¸Ê¿¡¼­ ÇÃ·¹ÀÌ¾î Ã£±â
+	// ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ Ã£ï¿½ï¿½
 	Player = Cast<ARGCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 
 	UpdatePlayerMoney();

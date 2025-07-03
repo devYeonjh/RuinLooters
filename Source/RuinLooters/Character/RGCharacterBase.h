@@ -7,7 +7,7 @@
 #include "RGEnumRepository.h"
 #include "RGCharacterBase.generated.h"
 
-// Ä³¸¯ÅÍ »ç¸Á µ¨¸®°ÔÀÌÆ®
+// Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
 DECLARE_MULTICAST_DELEGATE(FOnDie);
 
 /**
@@ -24,7 +24,7 @@ public:
 	FOnDie CharacterDie;
 
 protected:
-	// Ä³¸¯ÅÍ ½ºÅÈ
+	// Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	int32 CurrentHp;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
@@ -38,36 +38,36 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	int32 Defence;
 
-	// ¼ÒÀ¯ WeaponName
+	// ï¿½ï¿½ï¿½ï¿½ WeaponName
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	FName CharacterWeaponName;
 
-	// ÃßÈÄ È° µî ¹«±â ¾÷µ¥ÀÌÆ® ½Ã »ç¿ëÇÒ Enum
+	// ï¿½ï¿½ï¿½ï¿½ È° ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ Enum
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	EWeaponType Form;
 
-	// °ø°Ý ¾Ö´Ï¸ÞÀÌ¼Ç
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* CurrentMontage;
 
-	// »ç¸Á ¾Ö´Ï¸ÞÀÌ¼Ç
+	// ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* DieMontage;
 
 	UPROPERTY()
 	class UAnimInstance* AnimInstance;
 
-	// °ø°Ý ´ë±â½Ã°£ÀÎÁö È®ÀÎ
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ã°ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
 	uint8 bIsCanAttack : 1;
 
-	// ¼Õ ¼ÒÄÏ¿¡ ºÙÀÏ ¹«±â
+	// ï¿½ï¿½ ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY()
 	class USkeletalMeshComponent* WeaponMeshComponent;
 
-	// µ¥ÀÌÅÍ Å×ÀÌºíÀÇ ¹«±â ¿­
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
 	struct FWeaponTableRow* RowWeapon;
 
-	// µ¥ÀÌÅÍ Å×ÀÌºíÀÇ ¹«±â ÀÌ¸§
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	FName WeaponRowName;
 
@@ -80,7 +80,7 @@ protected:
 	UPROPERTY()
 	class UWorld* World;
 
-	// °ø°Ý, ÇÇ°Ý, »ç¸Á »ç¿îµå
+	// ï¿½ï¿½ï¿½ï¿½, ï¿½Ç°ï¿½, ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, Category = "Audio")
 	USoundBase* AttackSound;
 
@@ -92,7 +92,7 @@ protected:
 	
 
 public:
-	// FORCEINLINEÀ» ÀÌ¿ëÇØ Get, Set ÇÔ¼ö ±¸Çö
+	// FORCEINLINEï¿½ï¿½ ï¿½Ì¿ï¿½ï¿½ï¿½ Get, Set ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½
 	FORCEINLINE int32 GetAttackDamage() { return AttackDamage; };
 
 	FORCEINLINE void SetAttackDamage(int32 NewAttackDamage) { AttackDamage = NewAttackDamage; };
@@ -141,7 +141,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// Attack ¸ùÅ¸ÁÖ Á¾·á ½Ã Å¸ÀÌ¸Ó Á¤Áö
+	// Attack ï¿½ï¿½Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Å¸ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½
 	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	void ApplyWeaponAbility(struct FWeaponTableRow* ApplyWeapon);

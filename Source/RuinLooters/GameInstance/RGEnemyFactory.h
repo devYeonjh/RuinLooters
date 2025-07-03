@@ -15,7 +15,7 @@ public:
     ARGEnemyFactory();
 
 protected:
-    // Enemy Å¬·¡½º
+    // Enemy Å¬ï¿½ï¿½ï¿½ï¿½
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Factory")
     TSubclassOf<class ARGCharacterEnemy> EnemyClass;
 

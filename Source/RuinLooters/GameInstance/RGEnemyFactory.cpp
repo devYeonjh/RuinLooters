@@ -16,7 +16,7 @@ void ARGEnemyFactory::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ¿ùµå, °ÔÀÓ¸ðµå Ã£±â
+    // ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½Ó¸ï¿½ï¿½ Ã£ï¿½ï¿½
     World = GetWorld();
     GameInstance = Cast<URGGameInstance>(UGameplayStatics::GetGameInstance(World));
 
@@ -24,30 +24,30 @@ void ARGEnemyFactory::BeginPlay()
     SpawnEnemy();
 }
 
-// ½ºÆù
+// ï¿½ï¿½ï¿½ï¿½
  void ARGEnemyFactory::SpawnEnemy()
 {
     if (!SaveGame || !EnemyClass) return;
 
     FActorSpawnParameters SpawnParams;
-    // Ç×»ó ½ºÆùÀ¸·Î ¼³Á¤
+    // ï¿½×»ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-    // ÀÎ½ºÅÏ½º ½ºÆù
+    // ï¿½Î½ï¿½ï¿½Ï½ï¿½ ï¿½ï¿½ï¿½ï¿½
     ARGCharacterEnemy* SpawnedEnemy = GetWorld()->SpawnActor<ARGCharacterEnemy>(EnemyClass, GetActorTransform(), SpawnParams);
     if (!SpawnedEnemy) return;
 
-    // ½ºÅ×ÀÌÁö¿¡ µû¸¥ Àû ¼±ÅÃ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     int32 StageIndex = SaveGame->StageIndex;
     FString BaseName = SpawnedEnemy->GetEnemyName().ToString();
     FString NewName = BaseName + FString::FromInt(StageIndex);
     SpawnedEnemy->SetEnemyName(FName(*NewName));
 
-    // Àû ½ºÆù
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     SpawnedEnemy->EnemyAbilityRow = GameInstance->GetEnemyAbilityInformation(SpawnedEnemy->GetEnemyName());
     SpawnedEnemy->GetMesh()->SetSkeletalMesh(SpawnedEnemy->EnemyAbilityRow->SkeletalMesh);
 
-    // Àû ½ºÅÈ ¼³Á¤
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     SpawnedEnemy->SetMoney(SpawnedEnemy->EnemyAbilityRow->EnemyMoney);
     SpawnedEnemy->SetCurrentHp(SpawnedEnemy->EnemyAbilityRow->EnemyCurrentHp);
     SpawnedEnemy->SetMaxHp(SpawnedEnemy->EnemyAbilityRow->EnemyMaxHp);
@@ -55,7 +55,7 @@ void ARGEnemyFactory::BeginPlay()
     SpawnedEnemy->SetDefence(SpawnedEnemy->EnemyAbilityRow->EnemyDefence);
     SpawnedEnemy->SetRowWeapon(GameInstance->GetWeaponInformation(SpawnedEnemy->EnemyAbilityRow->EnemyWeaponName));
 
-    // Ä³¸¯ÅÍ ¹«±â ÀåÂø
+    // Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     if (SpawnedEnemy->GetCharacterWeaponRow())
     {
         SpawnedEnemy->ChangeWeapon(SpawnedEnemy->GetCharacterWeaponRow());

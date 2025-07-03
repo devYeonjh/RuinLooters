@@ -171,7 +171,7 @@ protected:
 
 public:
 
-	// ¿¡µðÅÍ¿¡¼­ DataTable ¿¡¼ÂÀ» µå·¡±×&µå·ÓÀ¸·Î ÇÒ´ç
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ DataTable ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½å·¡ï¿½ï¿½&ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ò´ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	UDataTable* WeaponDataTable;
 
@@ -180,11 +180,11 @@ public:
 
 	FWeaponTableRow* WeaponRow;
 
-	/** DataTable FindRow ½Ã »ç¿ëÇÒ Context ¹®ÀÚ¿­ */
+	/** DataTable FindRow ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ Context ï¿½ï¿½ï¿½Ú¿ï¿½ */
 	UPROPERTY(EditDefaultsOnly, Category = "Data")
 	FString ContextStr;
 
-	// ¿¡µðÅÍ¿¡¼­ DataTable ¿¡¼ÂÀ» µå·¡±×&µå·ÓÀ¸·Î ÇÒ´ç
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ DataTable ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½å·¡ï¿½ï¿½&ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ò´ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	UDataTable* PotionDataTable;
 
@@ -193,7 +193,7 @@ public:
 
 	FPotionTableRow* PotionRow;
 
-	// ¿¡µðÅÍ¿¡¼­ DataTable ¿¡¼ÂÀ» µå·¡±×&µå·ÓÀ¸·Î ÇÒ´ç
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ DataTable ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½å·¡ï¿½ï¿½&ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ò´ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	UDataTable* SkillBookDataTable;
 
@@ -202,7 +202,7 @@ public:
 
 	FSkillBookTableRow* SkillBookRow;
 
-	// ¿¡µðÅÍ¿¡¼­ DataTable ¿¡¼ÂÀ» µå·¡±×&µå·ÓÀ¸·Î ÇÒ´ç
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ DataTable ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½å·¡ï¿½ï¿½&ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ò´ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	UDataTable* EnemyAbilityDataTable;
 
@@ -239,10 +239,10 @@ public:
 
 	FEnemyAbilityTableRow* GetEnemyAbilityInformation(FName InEnemyName);
 
-	// SaveGame ÀúÀå
+	// SaveGame ï¿½ï¿½ï¿½ï¿½
 	void SetSaveGame(class URGPlayerDataAsset* NewSaveData);
 
-	// SaveGame ºÒ·¯¿À±â
+	// SaveGame ï¿½Ò·ï¿½ï¿½ï¿½ï¿½ï¿½
 	class URGSaveGame* LoadSaveGameData();
 };
 

@@ -66,7 +66,7 @@ ARGCharacterPlayer::ARGCharacterPlayer()
         StagePortalWidgetClass = StagePortalWidgetClassRef.Class;
     }
 
-    // ·¹º§ ÀÌ¸§ ÀúÀå
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½
     LevelName = FName(*UGameplayStatics::GetCurrentLevelName(this, true));
 
     bStageExit = 1;
@@ -82,7 +82,7 @@ void ARGCharacterPlayer::BeginPlay()
 
     if (RowWeapon)
     {
-        // ½ÃÀÛ ¹«±â ÀåÂø
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         ChangeWeapon(RowWeapon);
 
         WeaponMeshComponent->SetSkeletalMesh(RowWeapon->SkeletalMesh);
@@ -93,16 +93,16 @@ void ARGCharacterPlayer::BeginPlay()
         UE_LOG(LogTemp, Warning, TEXT("Player RowWeapon Null"));
     }
 
-    // LoadObject<>()´Â ¿¡µðÅÍ³ª ÆÐÅ°Áö ¹øµé¿¡ µé¾î ÀÖ´Â .uasset À» ·±Å¸ÀÓ¿¡ Ã£¾Æ ¸Þ¸ð¸®¿¡ ·ÎµåÇÔ
-    // ½Ì±ÛÅæÃ³·³ µ¿ÀÏ °æ·Î¶ó¸é ¿©·¯¹ø È£ÃâÇØµµ ÇÑ¹ø¸¸ ·ÎµåÇÔ
-    // ºí·çÇÁ¸°Æ®/C++¿¡ ¹Ì¸® ÂüÁ¶¸¦ °É ¼ö ¾ø´Â µ¿Àû °æ·ÎÀÇ ¿¡¼ÂÀ» ºÒ·¯¿Ã ¶§ ÇÊ¼ö
-    // ÇÊµå¸¦ ¼öÁ¤ÇÏ¸é ¿øº» ¿¡¼ÂÀÌ Á÷Á¢ ¹Ù²ð ¼ö ÀÖÀ½
+    // LoadObject<>()ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í³ï¿½ ï¿½ï¿½Å°ï¿½ï¿½ ï¿½ï¿½ï¿½é¿¡ ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ .uasset ï¿½ï¿½ ï¿½ï¿½Å¸ï¿½Ó¿ï¿½ Ã£ï¿½ï¿½ ï¿½Þ¸ð¸®¿ï¿½ ï¿½Îµï¿½ï¿½ï¿½
+    // ï¿½Ì±ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Î¶ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½ï¿½Øµï¿½ ï¿½Ñ¹ï¿½ï¿½ï¿½ ï¿½Îµï¿½ï¿½ï¿½
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®/C++ï¿½ï¿½ ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ò·ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ê¼ï¿½
+    // ï¿½Êµå¸¦ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ù²ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     LoadAsset = LoadObject<URGPlayerDataAsset>(nullptr, TEXT("/Script/Roguelike123.RGPlayerDataAsset'/Game/Assassin/Blueprint/DA_PlayerStat.DA_PlayerStat'"));
 
-    // DuplicateObject<>()´Â Æ÷ÀÎÅÍÃ³·³ ÂüÁ¶ Å¸ÀÔ ÇÊµåµµ Àç±Í º¹Á¦µÇ¾î, ¼­·Î µ¶¸³µÈ ÀÎ½ºÅÏ½º°¡ »ý¼º
-    // ·±Å¸ÀÓ¿¡ ¿øº» ¿¡¼ÂÀ» ÈÑ¼ÕÇÏÁö ¾ÊÀ¸¸é¼­ ¼öÁ¤ ¹× »ç¿ëÇÏ°í ½ÍÀ» ¶§ »ç¿ë
-    // º¹Á¦ ºñ¿ëÀÌ ¹ß»ýÇÏ¹Ç·Î ³²¿ë ÁÖÀÇ
-    // ÃÊ±â ½ºÅÈÀÌ ¿µ±¸È÷ º¯ÇÏ´Â °ÍÀ» ¸·±â À§ÇØ ±íÀºº¹»ç
+    // DuplicateObject<>()ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½ ï¿½Êµåµµ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½, ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Î½ï¿½ï¿½Ï½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    // ï¿½ï¿½Å¸ï¿½Ó¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ñ¼ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½é¼­ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß»ï¿½ï¿½Ï¹Ç·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    // ï¿½Ê±ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     PlayerStat = DuplicateObject<URGPlayerDataAsset>(LoadAsset, this);
 
     GetSaveGame();
@@ -123,15 +123,15 @@ void ARGCharacterPlayer::BeginPlay()
 
     PlayerHpChange.Broadcast(CurrentHp, MaxHp);
 
-    // Àû ¼ö È®ÀÎ ¹× ÀúÀå
+    // ï¿½ï¿½ ï¿½ï¿½ È®ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     if (!LevelName.IsNone())
     {
-        // ½ºÅ×ÀÌÁö ÀÏ ¶§¸¸ ¿¡³Ê¹Ì °³¼ö ÀúÀå ¹× Ã¼Å©
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ê¹ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Ã¼Å©
         if (LevelName.ToString().Contains(TEXT("Stage")))
         {
             if (CheckEnemy())
             {
-                // Àû o
+                // ï¿½ï¿½ o
                 UE_LOG(LogTemp, Warning, TEXT("LevelName  Get World Enemy : %d"), WorldAliveEnemys);
             }
         }
@@ -177,7 +177,7 @@ void ARGCharacterPlayer::Die()
 {
     ARGCharacterBase::Die();
 
-    // Àû AI Controller ÀüÃ¼ ´Ù¿î
+    // ï¿½ï¿½ AI Controller ï¿½ï¿½Ã¼ ï¿½Ù¿ï¿½
     for (TActorIterator<ARGEnemyAIController> It(GetWorld()); It; ++It)
     {
         ARGEnemyAIController* AIController = Cast<ARGEnemyAIController>(*It);
@@ -202,8 +202,8 @@ void ARGCharacterPlayer::Die()
         }
     }
 
-    // È­¸é ¾îµÓ°Ô
-    // ÆäÀÌµå ÀÎ: 0 ¡æ 1 alpha, È¸»ö
+    // È­ï¿½ï¿½ ï¿½ï¿½Ó°ï¿½
+    // ï¿½ï¿½ï¿½Ìµï¿½ ï¿½ï¿½: 0 ï¿½ï¿½ 1 alpha, È¸ï¿½ï¿½
     if (PlayerController)// = UGameplayStatics::GetPlayerController(this, 0)
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -211,14 +211,14 @@ void ARGCharacterPlayer::Die()
             Subsystem->RemoveMappingContext(DefaultMappingContext);
         }
 
-        // CameraManager ÅëÇØ ÆäÀÌµå È¿°ú
+        // CameraManager ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìµï¿½ È¿ï¿½ï¿½
         PlayerController->PlayerCameraManager->StartCameraFade(
             0.0f,                // From Alpha
             0.6f,                // To Alpha
             2.0f,               // Duration
             FLinearColor::Black, // FadeColor
             false,              // bShouldFadeAudio
-            true                // bHoldWhenFinished(³¡³ª¸é °íÁ¤)
+            true                // bHoldWhenFinished(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         );
     }
 
@@ -227,7 +227,7 @@ void ARGCharacterPlayer::Die()
 
 void ARGCharacterPlayer::Interaction()
 {
-    // NPC¿ÍÀÇ »óÈ£ÀÛ¿ë
+    // NPCï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£ï¿½Û¿ï¿½
     if (bIsCharacterInteractWithNPC)
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -235,7 +235,7 @@ void ARGCharacterPlayer::Interaction()
             Subsystem->RemoveMappingContext(DefaultMappingContext);
         }
 
-        // Áï½Ã NPC UI »ý¼º
+        // ï¿½ï¿½ï¿½ NPC UI ï¿½ï¿½ï¿½ï¿½
         InteractiveNPC->GetActiveStoreWidget()->AddToViewport(0);
 
         InteractiveNPC->GetActiveStoreWidget()->SetVisibility(ESlateVisibility::Visible);
@@ -258,22 +258,22 @@ void ARGCharacterPlayer::ApplySpeedBuff()
 
         AttackSpeed = 1.5;
 
-        // 1. ¿ø·¡ ¼Óµµ ÀúÀå
+        // 1. ï¿½ï¿½ï¿½ï¿½ ï¿½Óµï¿½ ï¿½ï¿½ï¿½ï¿½
         OriginalMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
 
-        // 2. ¹öÇÁµÈ ¼Óµµ·Î ¼ÂÆÃ
+        // 2. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Óµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         GetCharacterMovement()->MaxWalkSpeed = 800;
 
-        // 3. ±âÁ¸ Å¸ÀÌ¸Ó°¡ µ¹°í ÀÖÀ¸¸é Å¬¸®¾î
+        // 3. ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½Ì¸Ó°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½
         GetWorldTimerManager().ClearTimer(SpeedBuffTimerHandle);
 
-        // 4. Duration ÃÊ ÈÄ RestoreOriginalSpeed() È£Ãâ ¿¹¾à
+        // 4. Duration ï¿½ï¿½ ï¿½ï¿½ RestoreOriginalSpeed() È£ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         GetWorldTimerManager().SetTimer(
             SpeedBuffTimerHandle,
             this,
             &ARGCharacterPlayer::RestoreOriginalSpeed,
             5.0f,
-            false  // ¹Ýº¹ÇÏÁö ¾ÊÀ½
+            false  // ï¿½Ýºï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         );
 
         GetWorldTimerManager().SetTimer(
@@ -281,7 +281,7 @@ void ARGCharacterPlayer::ApplySpeedBuff()
             this,
             &ARGCharacterPlayer::OnSkill,
             8.0f,
-            false  // ¹Ýº¹ÇÏÁö ¾ÊÀ½
+            false  // ï¿½Ýºï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         );
         UE_LOG(LogTemp, Warning, TEXT("Skill On!"));
 
@@ -295,7 +295,7 @@ void ARGCharacterPlayer::ApplySpeedBuff()
 
 void ARGCharacterPlayer::RestoreOriginalSpeed()
 {
-    // ¿ø·¡ ¼Óµµ º¹±¸
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½Óµï¿½ ï¿½ï¿½ï¿½ï¿½
     GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed;
     AttackSpeed = 1.0;
 }
@@ -351,7 +351,7 @@ void ARGCharacterPlayer::ViewSettingWidget()
             SettingsWidget->CheckLevelName(LevelName);
 
             SettingsWidget->AddToViewport();
-            // °ÔÀÓ ÀÏ½ÃÁ¤Áö
+            // ï¿½ï¿½ï¿½ï¿½ ï¿½Ï½ï¿½ï¿½ï¿½ï¿½ï¿½
             UGameplayStatics::SetGamePaused(GetWorld(), true);
 
             if (PlayerController)
@@ -367,26 +367,26 @@ void ARGCharacterPlayer::ViewSettingWidget()
     }
 }
 
-// Player UI¿¡ ÀÖ´Â Money °ª º¯°æ
+// Player UIï¿½ï¿½ ï¿½Ö´ï¿½ Money ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 void ARGCharacterPlayer::PrintMoney()
 {
     if (PlayerUI != nullptr)
     {
-        // FText : String°ú À¯»çÇÑ ¾ð¸®¾ó ¹®ÀÚ 
+        // FText : Stringï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ð¸®¾ï¿½ ï¿½ï¿½ï¿½ï¿½ 
         PlayerUI->MoneyData->SetText(FText::AsNumber(Money));
     }
 }
 
-// Save Data °¡Á®¿È
+// Save Data ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void ARGCharacterPlayer::GetSaveGame()
 {
-    // ¼¼ÀÌºê ÆÄÀÏ Ã£±â
+    // ï¿½ï¿½ï¿½Ìºï¿½ ï¿½ï¿½ï¿½ï¿½ Ã£ï¿½ï¿½
     URGSaveGame* LoadData = GameInstance->LoadSaveGameData();
 
     if (LoadData)
     {
         UE_LOG(LogTemp, Warning, TEXT("GetSaveGame() Money : %d"), LoadData->PlayerMoney);
-        // °ª °¡Á®¿È
+        // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         Money = LoadData->PlayerMoney;
         MaxHp = LoadData->MaxHp;
         CurrentHp = LoadData->CurrentHp;
@@ -406,15 +406,15 @@ void ARGCharacterPlayer::GetSaveGame()
     }
 }
 
-// ·¹º§ ÀÌµ¿ ¹× ÇÃ·¹ÀÌ¾î Á¾·á ½Ã ÀúÀå
+// ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 void ARGCharacterPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     Super::EndPlay(EndPlayReason);
 
-    // Å¸ÀÌ¸Ó Å¬¸®¾î
+    // Å¸ï¿½Ì¸ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½
     GetWorldTimerManager().ClearAllTimersForObject(this);
 
-    // ÀüÃ¼ ÃÊ±âÈ­°¡ ¾Æ´Ñ ´øÀü ÀÔÀå ÀüÀ¸·Î µ¹¾Æ°¡°í ½Í´Ù¸é CurrentHp > 0 »©ÁÖ±â
+    // ï¿½ï¿½Ã¼ ï¿½Ê±ï¿½È­ï¿½ï¿½ ï¿½Æ´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Æ°ï¿½ï¿½ï¿½ ï¿½Í´Ù¸ï¿½ CurrentHp > 0 ï¿½ï¿½ï¿½Ö±ï¿½
     if (WorldAliveEnemys >= 1 && CurrentHp > 0)
     {
         return;
@@ -433,13 +433,13 @@ void ARGCharacterPlayer::SetPlayerStat()
 {
     if (CurrentHp <= 0)
     {
-        // ÇÃ·¹ÀÌ¾î°¡ Á×¾úÀ¸¸é ÃÊ±âÈ­
+        // ï¿½Ã·ï¿½ï¿½Ì¾î°¡ ï¿½×¾ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­
         PlayerStat = DuplicateObject<URGPlayerDataAsset>(LoadAsset, this);
         UE_LOG(LogTemp, Warning, TEXT("PlayerStat Reset"));
     }
     else
     {
-        // ÀúÀå ½Ã µ¥ÀÌÅÍ ¿¡¼Â¿¡ ÇöÀç ÇÃ·¹ÀÌ¾î »óÅÂ ÀúÀå
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         PlayerStat->PlayerMoney = Money;
         PlayerStat->MaxHp = MaxHp;
         PlayerStat->CurrentHp = CurrentHp;
@@ -495,26 +495,26 @@ void ARGCharacterPlayer::ShowStagePortalWidget()
 
 uint8 ARGCharacterPlayer::CheckEnemy()
 {
-    // ¿ùµå ³» Enemy ¹ÝÈ¯ 
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Enemy ï¿½ï¿½È¯ 
     TArray<AActor*> FoundEnemies;
     UGameplayStatics::GetAllActorsOfClass(World, ARGCharacterEnemy::StaticClass(), FoundEnemies);
 
-    // ÃÊ±âÈ­
+    // ï¿½Ê±ï¿½È­
     WorldAliveEnemys = 0;
 
-    // AActor*& Å¸ÀÔÀ» »ç¿ëÇÏ¸é ¹è¿­ ÀÚÃ¼¸¦ ¼öÁ¤ÇÒ ¼ö ÀÖÀ½, AActor*´Â ÀÐ±â Àü¿ë
+    // AActor*& Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½è¿­ ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½, AActor*ï¿½ï¿½ ï¿½Ð±ï¿½ ï¿½ï¿½ï¿½ï¿½
     for (AActor* FoundEnemy : FoundEnemies)
     {
         ARGCharacterEnemy* WorldEnemy = Cast<ARGCharacterEnemy>(FoundEnemy);
 
-        // EnemyÀÇ ÇÇ°¡ ÀÖÀ» ¶§
+        // Enemyï¿½ï¿½ ï¿½Ç°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
         if (WorldEnemy && WorldEnemy->GetCurrentHp() != 0)
         {
             WorldAliveEnemys++;
         }
     }
 
-    // Enemy°¡ ¿ùµå ³»¿¡ ¾øÀ» ¶§
+    // Enemyï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
     if (WorldAliveEnemys <= 0)
     {
         return false;

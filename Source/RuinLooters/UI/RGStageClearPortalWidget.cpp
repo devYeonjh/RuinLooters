@@ -9,7 +9,7 @@
 
 URGStageClearPortalWidget::URGStageClearPortalWidget(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
-	// Å° ÀÔ·Â ¹Þ¾Æ¿À´Â°É Çã¿ë
+	// Å° ï¿½Ô·ï¿½ ï¿½Þ¾Æ¿ï¿½ï¿½Â°ï¿½ ï¿½ï¿½ï¿½
 	bIsFocusable = true;
 }
 
@@ -35,53 +35,53 @@ void URGStageClearPortalWidget::NativeConstruct()
 
 }
 
-// À§Á¬ÀÇ Å° ÀÔ·Â°ª ¹Þ¾Æ¿È
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å° ï¿½Ô·Â°ï¿½ ï¿½Þ¾Æ¿ï¿½
 FReply URGStageClearPortalWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
 	const FKey PressedKey = InKeyEvent.GetKey();
 
-	// ESC ´­·ÈÀ» ¶§
+	// ESC ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
 	if (PressedKey == EKeys::Escape)
 	{
-		// À§Á¬ Á¦°Å
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		NotClearStageExit();
 
-		// ÀÔ·Â ¹ÝÈ¯
+		// ï¿½Ô·ï¿½ ï¿½ï¿½È¯
 		return FReply::Handled();
 	}
 
-	// ´Ù¸¥ Å° ÀÔ·Â ½Ã ¹«½Ã
+	// ï¿½Ù¸ï¿½ Å° ï¿½Ô·ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	return FReply::Unhandled();
 }
 
-// ½ºÅ×ÀÌÁö ³ª°¡±â ¹öÆ°
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ°
 void URGStageClearPortalWidget::ClearSatgeExit()
 {
-	// ¸¶À»·Î ÀÌµ¿
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½
 	UGameplayStatics::OpenLevel(GetWorld(), "Town");
 }
 
-// ´ÙÀ½ ½ºÅ×ÀÌÁö ¹öÆ°
+// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ°
 void URGStageClearPortalWidget::NextStage()
 {
-	// ´ÙÀ½ ½ºÅ×ÀÌÁö·Î ÀÌµ¿ (µ¿ÀÏ ½ºÅ×ÀÌÁö)
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 	UGameplayStatics::OpenLevel(GetWorld(), "BattleStage1");
 }
 
 void URGStageClearPortalWidget::NotClearStageExit()
 {
-    // ÀÏ½ÃÁ¤Áö ÇØÁ¦ 
+    // ï¿½Ï½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ 
     UGameplayStatics::SetGamePaused(GetWorld(), false);
 
     APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
 
-    // ¸¶¿ì½º Ä¿¼­  ¼û±â±â
+    // ï¿½ï¿½ï¿½ì½º Ä¿ï¿½ï¿½  ï¿½ï¿½ï¿½ï¿½ï¿½
     PlayerController->SetShowMouseCursor(false);
 
-    // À§Á¬ Á¦°Å
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     RemoveFromParent();
 
-    // ÀÎ°ÔÀÓ ÀÔ·Â¸¸ ¹Þ±â
+    // ï¿½Î°ï¿½ï¿½ï¿½ ï¿½Ô·Â¸ï¿½ ï¿½Þ±ï¿½
     FInputModeGameOnly InputMode;
     PlayerController->SetInputMode(InputMode);
 }

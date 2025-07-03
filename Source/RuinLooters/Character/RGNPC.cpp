@@ -37,7 +37,7 @@ ARGNPC::ARGNPC()
 	DetectPlayerBox->SetBoxExtent(FVector(120.0f, 120.0f, 80.0f));
 
 
-	// ºí·çÇÁ¸°Æ® Å¬·¡½º ÂüÁ¶
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	static ConstructorHelpers::FClassFinder<UUserWidget> NPCWBPClass(
 		TEXT("/Game/Assassin/UI/WBP_NPCStoreWidget.WBP_NPCStoreWidget_C"));
 	if (NPCWBPClass.Succeeded())
@@ -51,11 +51,11 @@ void ARGNPC::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ÇÃ·¹ÀÌ¾î °¨Áö ¹Ú½º ¹ÙÀÎµù
+	// ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ú½ï¿½ ï¿½ï¿½ï¿½Îµï¿½
 	DetectPlayerBox->OnComponentBeginOverlap.AddDynamic(this, &ARGNPC::OnDetectPlayerBoxBeginOverlap);
 	DetectPlayerBox->OnComponentEndOverlap.AddDynamic(this, &ARGNPC::OnDetectPlayerBoxEndOverlap);
 
-	// ±âº» ¿ä¼Ò Ã£±â
+	// ï¿½âº» ï¿½ï¿½ï¿½ Ã£ï¿½ï¿½
 	World = GetWorld();
 	GameInstance = Cast<URGGameInstance>(UGameplayStatics::GetGameInstance(World));
 	Player = Cast<ARGCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(World, 0));
@@ -65,7 +65,7 @@ void ARGNPC::BeginPlay()
 
 void ARGNPC::RemoveWidget()
 {
-	// NPC ¹üÀ§ ¹þ¾î³ª¸é È­¸é¿¡¼­ Á¦°Å
+	// NPC ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½î³ªï¿½ï¿½ È­ï¿½é¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (ActiveStoreWidget)
 	{
 		ActiveStoreWidget->SetVisibility(ESlateVisibility::Hidden);
@@ -78,7 +78,7 @@ void ARGNPC::RemoveWidget()
 		}
 	}
 
-	// ÇÃ·¹ÀÌ¾î ÄÁÆ®·Ñ ÀÔ·Â Àç½Ç½Ã
+	// ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½Ô·ï¿½ ï¿½ï¿½Ç½ï¿½
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 	{
 		Subsystem->AddMappingContext(Player->GetDefaultMappingContext(), 0);

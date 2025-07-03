@@ -25,21 +25,21 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "AI")
     UBlackboardData* BlackboardAsset;
 
-    // Áö°¢
+    // ï¿½ï¿½ï¿½ï¿½
     UPROPERTY(VisibleAnywhere)
     class UAIPerceptionComponent* Perception;
 
-    // ½Ã¾ß
+    // ï¿½Ã¾ï¿½
     UPROPERTY()
     class UAISenseConfig_Sight* SightCfg;
 
     UPROPERTY()
     class ARGCharacterPlayer* Player;
 
-    // ºùÀÇµÉ ¶§ È£Ãâ
+    // ï¿½ï¿½ï¿½Çµï¿½ ï¿½ï¿½ È£ï¿½ï¿½
     virtual void OnPossess(APawn* InPawn) override;
 
-    // Áö°¢ º¯È­ÇÒ ¶§ È£Ãâ
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È­ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½
     UFUNCTION()
     void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim);
 
