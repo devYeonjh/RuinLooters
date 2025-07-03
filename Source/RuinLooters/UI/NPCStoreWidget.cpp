@@ -4,14 +4,14 @@
 #include "UI/NPCStoreWidget.h"
 #include "Components/Button.h"
 #include "Kismet/GameplayStatics.h"
-#include "Character/RGCharacterPlayer.h"
-#include "Character/RGNPC.h"
+#include "Character/RLCharacterPlayer.h"
+#include "Character/RLNPC.h"
 
 void UNPCStoreWidget::NativeConstruct()
 {
     Super::NativeConstruct();
 
-    // ¹öÆ° Å¬¸¯ ÀÌº¥Æ® ¹ÙÀÎµù
+    // ï¿½ï¿½Æ° Å¬ï¿½ï¿½ ï¿½Ìºï¿½Æ® ï¿½ï¿½ï¿½Îµï¿½
     if (BuyButton)
     {
         BuyButton->OnClicked.AddDynamic(this, &UNPCStoreWidget::BuyItem);
@@ -21,7 +21,7 @@ void UNPCStoreWidget::NativeConstruct()
         DeleteButton->OnClicked.AddDynamic(this, &UNPCStoreWidget::DeleteWidget);
     }
 
-    Player = Cast<ARGCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+    Player = Cast<ARLCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 }
 
 void UNPCStoreWidget::BuyItem()
@@ -33,3 +33,6 @@ void UNPCStoreWidget::DeleteWidget()
 {
     Player->GetInteractNPC()->RemoveWidget();
 }
+
+
+
