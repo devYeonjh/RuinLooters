@@ -1,0 +1,10 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Character/RGNPCBuyInterface.h"
+
+// Add default functionality here for any IRGNPCBuyInterface functions that are not pure virtual.
+
+void IRGNPCBuyInterface::HandleStoreBuy()
+{
+}
