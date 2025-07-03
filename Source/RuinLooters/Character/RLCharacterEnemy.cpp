@@ -10,24 +10,24 @@
 
 ARLCharacterEnemy::ARLCharacterEnemy()
 {
-    // �޽ð� ��Ʈ�ѷ� ȸ���� ���� ���ƺ�����
+    // 메시가 컨트롤러 회전을 따라 회전하도록
     bUseControllerRotationYaw = true;
 
     Money = 50;
 
-    // �� ü�¹� UI
+    // HP 체력바 UI
     static ConstructorHelpers::FClassFinder<UUserWidget> WBPClass(
         TEXT("/Game/Assassin/UI/WBP_HpBar"));
     if (WBPClass.Succeeded())
     {
-        // ������Ʈ ���� �� ��ġ ��ġ
+        // 컴포넌트 생성 및 위치 설정
         HealthBarComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBar"));
         HealthBarComponent->SetupAttachment(GetMesh());
         HealthBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
         HealthBarComponent->SetDrawSize(FVector2D(200, 20));
         HealthBarComponent->SetRelativeLocation(FVector(0, 0, 200));
 
-        // ������Ʈ�� ������ ���� ����
+        // 컴포넌트에 위젯을 설정 지정
         HealthBarComponent->SetWidgetClass(WBPClass.Class);
         UE_LOG(LogTemp, Log, TEXT("WBPClass Load Success"));
     }
@@ -58,7 +58,7 @@ void ARLCharacterEnemy::BeginPlay()
 {
     Super::BeginPlay();
 
-    // �ʿ��� �÷��̾� ã��
+    // 필요한 플레이어 찾기
     Player = Cast<ARLCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(World, 0));
 
     if (UUserWidget* UserWidget = HealthBarComponent->GetUserWidgetObject())
@@ -66,11 +66,11 @@ void ARLCharacterEnemy::BeginPlay()
         UE_LOG(LogTemp, Warning, TEXT("make UUserWidget"));
         if (UHPWidget* HealthBarWidget = Cast<UHPWidget>(UserWidget))
         {
-            // ��������Ʈ�� ü�� ��ȭ �뺸
+            // 델리게이트에 체력 변화 바인딩
             EnemyHpChange.AddUObject(HealthBarWidget, &UHPWidget::CalculateHp);
             CharacterDie.AddUObject(HealthBarWidget, &UHPWidget::DestroyWidget);
 
-            // ... ���� ���ε� �ڵ� ...
+            // ... 기타 바인딩 코드 ...
             GetWorldTimerManager().SetTimerForNextTick([this]()
                 {
                     EnemyHpChange.Broadcast(CurrentHp, MaxHp);
