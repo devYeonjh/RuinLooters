@@ -106,19 +106,13 @@ void ARLCharacterBase::Attack()
     {
         bIsCanAttack = false;
         AnimInstance = GetMesh()->GetAnimInstance();
-        CurrentComboStep = 1;
-        PlayComboMontage(CurrentComboStep);
-        // 델리게이트 설정 (몽타주 종료 시 콤보 상태 초기화)
         if (AnimInstance && CurrentMontage)
         {
+            AnimInstance->Montage_Play(CurrentMontage, AttackSpeed);
             FOnMontageEnded EndDelegate;
             EndDelegate.BindUObject(this, &ARLCharacterBase::OnMontageEnded);
             AnimInstance->Montage_SetEndDelegate(EndDelegate, CurrentMontage);
         }
-    }
-    else if (bCanNextCombo)
-    {
-        bComboInput = true;
     }
 }
 
@@ -198,17 +192,4 @@ void ARLCharacterBase::ApplyWeaponAbility(FWeaponTableRow* ApplyWeapon)
     AttackDamage = ApplyWeapon->Damage;
     AttackSpeed = ApplyWeapon->AttackSpeed;
     Range = ApplyWeapon->Range;
-}
-
-void ARLCharacterBase::PlayComboMontage(int32 ComboStep)
-{
-    if (!CurrentMontage || !AnimInstance) return;
-    if (ComboStep > 0 && ComboStep <= CurrentMontage->CompositeSections.Num())
-    {
-        FName SectionName = CurrentMontage->CompositeSections[ComboStep - 1].SectionName;
-        // AttackSpeed를 반영하여 재생
-        AnimInstance->Montage_Play(CurrentMontage, AttackSpeed);
-        AnimInstance->Montage_JumpToSection(SectionName, CurrentMontage);
-    }
-    CurrentComboStep = ComboStep;
 }

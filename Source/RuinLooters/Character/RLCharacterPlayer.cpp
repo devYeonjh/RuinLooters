@@ -93,14 +93,14 @@ void ARLCharacterPlayer::BeginPlay()
         UE_LOG(LogTemp, Warning, TEXT("Player RowWeapon Null"));
     }
 
-    // LoadObject<>()�� �����ͳ� ��Ű�� ���鿡 ���?�ִ� .uasset �� ��Ÿ�ӿ� ã�� �޸𸮿� �ε���
+    // LoadObject<>()�� �����ͳ� ��Ű�� ���鿡 ���?�ִ� .uasset �� ��Ÿ�ӿ� ã�� �޸𸮿� �ε���
     // �̱���ó�� ���� ��ζ�� ������ ȣ���ص� �ѹ��� �ε���
-    // ��������Ʈ/C++�� �̸� ������ �� �� ���� ���� �����?������ �ҷ��� �� �ʼ�
+    // ��������Ʈ/C++�� �̸� ������ �� �� ���� ���� �����?������ �ҷ��� �� �ʼ�
     // �ʵ带 �����ϸ� ���� ������ ���� �ٲ� �� ����
     LoadAsset = LoadObject<URLPlayerDataAsset>(nullptr, TEXT("/Script/Roguelike123.RLPlayerDataAsset'/Game/Assassin/Blueprint/DA_PlayerStat.DA_PlayerStat'"));
 
-    // DuplicateObject<>()�� ������ó�� ���� Ÿ�� �ʵ嵵 ���?�����Ǿ�, ���� ������ �ν��Ͻ��� ����
-    // ��Ÿ�ӿ� ���� ������ �Ѽ����� �����鼭 ���� �� ����ϰ�?���� �� ���?    // ���� �����?�߻��ϹǷ� ���� ����
+    // DuplicateObject<>()�� ������ó�� ���� Ÿ�� �ʵ嵵 ���?�����Ǿ�, ���� ������ �ν��Ͻ��� ����
+    // ��Ÿ�ӿ� ���� ������ �Ѽ����� �����鼭 ���� �� ����ϰ�?���� �� ���?    // ���� �����?�߻��ϹǷ� ���� ����
     // �ʱ� ������ ������ ���ϴ� ���� ���� ���� ��������
     PlayerStat = DuplicateObject<URLPlayerDataAsset>(LoadAsset, this);
 
@@ -201,7 +201,7 @@ void ARLCharacterPlayer::Die()
         }
     }
 
-    // ȭ�� ��Ӱ�?    // ���̵� ��: 0 �� 1 alpha, ȸ��
+    // ȭ�� ��Ӱ�?    // ���̵� ��: 0 �� 1 alpha, ȸ��
     if (PlayerController)// = UGameplayStatics::GetPlayerController(this, 0)
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -233,7 +233,7 @@ void ARLCharacterPlayer::Interaction()
             Subsystem->RemoveMappingContext(DefaultMappingContext);
         }
 
-        // ���?NPC UI ����
+        // ���?NPC UI ����
         InteractiveNPC->GetActiveStoreWidget()->AddToViewport(0);
 
         InteractiveNPC->GetActiveStoreWidget()->SetVisibility(ESlateVisibility::Visible);
@@ -431,7 +431,7 @@ void ARLCharacterPlayer::SetPlayerStat()
 {
     if (CurrentHp <= 0)
     {
-        // ÷̾�?׾ ʱȭ
+        // ÷̾�?׾ ʱȭ
         PlayerStat = DuplicateObject<URLPlayerDataAsset>(LoadAsset, this);
         UE_LOG(LogTemp, Warning, TEXT("PlayerStat Reset"));
     }
@@ -500,7 +500,7 @@ uint8 ARLCharacterPlayer::CheckEnemy()
     // ʱȭ
     WorldAliveEnemys = 0;
 
-    // AActor*& Ÿ ϸ�?ü   , AActor*б 
+    // AActor*& Ÿ ϸ�?ü   , AActor*б 
     for (AActor* FoundEnemy : FoundEnemies)
     {
         ARLCharacterEnemy* WorldEnemy = Cast<ARLCharacterEnemy>(FoundEnemy);
