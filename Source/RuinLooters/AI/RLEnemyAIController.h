@@ -25,21 +25,21 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "AI")
     UBlackboardData* BlackboardAsset;
 
-    // ����
+    // 인식
     UPROPERTY(VisibleAnywhere)
     class UAIPerceptionComponent* Perception;
 
-    // �þ�
+    // 시야
     UPROPERTY()
     class UAISenseConfig_Sight* SightCfg;
 
     UPROPERTY()
     class ARLCharacterPlayer* Player;
 
-    // ���ǵ� �� ȣ��
+    // 빙의된 후 호출
     virtual void OnPossess(APawn* InPawn) override;
 
-    // ���� ��ȭ�� �� ȣ��
+    // 인식 변화시 호출
     UFUNCTION()
     void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim);
 

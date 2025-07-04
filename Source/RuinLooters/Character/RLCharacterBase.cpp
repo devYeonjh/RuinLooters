@@ -16,7 +16,7 @@
 
 ARLCharacterBase::ARLCharacterBase() : WeaponRowName(TEXT("First WeaponRowName Text"))
 {
-    // �⺻ ���� �ʱ�ȭ (���Ͻô� ������ ����)
+    // 기본 스탯 초기화 (블루프린트에서 덮어쓰기 가능)
     MaxHp = 100;
     CurrentHp = MaxHp;
     AttackDamage = 0;
@@ -26,11 +26,11 @@ ARLCharacterBase::ARLCharacterBase() : WeaponRowName(TEXT("First WeaponRowName T
     bIsCanAttack = true;
 
 
-    // 1) WeaponMeshComponent ����
+    // 1) WeaponMeshComponent 생성
     WeaponMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
-    // 2) ĳ���� �� ���Ͽ� ���̱� ("hand_rSocket" �� ���� �̸� ���� ���� �̸�)
+    // 2) 캐릭터 손 소켓에 부착하기 ("hand_rSocket" 등 스켈레톤 이름에 따라 다름)
     WeaponMeshComponent->SetupAttachment(GetMesh(), TEXT("hand_rSwordSocket"));
-    // 3) �ʱ⿡�� �޽� ����
+    // 3) 초기에는 메시 숨김
     WeaponMeshComponent->SetSkeletalMesh(nullptr);
     WeaponMeshComponent->SetCastShadow(false);
 
@@ -40,7 +40,7 @@ void ARLCharacterBase::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ����, ���Ӹ��?ã��
+    // 월드, 게임인스턴스 찾기
     World = GetWorld();
     GameInstance = Cast<URLGameInstance>(UGameplayStatics::GetGameInstance(World));
     ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
@@ -48,7 +48,7 @@ void ARLCharacterBase::BeginPlay()
 
 void ARLCharacterBase::TakeCharacterDamage(int32 RecieveDamage)
 {
-    // ���¸�ŭ ������ �氨
+    // 방어력만큼 데미지 감소
     int32 DamageApplied = FMath::Max(1, RecieveDamage - Defence);
     CurrentHp -= DamageApplied;
 
@@ -100,12 +100,14 @@ void ARLCharacterBase::Attack()
     {
         bIsCanAttack = false;
 
-        // ��Ÿ�� ��ü & ���?        AnimInstance = GetMesh()->GetAnimInstance();
+        // 몬타주 객체 & 재생
+        AnimInstance = GetMesh()->GetAnimInstance();
         if (AnimInstance)
         {
-            // ��Ÿ�� ���?            AnimInstance->Montage_Play(CurrentMontage, AttackSpeed);
+            // 몬타주 재생
+            AnimInstance->Montage_Play(CurrentMontage, AttackSpeed);
 
-            // ������ �� ȣ���?��������Ʈ ���ε�
+            // 종료될 때 호출할 델리게이트 바인딩
             FOnMontageEnded EndDelegate;
             EndDelegate.BindUObject(this, &ARLCharacterBase::OnMontageEnded);
             AnimInstance->Montage_SetEndDelegate(EndDelegate, CurrentMontage);
@@ -117,7 +119,7 @@ void ARLCharacterBase::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
     UE_LOG(LogTemp, Warning, TEXT("Montage ended. Timer will stop."));
 
-    // ���� ����
+    // 공격 가능
     bIsCanAttack = true;
 }
 
@@ -125,9 +127,9 @@ void ARLCharacterBase::SwordAttackLineTrace()
 {
     // ���濡 ���� Ʈ���̽��� �ɾ� ���� ĳ���Ϳ� ������ ���� ����
     FVector Start = GetActorLocation();
-    FVector End = Start + GetActorForwardVector() * Range;  // ��Ÿ�?����
+    FVector End = Start + GetActorForwardVector() * Range;  // ��Ÿ�?����
 
-    FHitResult Hit;     // Ʈ���̽�, �浹�� �����?���?����ü
+    FHitResult Hit;     // Ʈ���̽�, �浹�� �����?���?����ü
     FCollisionQueryParams Params;   // ���� Ʈ���̽�, ����, �������� ��� ���� �����ϴ� ����ü
     Params.AddIgnoredActor(this);   // ������ ���� ���� (�ڽ� ����)
 
@@ -162,11 +164,11 @@ void ARLCharacterBase::PlayAttackSound()
 
 void ARLCharacterBase::ChangeWeapon(FWeaponTableRow* ChangeWeapon)
 {
-    // ���� �ɷ�ġ ����, ���̷�Ż �޽� ����
+    // 무기 능력치 적용, 스켈레탈 메시 설정
     ApplyWeaponAbility(ChangeWeapon);
     WeaponMeshComponent->SetSkeletalMesh(ChangeWeapon->SkeletalMesh);
 
-    // ���⺰ ȸ������ ���� ����
+    // 무기별 회전각도 조정 설정
     if (ChangeWeapon->WeaponIndex == 4 || ChangeWeapon->WeaponIndex == 5)
     {
         WeaponMeshComponent->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
@@ -180,7 +182,7 @@ void ARLCharacterBase::ChangeWeapon(FWeaponTableRow* ChangeWeapon)
         WeaponMeshComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
     }
 
-    // ������ ���̺��� ���� �� ����
+    // 데이터 테이블의 무기 정보 저장
     RowWeapon = ChangeWeapon;
 }
 

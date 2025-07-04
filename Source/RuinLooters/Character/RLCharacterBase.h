@@ -7,7 +7,7 @@
 #include "RLEnumRepository.h"
 #include "RLCharacterBase.generated.h"
 
-// ĳ���� ���?��������Ʈ
+// 캐릭터 죽음 델리게이트
 DECLARE_MULTICAST_DELEGATE(FOnDie);
 
 /**
@@ -24,7 +24,7 @@ public:
 	FOnDie CharacterDie;
 
 protected:
-	// ĳ���� ����
+	// 캐릭터 스탯
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	int32 CurrentHp;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
@@ -38,36 +38,36 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	int32 Defence;
 
-	// ���� WeaponName
+	// 현재 WeaponName
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	FName CharacterWeaponName;
 
-	// ���� Ȱ �� ���� ������Ʈ �� �����?Enum
+	// 검과 활 등 무기 컴포넌트 및 폼타입 Enum
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	EWeaponType Form;
 
-	// ���� �ִϸ��̼�
+	// 공격 애니메이션
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* CurrentMontage;
 
-	// ���?�ִϸ��̼�
+	// 죽음 애니메이션
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* DieMontage;
 
 	UPROPERTY()
 	class UAnimInstance* AnimInstance;
 
-	// ���� ���ð����� Ȯ��
+	// 공격 가능시간인지 확인
 	uint8 bIsCanAttack : 1;
 
-	// �� ���Ͽ� ���� ����
+	// 손 소켓에 붙일 무기
 	UPROPERTY()
 	class USkeletalMeshComponent* WeaponMeshComponent;
 
-	// ������ ���̺��� ���� ��
+	// 데이터 테이블에서 무기 정보
 	struct FWeaponTableRow* RowWeapon;
 
-	// ������ ���̺��� ���� �̸�
+	// 데이터 테이블에서 무기 이름
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	FName WeaponRowName;
 
@@ -80,7 +80,7 @@ protected:
 	UPROPERTY()
 	class UWorld* World;
 
-	// ����, �ǰ�, ���?����
+	// 공격, 피격, 죽음 사운드
 	UPROPERTY(EditAnywhere, Category = "Audio")
 	USoundBase* AttackSound;
 
@@ -92,7 +92,7 @@ protected:
 	
 
 public:
-	// FORCEINLINE�� �̿��� Get, Set �Լ� ����
+	// FORCEINLINE을 이용한 Get, Set 함수 정의
 	FORCEINLINE int32 GetAttackDamage() { return AttackDamage; };
 
 	FORCEINLINE void SetAttackDamage(int32 NewAttackDamage) { AttackDamage = NewAttackDamage; };
@@ -141,7 +141,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// Attack ��Ÿ�� ���� �� Ÿ�̸� ����
+	// Attack 몬타주 끝난 후 타이머 콜백
 	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	void ApplyWeaponAbility(struct FWeaponTableRow* ApplyWeapon);

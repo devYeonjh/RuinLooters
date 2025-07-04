@@ -12,10 +12,10 @@
  * 
  */
 
-// ĳ���� ü�� ���� ��������Ʈ
+// 캐릭터 체력 변화 델리게이트
 DECLARE_MULTICAST_DELEGATE_TwoParams(FPlayerCalculateHp, int32 /*CurrentHp*/, int32 /*MaxHp*/);
 
-// ĳ���� ��ų ��Ÿ�� ��������Ʈ
+// 캐릭터 스킬 쿨타임 델리게이트
 DECLARE_MULTICAST_DELEGATE_OneParam(FSkillCoolTime, uint8 /*CoolCheck*/);
 
 UCLASS()
@@ -51,28 +51,28 @@ protected:
 	UPROPERTY()
 	class ARLNPC* InteractiveNPC;
 
-	// �÷��̾� ü�� �� ��ų ��Ÿ��
+	// 플레이어 체력 및 스킬 쿨타임
 	UPROPERTY()
 	class URLPlayerUI* PlayerUI;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<class URLPlayerUI> PlayerUIClass;
 
-	// ����â
+	// 설정창
 	UPROPERTY()
 	class URLSettingsMenuWidget* SettingsWidget;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<class URLSettingsMenuWidget> SettingsWidgetClass;
 
-	// ���?UI
+	// 죽음 UI
 	UPROPERTY()
 	class URLPlayerDeadWidget* PlayerDieUI;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<class URLPlayerDeadWidget> PlayerDieUIClass;
 
-	// �÷��̾��?0�� ��, ���� 1�� ��
+	// 플레이어는 0번 팀, 적은 1번 팀
 	UPROPERTY(EditAnywhere, Category = "AI")
 	uint8 TeamID = 0;
 
@@ -82,18 +82,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	class URLPlayerDataAsset* PlayerStat;
 
-	// n��° ���������� n�� Ŀ������ ���̵��� �ö�
+	// n번째 스테이지일 때 n번 커서에서 스테이지가 열림
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	int32 StageIndex;
 
-	// ���� Level Name
+	// 현재 Level Name
 	UPROPERTY()
 	FName LevelName;
 
-	// ����ִ�?�� ����
+	// 살아있는 적 개수
 	uint32 WorldAliveEnemys;
 
-	// �� �����ϴ����� Ȯ��
+	// 스테이지 나가는지 확인
 	uint8 bStageExit : 1;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
@@ -111,10 +111,10 @@ protected:
 	UPROPERTY()
 	class URLPlayerDataAsset* LoadAsset;
 
-	// ���� �ӵ��� ����
+	// 원래 속도를 저장
 	float OriginalMaxWalkSpeed;
 
-	// ���� ���Ḧ �����ϴ� �ڵ�
+	// 스킬 버프를 관리하는 핸들
 	FTimerHandle SpeedBuffTimerHandle;
 
 	FTimerHandle CoolTimerHandle;
@@ -136,7 +136,7 @@ public:
 	FORCEINLINE const FTimerHandle& GetCoolTimerHandle() const { return CoolTimerHandle; }
 	FORCEINLINE void StageIndexUp() { StageIndex++; };
 
-	// �������̽��� �޼��� �������̵�
+	// 인터페이스의 메서드 오버라이드
 	virtual FGenericTeamId GetGenericTeamId() const override;
 
 	virtual void TakeCharacterDamage(int32 RecieveDamage) override;
@@ -149,7 +149,7 @@ public:
 
 	void PrintMoney();
 
-	// ESC ���ε�
+	// ESC 바인딩
 	void ViewSettingWidget();
 
 	void GetSaveGame();
@@ -166,12 +166,12 @@ protected:
 
 	virtual void Die() override;
 
-	// NPC�� ���ͷ���
+	// NPC와 상호작용
 	void Interaction();
 
 	void ApplySpeedBuff();
 
-	// Ÿ�̸� ���� �� ���� �ӵ��� ����
+	// 타이머 끝난 후 원래 속도로 복귀
 	void RestoreOriginalSpeed();
 
 	void OnSkill();
