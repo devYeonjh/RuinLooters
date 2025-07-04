@@ -12,7 +12,7 @@ void URLPlayerUI::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// �ʿ��� �÷��̾� ã��
+	// 필요한 플레이어 찾기
 	Player = Cast<ARLCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 
 	UpdatePlayerMoney();

@@ -406,12 +406,12 @@ void ARLCharacterPlayer::GetSaveGame()
     }
 }
 
-//  ̵  ÷̾   
+// 레벨 이동시 플레이어 데이터 저장
 void ARLCharacterPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     Super::EndPlay(EndPlayReason);
 
-    // Ÿ̸ Ŭ
+    // 타이머 클리어
     GetWorldTimerManager().ClearAllTimersForObject(this);
 
     // ü ʱȭ ƴ    ư ʹٸ CurrentHp > 0 ֱ
@@ -433,13 +433,13 @@ void ARLCharacterPlayer::SetPlayerStat()
 {
     if (CurrentHp <= 0)
     {
-        // ÷̾�?׾ ʱȭ
+        // 플레이어가 죽었을때 초기화
         PlayerStat = DuplicateObject<URLPlayerDataAsset>(LoadAsset, this);
         UE_LOG(LogTemp, Warning, TEXT("PlayerStat Reset"));
     }
     else
     {
-        //    ¿  ÷̾  
+        // 레벨 이동등 살아있을 때 플레이어 데이터 저장
         PlayerStat->PlayerMoney = Money;
         PlayerStat->MaxHp = MaxHp;
         PlayerStat->CurrentHp = CurrentHp;
@@ -495,26 +495,26 @@ void ARLCharacterPlayer::ShowStagePortalWidget()
 
 uint8 ARLCharacterPlayer::CheckEnemy()
 {
-    // ���� �� Enemy ��ȯ 
+    // 현재 살아있는 Enemy 반환
     TArray<AActor*> FoundEnemies;
     UGameplayStatics::GetAllActorsOfClass(World, ARLCharacterEnemy::StaticClass(), FoundEnemies);
 
-    // ʱȭ
+    // 초기화
     WorldAliveEnemys = 0;
 
-    // AActor*& Ÿ ϸ�?ü   , AActor*б 
+    // AActor*& 타입이므로 참조형 구조체이지만, AActor*로 받기
     for (AActor* FoundEnemy : FoundEnemies)
     {
         ARLCharacterEnemy* WorldEnemy = Cast<ARLCharacterEnemy>(FoundEnemy);
 
-        // Enemy ǰ  
+        // Enemy 체력 검사
         if (WorldEnemy && WorldEnemy->GetCurrentHp() != 0)
         {
             WorldAliveEnemys++;
         }
     }
 
-    // Enemy    
+    // Enemy 존재 여부 반환
     if (WorldAliveEnemys <= 0)
     {
         return false;

@@ -11,7 +11,7 @@ void UNPCStoreWidget::NativeConstruct()
 {
     Super::NativeConstruct();
 
-    // ��ư Ŭ�� �̺�Ʈ ���ε�
+    // 버튼 클릭 이벤트 바인딩
     if (BuyButton)
     {
         BuyButton->OnClicked.AddDynamic(this, &UNPCStoreWidget::BuyItem);
