@@ -45,6 +45,7 @@ protected:
 
 public:
     void ShutdownAI();
+
 };
 
 
