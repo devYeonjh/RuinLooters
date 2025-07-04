@@ -7,7 +7,7 @@
 #include "RGEnumRepository.h"
 #include "RGCharacterBase.generated.h"
 
-// Ä³¸¯ÅÍ »ç¸Á µ¨¸®°ÔÀÌÆ®
+// Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
 DECLARE_MULTICAST_DELEGATE(FOnDie);
 
 /**
@@ -24,7 +24,7 @@ public:
 	FOnDie CharacterDie;
 
 protected:
-	// Ä³¸¯ÅÍ ½ºÅÈ
+	// Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	int32 CurrentHp;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
@@ -38,36 +38,36 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	int32 Defence;
 
-	// ¼ÒÀ¯ WeaponName
+	// ï¿½ï¿½ï¿½ï¿½ WeaponName
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	FName CharacterWeaponName;
 
-	// ÃßÈÄ È° µî ¹«±â ¾÷µ¥ÀÌÆ® ½Ã »ç¿ëÇÒ Enum
+	// ï¿½ï¿½ï¿½ï¿½ È° ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ Enum
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	EWeaponType Form;
 
-	// °ø°İ ¾Ö´Ï¸ŞÀÌ¼Ç
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* CurrentMontage;
 
-	// »ç¸Á ¾Ö´Ï¸ŞÀÌ¼Ç
+	// ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* DieMontage;
 
 	UPROPERTY()
 	class UAnimInstance* AnimInstance;
-
-	// °ø°İ ´ë±â½Ã°£ÀÎÁö È®ÀÎ
+public:
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ã°ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
 	uint8 bIsCanAttack : 1;
-
-	// ¼Õ ¼ÒÄÏ¿¡ ºÙÀÏ ¹«±â
+protected:
+	// ï¿½ï¿½ ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY()
 	class USkeletalMeshComponent* WeaponMeshComponent;
 
-	// µ¥ÀÌÅÍ Å×ÀÌºíÀÇ ¹«±â ¿­
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
 	struct FWeaponTableRow* RowWeapon;
 
-	// µ¥ÀÌÅÍ Å×ÀÌºíÀÇ ¹«±â ÀÌ¸§
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	FName WeaponRowName;
 
@@ -80,7 +80,7 @@ protected:
 	UPROPERTY()
 	class UWorld* World;
 
-	// °ø°İ, ÇÇ°İ, »ç¸Á »ç¿îµå
+	// ï¿½ï¿½ï¿½ï¿½, ï¿½Ç°ï¿½, ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, Category = "Audio")
 	USoundBase* AttackSound;
 
@@ -89,10 +89,18 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Audio")
 	USoundBase* DieSound;
-	
-
 public:
-	// FORCEINLINEÀ» ÀÌ¿ëÇØ Get, Set ÇÔ¼ö ±¸Çö
+	// ì½¤ë³´ ì‹œìŠ¤í…œ ìƒíƒœ ë³€ìˆ˜
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
+	int32 CurrentComboStep = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
+	int32 ComboMaxStep = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
+	bool bComboInput = false;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
+	bool bCanNextCombo = false;
+
+	// FORCEINLINE Ì¿ Get, Set Ô¼ 
 	FORCEINLINE int32 GetAttackDamage() { return AttackDamage; };
 
 	FORCEINLINE void SetAttackDamage(int32 NewAttackDamage) { AttackDamage = NewAttackDamage; };
@@ -138,10 +146,13 @@ public:
 
 	void PlayAttackSound();
 
+	// ì½¤ë³´ ì„¹ì…˜ìœ¼ë¡œ ì í”„í•˜ëŠ” í•¨ìˆ˜
+	void PlayComboMontage(int32 ComboStep);
+
 protected:
 	virtual void BeginPlay() override;
 
-	// Attack ¸ùÅ¸ÁÖ Á¾·á ½Ã Å¸ÀÌ¸Ó Á¤Áö
+	// Attack Å¸   Å¸Ì¸ 
 	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	void ApplyWeaponAbility(struct FWeaponTableRow* ApplyWeapon);
