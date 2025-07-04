@@ -35,6 +35,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TObjectPtr<class UHPWidget> HpWidget;
 
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UHPWidget> HpWidgetClass;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* HealthBarComponent;
 
