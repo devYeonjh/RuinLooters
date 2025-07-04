@@ -32,40 +32,6 @@ ARLCharacterPlayer::ARLCharacterPlayer()
     IsCanSkill = true;
     bIsCharacterInteractWithNPC = false;
 
-    // Player UI Ref
-    static ConstructorHelpers::FClassFinder<UUserWidget> PlayerUIClassRef(TEXT("/Game/Assassin/UI/WBP_PlayerUIWidget.WBP_PlayerUIWidget_C"));
-    if (PlayerUIClassRef.Succeeded())
-    {
-        PlayerUIClass = PlayerUIClassRef.Class;
-    }
-
-    // SettingWidget Ref
-    static ConstructorHelpers::FClassFinder<UUserWidget> SettingsWidgetClassRef(TEXT("/Game/Assassin/UI/WBP_SettingWidget.WBP_SettingWidget_C"));
-    if (SettingsWidgetClassRef.Succeeded())
-    {
-        SettingsWidgetClass = SettingsWidgetClassRef.Class;
-    }
-
-    static ConstructorHelpers::FClassFinder<UUserWidget> PlayerDieUIClassRef(TEXT("/Game/Assassin/UI/WBP_PlayerDead.WBP_PlayerDead_C"));
-    if (PlayerDieUIClassRef.Succeeded())
-    {
-        PlayerDieUIClass = PlayerDieUIClassRef.Class;
-    }
-
-    // StageClearWidget Ref
-    static ConstructorHelpers::FClassFinder<UUserWidget> StageClearWidgetRef(TEXT("/Game/Assassin/UI/WBP_StageClearMessageWidget.WBP_StageClearMessageWidget_C"));
-    if (StageClearWidgetRef.Succeeded())
-    {
-        StageClearWidgetClass = StageClearWidgetRef.Class;
-    }
-
-    // PortalWidget Ref
-    static ConstructorHelpers::FClassFinder<UUserWidget> StagePortalWidgetClassRef(TEXT("/Game/Assassin/UI/WBP_StageClearPortalWidget.WBP_StageClearPortalWidget_C"));
-    if (StagePortalWidgetClassRef.Succeeded())
-    {
-        StagePortalWidgetClass = StagePortalWidgetClassRef.Class;
-    }
-
     // 현재 이름 저장
     LevelName = FName(*UGameplayStatics::GetCurrentLevelName(this, true));
 
