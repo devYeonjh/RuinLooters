@@ -97,7 +97,7 @@ void ARLCharacterPlayer::BeginPlay()
     // 싱글톤처럼 한번 로드를 하면 호출해도 한번만 로드됨
     // 블루프린트/C++의 이름이 바뀌면 이 것 때문에 경로 찾기가 불가능하므로 불러올 수 없음
     // 필드를 포인터로 사용하면 런타임에 경로 바꿀 수 있음
-    LoadAsset = LoadObject<URLPlayerDataAsset>(nullptr, TEXT("/Script/Roguelike123.RLPlayerDataAsset'/Game/Assassin/Blueprint/DA_PlayerStat.DA_PlayerStat'"));
+    LoadAsset = LoadObject<URLPlayerDataAsset>(nullptr, TEXT("/Script/RuinLooters.RLPlayerDataAsset'/Game/Player/DA_PlayerStat.DA_PlayerStat'"));
 
     // DuplicateObject<>()는 원본처럼 특정 타입 필드도 모두 복사되어, 새로운 복사본 인스턴스를 생성
     // 런타임에 값을 데이터를 수정하면서 저장할 수 있고 매번 새로운 객체를 생성

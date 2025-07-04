@@ -74,7 +74,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character", meta = (AllowPrivateAccess = "true"))
 	int32 Money;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameInstance")
+	UPROPERTY()
 	class URLGameInstance* GameInstance;
 
 	UPROPERTY()

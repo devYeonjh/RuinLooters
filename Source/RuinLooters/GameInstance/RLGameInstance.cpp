@@ -182,7 +182,7 @@ URLSaveGame* URLGameInstance::LoadSaveGameData()
 
     // 세이브 파일 찾기 못할 때
     // Player Stat Asset 불러와 초기화한 설정
-    URLPlayerDataAsset* NewPlayerStatAsset = LoadObject<URLPlayerDataAsset>(nullptr, TEXT("/Script/Roguelike123.RLPlayerDataAsset'/Game/Assassin/Blueprint/DA_PlayerStat.DA_PlayerStat'"));
+    URLPlayerDataAsset* NewPlayerStatAsset = LoadObject<URLPlayerDataAsset>(nullptr, TEXT("/Script/RuinLooters.RLPlayerDataAsset'/Game/Player/DA_PlayerStat.DA_PlayerStat'"));
     LoadGameInstance->SetSaveGameData(NewPlayerStatAsset);
 
     return LoadGameInstance;
