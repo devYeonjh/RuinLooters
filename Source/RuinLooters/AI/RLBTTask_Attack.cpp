@@ -9,7 +9,7 @@
 
 EBTNodeResult::Type URLBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-    // ������ �� ã��
+    // 컨트롤러 포 찾기
     AAIController* AIController = OwnerComp.GetAIOwner();
     APawn* Pawn = AIController ? AIController->GetPawn() : nullptr;
     if (!Pawn) return EBTNodeResult::Failed;

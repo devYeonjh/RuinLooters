@@ -15,7 +15,7 @@ class RUINLOOTERS_API URLBTTask_Attack : public UBTTaskNode
 	GENERATED_BODY()
 
 protected:
-	// Task�� ���۵� �� ȣ��
+	// Task가 시작될 때 호출
     virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 };
 

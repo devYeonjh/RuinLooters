@@ -26,10 +26,10 @@ ARLItemBoxBase::ARLItemBoxBase()
 
 	DroppedItemOverlapBox->SetGenerateOverlapEvents(true);
 
-	// Query(��ħ)�� �˻�
+	// Query(쿼리)를 검색
 	DroppedItemOverlapBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
-	// �浹 ������Ʈ Ÿ��
+	// 충돌 컴포넌트 타입
 	DroppedItemOverlapBox->SetCollisionProfileName(TEXT("WeaponBox"));
 
 }

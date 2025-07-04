@@ -13,10 +13,10 @@ void ARLWeaponNPC::OnDetectPlayerBoxBeginOverlap(UPrimitiveComponent* Overlapped
 {
 	ARLNPC::OnDetectPlayerBoxBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-	// NPC�� ��ȣ�ۿ� ���� �� �� ���� ����
+	// NPC와 상호작용할 때만 한 번 위젯 생성
 	if (!ActiveStoreWidget && StoreClass && PlayerController)
 	{
-		// CreateWidget: PlayerController �� WorldContext�� �Ѱܾ� �մϴ�
+		// CreateWidget: PlayerController 를 WorldContext로 넘겨야 합니다
 		if (World && GameInstance)
 		{
 			Weapon = GameInstance->GetRamdomWeapon();

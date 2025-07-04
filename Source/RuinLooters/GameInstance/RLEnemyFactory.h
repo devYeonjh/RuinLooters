@@ -15,7 +15,7 @@ public:
     ARLEnemyFactory();
 
 protected:
-    // Enemy Ŭ����
+    // Enemy 클래스
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Factory")
     TSubclassOf<class ARLCharacterEnemy> EnemyClass;
 

@@ -13,10 +13,10 @@ void ARLSkillBookNPC::OnDetectPlayerBoxBeginOverlap(UPrimitiveComponent* Overlap
 {
 	ARLNPC::OnDetectPlayerBoxBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-	// NPC¿Í »óÈ£ÀÛ¿ë ½ÃÀÛ ½Ã ÇÑ ¹ø¸¸ ¶ç¿ì±â
+	// NPCì™€ ìƒí˜¸ìž‘ìš©í•  ë•Œë§Œ í•œ ë²ˆ ìœ„ì ¯ ìƒì„±
 	if (!ActiveStoreWidget && StoreClass && PlayerController)
 	{
-		// CreateWidget: PlayerController ¸¦ WorldContext·Î ³Ñ°Ü¾ß ÇÕ´Ï´Ù
+		// CreateWidget: PlayerController ë¥¼ WorldContextë¡œ ë„˜ê²¨ì•¼ í•©ë‹ˆë‹¤
 		if (World && GameInstance)
 		{
 			SkillBook = GameInstance->GetRamdomSkillBook();

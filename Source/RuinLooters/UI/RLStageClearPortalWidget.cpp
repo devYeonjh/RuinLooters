@@ -9,7 +9,8 @@
 
 URLStageClearPortalWidget::URLStageClearPortalWidget(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
-	// Ű �Է� �޾ƿ��°� ���?	bIsFocusable = true;
+	// 키 입력 받아올지 설정
+	bIsFocusable = true;
 }
 
 void URLStageClearPortalWidget::NativeConstruct()
@@ -34,52 +35,53 @@ void URLStageClearPortalWidget::NativeConstruct()
 
 }
 
-// ������ Ű �Է°� �޾ƿ�
+// 플레이어 키 입력을 받아옴
 FReply URLStageClearPortalWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
 	const FKey PressedKey = InKeyEvent.GetKey();
 
-	// ESC ������ ��
+	// ESC 키에 대한 처리
 	if (PressedKey == EKeys::Escape)
 	{
-		// ���� ����
+		// 위젯 종료
 		NotClearStageExit();
 
-		// �Է� ��ȯ
+		// 입력 변환
 		return FReply::Handled();
 	}
 
-	// �ٸ� Ű �Է� �� ����
+	// 다른 키 입력 시 처리
 	return FReply::Unhandled();
 }
 
-// �������� ������ ��ư
+// 클리어되어 나가는 버튼
 void URLStageClearPortalWidget::ClearSatgeExit()
 {
-	// ������ �̵�
+	// 타운으로 이동
 	UGameplayStatics::OpenLevel(GetWorld(), "Town");
 }
 
-// ���� �������� ��ư
+// 다음 스테이지로 버튼
 void URLStageClearPortalWidget::NextStage()
 {
-	// ���� ���������� �̵� (���� ��������)
+	// 다음 스테이지로 이동 (현재 밸런싱중)
 	UGameplayStatics::OpenLevel(GetWorld(), "BattleStage1");
 }
 
 void URLStageClearPortalWidget::NotClearStageExit()
 {
-    // �Ͻ����� ���� 
+    // 일시정지 해제
     UGameplayStatics::SetGamePaused(GetWorld(), false);
 
     APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
 
-    // ���콺 Ŀ��  �����?    PlayerController->SetShowMouseCursor(false);
+    // 마우스 커서 숨기기
+    PlayerController->SetShowMouseCursor(false);
 
-    // ���� ����
+    // 위젯 종료
     RemoveFromParent();
 
-    // �ΰ��� �Է¸� �ޱ�
+    // 게임만 입력만 받기
     FInputModeGameOnly InputMode;
     PlayerController->SetInputMode(InputMode);
 }

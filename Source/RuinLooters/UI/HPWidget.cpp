@@ -8,13 +8,13 @@ void UHPWidget::CalculateHp(int32 NewCurrentHp, int32 NewMaxHp)
 {
     if (!HpBar) return;
 
-    // SetPercent()∞° float ≈∏¿‘∏∏ πﬁ±‚ ∂ßπÆø° «¸∫Ø»Ø
+    // SetPercent()Í∞Ä float ÌÉÄÏûÖÏùÑ Î∞õÍ∏∞ ÎïåÎ¨∏Ïóê ÌÉÄÏûÖÎ≥ÄÌôò
     float Ratio = (float)NewCurrentHp / NewMaxHp;
     HpBar->SetPercent(Ratio);
     UE_LOG(LogTemp, Warning, TEXT("%d / %d"), NewCurrentHp, NewMaxHp);
 }
 
-// ªÁ∏¡ Ω√ ¿ß¡¨ ¡¶∞≈
+// Ï†ÅÏù¥ Ï£Ω ÏúÑÏ†Ø ÏÇ≠Ï†ú
 void UHPWidget::DestroyWidget()
 {
     RemoveFromParent();
