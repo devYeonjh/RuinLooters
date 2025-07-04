@@ -57,8 +57,7 @@ protected:
 	UPROPERTY()
 	class UAnimInstance* AnimInstance;
 
-	// 공격 가능시간인지 확인
-	uint8 bIsCanAttack : 1;
+
 
 	// 손 소켓에 붙일 무기
 	UPROPERTY()
@@ -89,6 +88,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Audio")
 	USoundBase* DieSound;
+	
 	
 
 public:
@@ -138,6 +138,23 @@ public:
 
 	void PlayAttackSound();
 
+	// 공격 가능시간인지 확인
+	uint8 bIsCanAttack : 1;
+
+	// 콤보 섹션으로 점프하는 함수
+	void PlayComboMontage(int32 ComboStep);
+
+	// 콤보 시스템 상태 변수
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
+	int32 CurrentComboStep = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
+	int32 ComboMaxStep = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
+	bool bComboInput = false;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
+	bool bCanNextCombo = false;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
+	bool bIsAttacking = false;
 protected:
 	virtual void BeginPlay() override;
 

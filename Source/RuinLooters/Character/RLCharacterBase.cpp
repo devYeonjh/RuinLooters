@@ -1,6 +1,7 @@
 // RLCharacterBase.cpp
 
 #include "RLCharacterBase.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Character/RLCharacterPlayer.h"
 #include "Character/RLCharacterEnemy.h"
 #include "Kismet/GameplayStatics.h"
@@ -44,6 +45,12 @@ void ARLCharacterBase::BeginPlay()
     World = GetWorld();
     GameInstance = Cast<URLGameInstance>(UGameplayStatics::GetGameInstance(World));
     ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+
+    // 콤보 최대 단계 자동 설정
+    if (CurrentMontage)
+    {
+        ComboMaxStep = CurrentMontage->CompositeSections.Num();
+    }
 }
 
 void ARLCharacterBase::TakeCharacterDamage(int32 RecieveDamage)
@@ -96,30 +103,36 @@ void ARLCharacterBase::Die()
 
 void ARLCharacterBase::Attack()
 {
-    if (bIsCanAttack)
+    // 점프 중이거나 공중에 떠있으면 공격 불가
+    if (!bIsCanAttack || GetCharacterMovement()->IsFalling())
     {
-        bIsCanAttack = false;
-
-        // 몬타주 객체 & 재생
-        AnimInstance = GetMesh()->GetAnimInstance();
-        if (AnimInstance)
+        if (bCanNextCombo && !GetCharacterMovement()->IsFalling())
         {
-            // 몬타주 재생
-            AnimInstance->Montage_Play(CurrentMontage, AttackSpeed);
-
-            // 종료될 때 호출할 델리게이트 바인딩
-            FOnMontageEnded EndDelegate;
-            EndDelegate.BindUObject(this, &ARLCharacterBase::OnMontageEnded);
-            AnimInstance->Montage_SetEndDelegate(EndDelegate, CurrentMontage);
+            bComboInput = true;
         }
+        return;
+    }
+
+    // Idle 상태에서만 1타 시작
+    bIsCanAttack = false;
+    AnimInstance = GetMesh()->GetAnimInstance();
+    CurrentComboStep = 1;
+    PlayComboMontage(CurrentComboStep);
+    // 공격 시작 시 이동 불가
+    //GetCharacterMovement()->DisableMovement();
+    if (AnimInstance && CurrentMontage)
+    {
+        FOnMontageEnded EndDelegate;
+        EndDelegate.BindUObject(this, &ARLCharacterBase::OnMontageEnded);
+        AnimInstance->Montage_SetEndDelegate(EndDelegate, CurrentMontage);
     }
 }
 
 void ARLCharacterBase::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
     UE_LOG(LogTemp, Warning, TEXT("Montage ended. Timer will stop."));
-
-    // 공격 가능
+    // 공격 끝나면 이동 가능
+    //GetCharacterMovement()->SetMovementMode(MOVE_Walking);
     bIsCanAttack = true;
 }
 
@@ -191,6 +204,25 @@ void ARLCharacterBase::ApplyWeaponAbility(FWeaponTableRow* ApplyWeapon)
     AttackDamage = ApplyWeapon->Damage;
     AttackSpeed = ApplyWeapon->AttackSpeed;
     Range = ApplyWeapon->Range;
+}
+
+void ARLCharacterBase::PlayComboMontage(int32 ComboStep)
+{
+    if (!CurrentMontage || !AnimInstance) return;
+    if (ComboStep > 0 && ComboStep <= CurrentMontage->CompositeSections.Num())
+    {
+        FName SectionName = CurrentMontage->CompositeSections[ComboStep - 1].SectionName;
+        if (AnimInstance->Montage_IsPlaying(CurrentMontage))
+        {
+            AnimInstance->Montage_JumpToSection(SectionName, CurrentMontage);
+        }
+        else
+        {
+            AnimInstance->Montage_Play(CurrentMontage, AttackSpeed);
+            AnimInstance->Montage_JumpToSection(SectionName, CurrentMontage);
+        }
+    }
+    CurrentComboStep = ComboStep;
 }
 
 
