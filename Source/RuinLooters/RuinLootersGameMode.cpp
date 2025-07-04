@@ -13,9 +13,12 @@ ARuinLootersGameMode::ARuinLootersGameMode()
 		DefaultPawnClass = PlayerPawnBPClassRef.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerClassRef(TEXT("/Script/CoreUObject.Class'/Script/Roguelike123.RGPlayerController'_C"));
+	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerClassRef(TEXT("/Script/CoreUObject.Class'/Script/Roguelike123.RLPlayerController'_C"));
 	if (PlayerControllerClassRef.Succeeded())
 	{
 		PlayerControllerClass = PlayerControllerClassRef.Class;
 	}
 }
+
+
+

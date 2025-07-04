@@ -28,3 +28,6 @@ public:
 	void CalculateHp(int32 NewCurrentHp, int32 NewMaxHp);
 	void DestroyWidget();
 };
+
+
+

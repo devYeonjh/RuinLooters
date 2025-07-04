@@ -39,7 +39,7 @@ protected:
 	class UTextBlock* ItemNameText;
 
 	UPROPERTY()
-	class ARGCharacterPlayer* Player;
+	class ARLCharacterPlayer* Player;
 
 public:
 	FORCEINLINE class UImage* GetItemImage() { return ItemImage; };
@@ -58,3 +58,6 @@ public:
 	void DeleteWidget();
 
 };
+
+
+
