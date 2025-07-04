@@ -60,6 +60,10 @@ void URLAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 	{
 		bShouldMove = true;
 	}
+	else
+	{
+		bShouldMove = false;
+	}
 }
 
 
