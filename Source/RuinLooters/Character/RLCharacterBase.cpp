@@ -125,13 +125,13 @@ void ARLCharacterBase::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 
 void ARLCharacterBase::SwordAttackLineTrace()
 {
-    // ���濡 ���� Ʈ���̽��� �ɾ� ���� ĳ���Ϳ� ������ ���� ����
+    // 전방에 대한 트레이스를 걸어서 적이 캐릭터에 닿으면 데미지 적용
     FVector Start = GetActorLocation();
-    FVector End = Start + GetActorForwardVector() * Range;  // ��Ÿ�?����
+    FVector End = Start + GetActorForwardVector() * Range;  // 공격 범위
 
-    FHitResult Hit;     // Ʈ���̽�, �浹�� �����?���?����ü
+    FHitResult Hit;     // 트레이스, 충돌시 충돌정보를 담는 구조체
     FCollisionQueryParams Params;   // ���� Ʈ���̽�, ����, �������� ��� ���� �����ϴ� ����ü
-    Params.AddIgnoredActor(this);   // ������ ���� ���� (�ڽ� ����)
+    Params.AddIgnoredActor(this);   // 본인은 무시 설정 (자신 제외)
 
     bool bHit = GetWorld()->LineTraceSingleByChannel(
         Hit,
@@ -145,7 +145,7 @@ void ARLCharacterBase::SwordAttackLineTrace()
 
     if (bHit)
     {
-        // ������ ����
+        // 히트시 처리
         ARLCharacterBase* HitChar = Cast<ARLCharacterBase>(Hit.GetActor());
         if (HitChar)
         {
