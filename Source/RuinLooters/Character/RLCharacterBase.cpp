@@ -42,8 +42,8 @@ void ARLCharacterBase::BeginPlay()
 
     // 찾기, 자식 찾기
     World = GetWorld();
-    GameInstance = Cast<URGGameInstance>(UGameplayStatics::GetGameInstance(World));
-    ARGCharacterPlayer* Player = Cast<ARGCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+    GameInstance = Cast<URLGameInstance>(UGameplayStatics::GetGameInstance(World));
+    ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 
     // 콤보 최대 단계 자동 설정
     if (CurrentMontage)
@@ -200,7 +200,7 @@ void ARLCharacterBase::ApplyWeaponAbility(FWeaponTableRow* ApplyWeapon)
     Range = ApplyWeapon->Range;
 }
 
-void ARGCharacterBase::PlayComboMontage(int32 ComboStep)
+void ARLCharacterBase::PlayComboMontage(int32 ComboStep)
 {
     if (!CurrentMontage || !AnimInstance) return;
     if (ComboStep > 0 && ComboStep <= CurrentMontage->CompositeSections.Num())

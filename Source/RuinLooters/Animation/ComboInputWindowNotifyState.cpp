@@ -1,9 +1,9 @@
 #include "Animation/ComboInputWindowNotifyState.h"
-#include "Character/RGCharacterBase.h"
+#include "Character/RLCharacterBase.h"
 
 void UComboInputWindowNotifyState::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration)
 {
-    if (ARGCharacterBase* Character = Cast<ARGCharacterBase>(MeshComp->GetOwner()))
+    if (ARLCharacterBase* Character = Cast<ARLCharacterBase>(MeshComp->GetOwner()))
     {
         Character->bCanNextCombo = true; // 입력 가능 구간 시작
     }
@@ -11,7 +11,7 @@ void UComboInputWindowNotifyState::NotifyBegin(USkeletalMeshComponent* MeshComp,
 
 void UComboInputWindowNotifyState::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
-    if (ARGCharacterBase* Character = Cast<ARGCharacterBase>(MeshComp->GetOwner()))
+    if (ARLCharacterBase* Character = Cast<ARLCharacterBase>(MeshComp->GetOwner()))
     {
         if (Character->bComboInput && Character->CurrentComboStep < Character->ComboMaxStep)
         {
