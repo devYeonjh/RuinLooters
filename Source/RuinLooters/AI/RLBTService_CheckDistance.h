@@ -22,7 +22,7 @@ public:
     FBlackboardKeySelector TargetKey;
 
     UPROPERTY(EditAnywhere, Category = "AI")
-    FBlackboardKeySelector InRangeKey;
+    FBlackboardKeySelector bInRangeKey;
 
 protected:
     virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
