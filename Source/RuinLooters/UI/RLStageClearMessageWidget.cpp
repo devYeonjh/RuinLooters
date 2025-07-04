@@ -15,7 +15,7 @@ void URLStageClearMessageWidget::NativeConstruct()
 
 	Player->SetMoney(Player->GetMoney() + 2000);
 
-	// 3�� �� widget ����
+	// 3초 후 widget 종료
 	World->GetTimerManager().SetTimer(ViewClearTextTimer, this, &URLStageClearMessageWidget::CloseSelf, 3.0f, false);
 
 	GameClear.Broadcast();

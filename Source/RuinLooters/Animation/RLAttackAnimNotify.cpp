@@ -10,10 +10,10 @@ void URLAttackAnimNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequence
 
     if (!MeshComp) return;
 
-    // ARLCharacterBase Ÿ������ Ȯ��
+    // ARLCharacterBase 타입인지 확인
     if (ARLCharacterBase* Character = Cast<ARLCharacterBase>(MeshComp->GetOwner()))
     {
-        // ���� Ʈ���̽� �߻� �� ���� ���� ���?
+        // 공격 트레이스 발생 및 사운드 재생
         Character->SwordAttackLineTrace();
         Character->PlayAttackSound();
     }

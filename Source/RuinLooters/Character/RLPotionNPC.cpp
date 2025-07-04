@@ -13,7 +13,7 @@ void ARLPotionNPC::OnDetectPlayerBoxBeginOverlap(UPrimitiveComponent* Overlapped
 {
 	ARLNPC::OnDetectPlayerBoxBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-	// NPC¿Í »óÈ£ÀÛ¿ë ½ÃÀÛ ½Ã ÇÑ ¹ø¸¸ ¶ç¿ì±â
+	// NPCì™€ ìƒí˜¸ì‘ìš©í•  ë•Œë§Œ í•œ ë²ˆ ìœ„ì ¯ ìƒì„±
 	if (!ActiveStoreWidget && StoreClass && PlayerController)
 	{
 		if (World && GameInstance)
@@ -26,7 +26,7 @@ void ARLPotionNPC::OnDetectPlayerBoxBeginOverlap(UPrimitiveComponent* Overlapped
 		{
 			CastedStoreWiget = Cast<UNPCStoreWidget>(ActiveStoreWidget);
 
-			// UI ³» ÅØ½ºÆ® º¯°æ
+			// UI ë° í…ìŠ¤íŠ¸ ì„¤ì •
 			CastedStoreWiget->GetItemImage()->SetBrushFromTexture(Potion->Icon, /*bMatchSize=*/ true);
 			CastedStoreWiget->GetItemPrice()->SetText(FText::AsNumber(Potion->Price));
 			CastedStoreWiget->GetItemNameText()->SetText(FText::FromName(GameInstance->GetPotionName(Potion->PotionIndex)));

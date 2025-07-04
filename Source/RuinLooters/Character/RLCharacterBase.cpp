@@ -16,7 +16,7 @@
 
 ARLCharacterBase::ARLCharacterBase() : WeaponRowName(TEXT("First WeaponRowName Text"))
 {
-    // 기본 초기화 (초기 값 설정)
+    // 기본 스탯 초기화 (블루프린트에서 덮어쓰기 가능)
     MaxHp = 100;
     CurrentHp = MaxHp;
     AttackDamage = 0;
@@ -26,11 +26,11 @@ ARLCharacterBase::ARLCharacterBase() : WeaponRowName(TEXT("First WeaponRowName T
     bIsCanAttack = true;
 
 
-    // 1) WeaponMeshComponent 설정
+    // 1) WeaponMeshComponent 생성
     WeaponMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
-    // 2) 특정 손에 장비 장착 ("hand_rSocket" 위치에 장비 위치 이름 설정)
+    // 2) 캐릭터 손 소켓에 부착하기 ("hand_rSocket" 등 스켈레톤 이름에 따라 다름)
     WeaponMeshComponent->SetupAttachment(GetMesh(), TEXT("hand_rSwordSocket"));
-    // 3) 기본 애니메이션 설정
+    // 3) 초기에는 메시 숨김
     WeaponMeshComponent->SetSkeletalMesh(nullptr);
     WeaponMeshComponent->SetCastShadow(false);
 
@@ -40,21 +40,15 @@ void ARLCharacterBase::BeginPlay()
 {
     Super::BeginPlay();
 
-    // 찾기, 자식 찾기
+    // 월드, 게임인스턴스 찾기
     World = GetWorld();
     GameInstance = Cast<URLGameInstance>(UGameplayStatics::GetGameInstance(World));
     ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
-
-    // 콤보 최대 단계 자동 설정
-    if (CurrentMontage)
-    {
-        ComboMaxStep = CurrentMontage->CompositeSections.Num();
-    }
 }
 
 void ARLCharacterBase::TakeCharacterDamage(int32 RecieveDamage)
 {
-    // 최대 피해량 계산
+    // 방어력만큼 데미지 감소
     int32 DamageApplied = FMath::Max(1, RecieveDamage - Defence);
     CurrentHp -= DamageApplied;
 
@@ -105,10 +99,15 @@ void ARLCharacterBase::Attack()
     if (bIsCanAttack)
     {
         bIsCanAttack = false;
+
+        // 몬타주 객체 & 재생
         AnimInstance = GetMesh()->GetAnimInstance();
-        if (AnimInstance && CurrentMontage)
+        if (AnimInstance)
         {
+            // 몬타주 재생
             AnimInstance->Montage_Play(CurrentMontage, AttackSpeed);
+
+            // 종료될 때 호출할 델리게이트 바인딩
             FOnMontageEnded EndDelegate;
             EndDelegate.BindUObject(this, &ARLCharacterBase::OnMontageEnded);
             AnimInstance->Montage_SetEndDelegate(EndDelegate, CurrentMontage);
@@ -120,19 +119,19 @@ void ARLCharacterBase::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
     UE_LOG(LogTemp, Warning, TEXT("Montage ended. Timer will stop."));
 
-    // 충돌 후 처리
+    // 공격 가능
     bIsCanAttack = true;
 }
 
 void ARLCharacterBase::SwordAttackLineTrace()
 {
-    // 충돌 후 처리를 위해 충돌 검사 함수 구현
+    // 전방에 대한 트레이스를 걸어서 적이 캐릭터에 닿으면 데미지 적용
     FVector Start = GetActorLocation();
-    FVector End = Start + GetActorForwardVector() * Range;  // 충돌 위치
+    FVector End = Start + GetActorForwardVector() * Range;  // 공격 범위
 
-    FHitResult Hit;     // 충돌 결과, 충돌 검사 결과를 저장할 변수
-    FCollisionQueryParams Params;   // 충돌 검사, 무시할 액터, 충돌 검사 결과를 저장할 변수
-    Params.AddIgnoredActor(this);   // 자신을 무시 (자식 찾기)
+    FHitResult Hit;     // 트레이스, 충돌시 충돌정보를 담는 구조체
+    FCollisionQueryParams Params;   // ���� Ʈ���̽�, ����, �������� ��� ���� �����ϴ� ����ü
+    Params.AddIgnoredActor(this);   // 본인은 무시 설정 (자신 제외)
 
     bool bHit = GetWorld()->LineTraceSingleByChannel(
         Hit,
@@ -146,7 +145,7 @@ void ARLCharacterBase::SwordAttackLineTrace()
 
     if (bHit)
     {
-        // ������ ����
+        // 히트시 처리
         ARLCharacterBase* HitChar = Cast<ARLCharacterBase>(Hit.GetActor());
         if (HitChar)
         {
@@ -165,11 +164,11 @@ void ARLCharacterBase::PlayAttackSound()
 
 void ARLCharacterBase::ChangeWeapon(FWeaponTableRow* ChangeWeapon)
 {
-    // 장비 적용, 장비 애니메이션 설정
+    // 무기 능력치 적용, 스켈레탈 메시 설정
     ApplyWeaponAbility(ChangeWeapon);
     WeaponMeshComponent->SetSkeletalMesh(ChangeWeapon->SkeletalMesh);
 
-    // 장비 위치 설정
+    // 무기별 회전각도 조정 설정
     if (ChangeWeapon->WeaponIndex == 4 || ChangeWeapon->WeaponIndex == 5)
     {
         WeaponMeshComponent->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
@@ -183,7 +182,7 @@ void ARLCharacterBase::ChangeWeapon(FWeaponTableRow* ChangeWeapon)
         WeaponMeshComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
     }
 
-    // 장비 행동 설정
+    // 데이터 테이블의 무기 정보 저장
     RowWeapon = ChangeWeapon;
 }
 
@@ -193,3 +192,6 @@ void ARLCharacterBase::ApplyWeaponAbility(FWeaponTableRow* ApplyWeapon)
     AttackSpeed = ApplyWeapon->AttackSpeed;
     Range = ApplyWeapon->Range;
 }
+
+
+

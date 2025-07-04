@@ -15,7 +15,7 @@ class RUINLOOTERS_API URLAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 
 protected:
-    // �ִ� ��������Ʈ���� ���?������ �Ӽ�
+    // 애니메이션 블루프린트에서 사용하는 속성
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
     float GroundSpeed;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
@@ -31,10 +31,10 @@ public:
     FORCEINLINE void SetShouldMove(bool ShouldMove) { bShouldMove = ShouldMove; };
 
 protected:
-    // �ִ� �ʱ�ȭ ������ ȣ��
+    // 애니메이션 초기화 시점에 호출
     virtual void NativeInitializeAnimation() override;
 
-    // �� ������ ��ŸŸ�Ӹ�ŭ ȣ��
+    // 매 프레임 델타타임만큼 호출
     virtual void NativeUpdateAnimation(float DeltaTimeX) override;
 	
     APawn* OwningPawn = nullptr;

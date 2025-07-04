@@ -15,7 +15,7 @@ class RUINLOOTERS_API URLAttackAnimNotify : public UAnimNotify
 	GENERATED_BODY()
 
 public:
-	// Notify �Լ��� �������̵�
+	// Notify 함수의 오버라이드
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
 	
 };

@@ -17,9 +17,9 @@ ARLEnemyAIController::ARLEnemyAIController()
     Perception->ConfigureSense(*SightCfg);
     Perception->SetDominantSense(SightCfg->GetSenseImplementation());
 
-    SightCfg->DetectionByAffiliation.bDetectEnemies = true;   // �ٸ� ����
-    SightCfg->DetectionByAffiliation.bDetectFriendlies = false;  // ���� �� ����
-    SightCfg->DetectionByAffiliation.bDetectNeutrals = false;  // �߸� ����
+    SightCfg->DetectionByAffiliation.bDetectEnemies = true;   // 다른 팀
+    SightCfg->DetectionByAffiliation.bDetectFriendlies = false;  // 같은 팀 감지
+    SightCfg->DetectionByAffiliation.bDetectNeutrals = false;  // 중립 감지
 
     Perception->OnTargetPerceptionUpdated.AddDynamic(
         this, &ARLEnemyAIController::OnPerceptionUpdated);
@@ -29,19 +29,19 @@ void ARLEnemyAIController::OnPossess(APawn* InPawn)
 {
     Super::OnPossess(InPawn);
 
-    // �ʿ��� �÷��̾� ã��
+    // 필요한 플레이어 찾기
     Player = Cast<ARLCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 
-    // ���� raw ������ �غ�
+    // 임시 raw 포인터 준비
     UBlackboardComponent* BlackboardComp = nullptr;
 
-    // �ڵ��?�������尡 ����
+    // 자동으로 블랙보드가 설정
     if (UseBlackboard(BlackboardAsset, BlackboardComp))
     {
-        // TObjectPtr �����?Blackboard �� ����
+        // TObjectPtr 대신에 Blackboard 를 설정
         Blackboard = BlackboardComp;
 
-        // ���� AAIController::Blackboard �����?������ ���·� Ʈ�� ����
+        // 현재 AAIController::Blackboard 대신에 가져온 블랙보드 트리 시작
         RunBehaviorTree(BehaviorTreeAsset);
         UE_LOG(LogTemp, Warning, TEXT("Controller OnPossess"));
     }
@@ -56,14 +56,14 @@ void ARLEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim)
     Player = Cast<ARLCharacterPlayer>(Actor);
     if (Player)
     {
-        // Stim: �ڱؿ� ���� ������ ���� ��ü
+        // Stim: 자극에 대한 정보를 담은 객체
         if (Stim.WasSuccessfullySensed())
         {
-            // "TargetKey"�� Ű�� ���� ����
+            // "TargetKey"를 키로 타겟 설정
             Blackboard->SetValueAsObject(TEXT("TargetKey"), Player);
             UE_LOG(LogTemp, Warning, TEXT("Enemy Detected Player"));
         }
-        // �þ߿��� �Ҿ��ٸ�
+        // 시야에서 사라졌다면
         else
         {
             Player = Cast<ARLCharacterPlayer>(Blackboard->GetValueAsObject(TEXT("TargetKey")));
@@ -73,16 +73,16 @@ void ARLEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim)
     }
 }
 
-// AI ����
+// AI 정지
 void ARLEnemyAIController::ShutdownAI()
 {
-    // �����̺��?Ʈ�� ����
+    // 비헤이비어 트리 정지
     if (UBrainComponent* Brain = GetBrainComponent())
     {
         Brain->StopLogic(TEXT("PlayerDead"));
     }
 
-    // ��ã�⡤�̵� ����
+    // 추적・이동 정지
     StopMovement();
     ClearFocus(EAIFocusPriority::Gameplay);
 }

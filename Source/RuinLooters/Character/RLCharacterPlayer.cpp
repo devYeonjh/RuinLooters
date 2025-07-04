@@ -66,7 +66,7 @@ ARLCharacterPlayer::ARLCharacterPlayer()
         StagePortalWidgetClass = StagePortalWidgetClassRef.Class;
     }
 
-    // ���� �̸� ����
+    // 현재 이름 저장
     LevelName = FName(*UGameplayStatics::GetCurrentLevelName(this, true));
 
     bStageExit = 1;
@@ -82,7 +82,7 @@ void ARLCharacterPlayer::BeginPlay()
 
     if (RowWeapon)
     {
-        // ���� ���� ����
+        // 무기 변경 적용
         ChangeWeapon(RowWeapon);
 
         WeaponMeshComponent->SetSkeletalMesh(RowWeapon->SkeletalMesh);
@@ -93,15 +93,16 @@ void ARLCharacterPlayer::BeginPlay()
         UE_LOG(LogTemp, Warning, TEXT("Player RowWeapon Null"));
     }
 
-    // LoadObject<>()�� �����ͳ� ��Ű�� ���鿡 ���?�ִ� .uasset �� ��Ÿ�ӿ� ã�� �޸𸮿� �ε���
-    // �̱���ó�� ���� ��ζ�� ������ ȣ���ص� �ѹ��� �ε���
-    // ��������Ʈ/C++�� �̸� ������ �� �� ���� ���� �����?������ �ҷ��� �� �ʼ�
-    // �ʵ带 �����ϸ� ���� ������ ���� �ٲ� �� ����
+    // LoadObject<>()는 하드코딩된 경로에 있는 .uasset 을 런타임에 찾아 메모리에 로드함
+    // 싱글톤처럼 한번 로드를 하면 호출해도 한번만 로드됨
+    // 블루프린트/C++의 이름이 바뀌면 이 것 때문에 경로 찾기가 불가능하므로 불러올 수 없음
+    // 필드를 포인터로 사용하면 런타임에 경로 바꿀 수 있음
     LoadAsset = LoadObject<URLPlayerDataAsset>(nullptr, TEXT("/Script/Roguelike123.RLPlayerDataAsset'/Game/Assassin/Blueprint/DA_PlayerStat.DA_PlayerStat'"));
 
-    // DuplicateObject<>()�� ������ó�� ���� Ÿ�� �ʵ嵵 ���?�����Ǿ�, ���� ������ �ν��Ͻ��� ����
-    // ��Ÿ�ӿ� ���� ������ �Ѽ����� �����鼭 ���� �� ����ϰ�?���� �� ���?    // ���� �����?�߻��ϹǷ� ���� ����
-    // �ʱ� ������ ������ ���ϴ� ���� ���� ���� ��������
+    // DuplicateObject<>()는 원본처럼 특정 타입 필드도 모두 복사되어, 새로운 복사본 인스턴스를 생성
+    // 런타임에 값을 데이터를 수정하면서 저장할 수 있고 매번 새로운 객체를 생성
+    // 포인터 참조가 발생하므로 연결 끊기
+    // 초기 데이터 복사본 생성하는 것이 많은 경우 메모리 부족
     PlayerStat = DuplicateObject<URLPlayerDataAsset>(LoadAsset, this);
 
     GetSaveGame();
@@ -122,15 +123,15 @@ void ARLCharacterPlayer::BeginPlay()
 
     PlayerHpChange.Broadcast(CurrentHp, MaxHp);
 
-    // �� �� Ȯ�� �� ����
+    // 현재 레벨 확인 및 설정
     if (!LevelName.IsNone())
     {
-        // �������� �� ���� ���ʹ� ���� ���� �� üũ
+        // 스테이지 레벨 이름 포함되어 있는지 확인
         if (LevelName.ToString().Contains(TEXT("Stage")))
         {
             if (CheckEnemy())
             {
-                // �� o
+                // 적 존재
                 UE_LOG(LogTemp, Warning, TEXT("LevelName  Get World Enemy : %d"), WorldAliveEnemys);
             }
         }
@@ -176,7 +177,7 @@ void ARLCharacterPlayer::Die()
 {
     ARLCharacterBase::Die();
 
-    // �� AI Controller ��ü �ٿ�
+    // 모든 AI Controller 객체 끄기
     for (TActorIterator<ARLEnemyAIController> It(GetWorld()); It; ++It)
     {
         ARLEnemyAIController* AIController = Cast<ARLEnemyAIController>(*It);
@@ -201,7 +202,8 @@ void ARLCharacterPlayer::Die()
         }
     }
 
-    // ȭ�� ��Ӱ�?    // ���̵� ��: 0 �� 1 alpha, ȸ��
+    // 화면 검게 하기
+    // 페이드 설정: 0 은 1 alpha, 회색
     if (PlayerController)// = UGameplayStatics::GetPlayerController(this, 0)
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -209,14 +211,14 @@ void ARLCharacterPlayer::Die()
             Subsystem->RemoveMappingContext(DefaultMappingContext);
         }
 
-        // CameraManager ���� ���̵� ȿ��
+        // CameraManager 통해 페이드 효과
         PlayerController->PlayerCameraManager->StartCameraFade(
             0.0f,                // From Alpha
             0.6f,                // To Alpha
             2.0f,               // Duration
             FLinearColor::Black, // FadeColor
             false,              // bShouldFadeAudio
-            true                // bHoldWhenFinished(������ ����)
+            true                // bHoldWhenFinished(지속적 유지)
         );
     }
 
@@ -225,7 +227,7 @@ void ARLCharacterPlayer::Die()
 
 void ARLCharacterPlayer::Interaction()
 {
-    // NPC���� ��ȣ�ۿ�
+    // NPC와의 상호작용
     if (bIsCharacterInteractWithNPC)
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -233,7 +235,7 @@ void ARLCharacterPlayer::Interaction()
             Subsystem->RemoveMappingContext(DefaultMappingContext);
         }
 
-        // ���?NPC UI ����
+        // 해당 NPC UI 생성
         InteractiveNPC->GetActiveStoreWidget()->AddToViewport(0);
 
         InteractiveNPC->GetActiveStoreWidget()->SetVisibility(ESlateVisibility::Visible);
@@ -256,22 +258,22 @@ void ARLCharacterPlayer::ApplySpeedBuff()
 
         AttackSpeed = 1.5;
 
-        // 1. ���� �ӵ� ����
+        // 1. 현재 속도 저장
         OriginalMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
 
-        // 2. ������ �ӵ��� ����
+        // 2. 스피드 버프속도로 변경
         GetCharacterMovement()->MaxWalkSpeed = 800;
 
-        // 3. ���� Ÿ�̸Ӱ� ���� ������ Ŭ����
+        // 3. 기존 타이머가 있다면 클리어
         GetWorldTimerManager().ClearTimer(SpeedBuffTimerHandle);
 
-        // 4. Duration �� �� RestoreOriginalSpeed() ȣ�� ����
+        // 4. Duration 후 RestoreOriginalSpeed() 호출하기
         GetWorldTimerManager().SetTimer(
             SpeedBuffTimerHandle,
             this,
             &ARLCharacterPlayer::RestoreOriginalSpeed,
             5.0f,
-            false  // ݺ 
+            false  // 반복 
         );
 
         GetWorldTimerManager().SetTimer(
@@ -279,7 +281,7 @@ void ARLCharacterPlayer::ApplySpeedBuff()
             this,
             &ARLCharacterPlayer::OnSkill,
             8.0f,
-            false  // ݺ 
+            false  // 반복 
         );
         UE_LOG(LogTemp, Warning, TEXT("Skill On!"));
 
@@ -293,7 +295,7 @@ void ARLCharacterPlayer::ApplySpeedBuff()
 
 void ARLCharacterPlayer::RestoreOriginalSpeed()
 {
-    // ���� �ӵ� ����
+    // 원래 속도 복원
     GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed;
     AttackSpeed = 1.0;
 }
@@ -349,7 +351,7 @@ void ARLCharacterPlayer::ViewSettingWidget()
             SettingsWidget->CheckLevelName(LevelName);
 
             SettingsWidget->AddToViewport();
-            //  Ͻ
+            // 일시정지
             UGameplayStatics::SetGamePaused(GetWorld(), true);
 
             if (PlayerController)
@@ -365,26 +367,26 @@ void ARLCharacterPlayer::ViewSettingWidget()
     }
 }
 
-// Player UI�� �ִ� Money �� ����
+// Player UI에 있는 Money 값 출력
 void ARLCharacterPlayer::PrintMoney()
 {
     if (PlayerUI != nullptr)
     {
-        // FText : String�� ������ �𸮾� ���� 
+        // FText : String을 언리얼 엔진 텍스트로 변환
         PlayerUI->MoneyData->SetText(FText::AsNumber(Money));
     }
 }
 
-// Save Data ������
+// Save Data 불러오기
 void ARLCharacterPlayer::GetSaveGame()
 {
-    // ���̺� ���� ã��
+    // 세이브 게임 찾기
     URLSaveGame* LoadData = GameInstance->LoadSaveGameData();
 
     if (LoadData)
     {
         UE_LOG(LogTemp, Warning, TEXT("GetSaveGame() Money : %d"), LoadData->PlayerMoney);
-        //  
+        // 로드 데이터 적용
         Money = LoadData->PlayerMoney;
         MaxHp = LoadData->MaxHp;
         CurrentHp = LoadData->CurrentHp;

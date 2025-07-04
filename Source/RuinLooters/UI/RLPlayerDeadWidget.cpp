@@ -20,18 +20,18 @@ void URLPlayerDeadWidget::QuitGame()
 {
     UWorld* CurrentWorld = GetWorld();
 
-    // ���� ���� �Լ�(����, ��Ʈ�ѷ�, ���� ���? true�� �������� false�� �÷����� �䱸�ϴ� �������?����)
+    // 현재 월드 함수(월드, 컨트롤러, 종료 타입 true는 백그라운드 false는 플레이어가 요구하는 프로그램 종료)
     UKismetSystemLibrary::QuitGame(CurrentWorld, CurrentWorld->GetFirstPlayerController(), EQuitPreference::Quit, false);
 }
 
 void URLPlayerDeadWidget::RestartGame()
 {
-    // �÷��̾� ü���� 0 �� ��
-    // ���� �̵� => EndPlay() ���� => ü�� 0 �� �� => �ʱ�ȭ �� ����
+    // 플레이어 체력을 0 로 두기
+    // 레벨 이동 => EndPlay() 호출 => 체력 0 로 죽 => 초기화 후 재생
         
     if (Player)
     {
-        //  Ÿ������ ���� �̵�
+        //  타운으로 레벨 이동
         UGameplayStatics::OpenLevel(GetWorld(), "Town");
     }
 }

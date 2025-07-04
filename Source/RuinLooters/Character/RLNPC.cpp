@@ -37,7 +37,7 @@ ARLNPC::ARLNPC()
 	DetectPlayerBox->SetBoxExtent(FVector(120.0f, 120.0f, 80.0f));
 
 
-	// ��������Ʈ Ŭ���� ����
+	// 블루프린트 클래스 설정
 	static ConstructorHelpers::FClassFinder<UUserWidget> NPCWBPClass(
 		TEXT("/Game/Assassin/UI/WBP_NPCStoreWidget.WBP_NPCStoreWidget_C"));
 	if (NPCWBPClass.Succeeded())
@@ -51,11 +51,11 @@ void ARLNPC::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// �÷��̾� ���� �ڽ� ���ε�
+	// 플레이어 감지 박스 바인딩
 	DetectPlayerBox->OnComponentBeginOverlap.AddDynamic(this, &ARLNPC::OnDetectPlayerBoxBeginOverlap);
 	DetectPlayerBox->OnComponentEndOverlap.AddDynamic(this, &ARLNPC::OnDetectPlayerBoxEndOverlap);
 
-	// �⺻ ���?ã��
+	// 기본 설정 찾기
 	World = GetWorld();
 	GameInstance = Cast<URLGameInstance>(UGameplayStatics::GetGameInstance(World));
 	Player = Cast<ARLCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(World, 0));
@@ -78,7 +78,7 @@ void ARLNPC::RemoveWidget()
 		}
 	}
 
-	// �÷��̾� ��Ʈ�� �Է� ��ǽ�?
+	// 플레이어 입력 컨트롤 복구
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 	{
 		Subsystem->AddMappingContext(Player->GetDefaultMappingContext(), 0);

@@ -22,30 +22,30 @@ void URLSettingsMenuWidget::NativeConstruct()
     Player = Cast<ARLCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 }
 
-// ������ Ű �Է°� �޾ƿ�
+// 플레이어 키 입력을 받아옴
 FReply URLSettingsMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
     Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 
     const FKey PressedKey = InKeyEvent.GetKey();
 
-    // ESC ������ ��
+    // ESC 키에 대한 처리
     if (PressedKey == EKeys::Escape)
     {
-        // ���� ����
+        // 위젯 종료
         CloaseWidget();
 
-        // �Է� ��ȯ
+        // 입력 변환
         return FReply::Handled();
     }
 
-    // �ٸ� Ű �Է� �� ����
+    // 다른 키 입력 시 처리
     return FReply::Unhandled();
 }
 
 void URLSettingsMenuWidget::CheckLevelName(FName NewLevelName)
 {
-	// ���������� �ƴϸ� ���� ��ư ����
+	// 스테이지가 아니면 나가기 버튼 숨김
 	if (NewLevelName.ToString().Contains(TEXT("Stage")))
 	{
 		ExitButton->SetVisibility(ESlateVisibility::Visible);
@@ -56,34 +56,35 @@ void URLSettingsMenuWidget::CheckLevelName(FName NewLevelName)
 	}
 }
 
-// stage ������ ��ư
+// stage 나가기 버튼
 void URLSettingsMenuWidget::ExitSatge()
 {
     Player->SetbStageExit(true);
 
-    // ������ �̵�
+    // 타운으로 이동
     UGameplayStatics::OpenLevel(GetWorld(), "Town");
 }
 
-// ���?��ư(ConfButton) OnClicked �̺�Ʈ �Լ� => ���� ����
+// 확인 버튼(ConfButton) OnClicked 이벤트 함수 => 위젯 종료
 void URLSettingsMenuWidget::CloaseWidget()
 {
-    // �Ͻ����� ���� 
+    // 일시정지 해제
     UGameplayStatics::SetGamePaused(GetWorld(), false);
 
     APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
 
-    // ���콺 Ŀ��  �����?    PlayerController->SetShowMouseCursor(false);
+    // 마우스 커서 숨기기
+    PlayerController->SetShowMouseCursor(false);
 
-    // ���� ����
+    // 위젯 종료
     RemoveFromParent();
 
-    // �ΰ��� �Է¸� �ޱ�
+    // 게임만 입력만 받기
     FInputModeGameOnly InputMode;
     PlayerController->SetInputMode(InputMode);
 }
 
-// ������ ��ư(QuitButton) OnClicked �̺�Ʈ �Լ� => ���� ����
+// 종료버튼(QuitButton) OnClicked 이벤트 함수 => 게임 종료
 void URLSettingsMenuWidget::QuitGame()
 {
     UWorld* CurrentWorld = GetWorld();

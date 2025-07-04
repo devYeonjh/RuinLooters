@@ -20,11 +20,11 @@ public:
     URLBTService_FaceTarget();
 
 protected:
-    // �÷��̾ �����?�������� Ű
+    // �÷��̾ �����?�������� Ű
     UPROPERTY(EditAnywhere, Category = "AI")
     FBlackboardKeySelector TargetKey;
 
-    // �� ƽ ����
+    // 매 틱 실행
     virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 };
 

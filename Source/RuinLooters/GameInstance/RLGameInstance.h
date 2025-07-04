@@ -171,7 +171,7 @@ protected:
 
 public:
 
-	// �����Ϳ��� DataTable ������ �巡��&�������?�Ҵ�
+	// 블루프린트에서 DataTable 정보를 가져올 수 있도록 할당
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	UDataTable* WeaponDataTable;
 
@@ -180,11 +180,11 @@ public:
 
 	FWeaponTableRow* WeaponRow;
 
-	/** DataTable FindRow �� �����?Context ���ڿ� */
+	/** DataTable FindRow 시 사용할 Context 문자열 */
 	UPROPERTY(EditDefaultsOnly, Category = "Data")
 	FString ContextStr;
 
-	// �����Ϳ��� DataTable ������ �巡��&�������?�Ҵ�
+	// 블루프린트에서 DataTable 정보를 가져올 수 있도록 할당
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	UDataTable* PotionDataTable;
 
@@ -193,7 +193,7 @@ public:
 
 	FPotionTableRow* PotionRow;
 
-	// �����Ϳ��� DataTable ������ �巡��&�������?�Ҵ�
+	// 블루프린트에서 DataTable 정보를 가져올 수 있도록 할당
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	UDataTable* SkillBookDataTable;
 
@@ -202,7 +202,7 @@ public:
 
 	FSkillBookTableRow* SkillBookRow;
 
-	// �����Ϳ��� DataTable ������ �巡��&�������?�Ҵ�
+	// 블루프린트에서 DataTable 정보를 가져올 수 있도록 할당
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	UDataTable* EnemyAbilityDataTable;
 
@@ -239,10 +239,10 @@ public:
 
 	FEnemyAbilityTableRow* GetEnemyAbilityInformation(FName InEnemyName);
 
-	// SaveGame ����
+	// SaveGame 저장
 	void SetSaveGame(class URLPlayerDataAsset* NewSaveData);
 
-	// SaveGame �ҷ�����
+	// SaveGame 불러오기
 	class URLSaveGame* LoadSaveGameData();
 };
 

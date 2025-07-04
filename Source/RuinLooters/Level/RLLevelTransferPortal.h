@@ -15,11 +15,11 @@ public:
 	ARLLevelTransferPortal();
 
 protected:
-	//  Mesh�� Material ���� �Ұ� ���� 
+	//  Mesh와 Material 등의 기본 설정 
 	UPROPERTY(VisibleDefaultsOnly)
 	UStaticMeshComponent* MeshComponent;
 
-	// ���忡 ��ġ�� ��ü�� ������ �гο��� �ٲٱ� ���� Custom ����
+	// 레벨에 배치한 객체의 모양을 다르게 바꾸기 위한 Custom 설정
 	UPROPERTY(EditAnywhere, Category = "Visual")
 	UStaticMesh* CustomMesh;
 
@@ -27,7 +27,7 @@ protected:
 	UMaterialInterface* CustomMaterial;
 
 private:
-	// �ѹ��� �ε�Ǵ�?���� �����ϱ� ���� Soft�� ����
+	// 한번에 로딩되지 않게 하기 위해 Soft로 설정
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
 	TSoftObjectPtr<UWorld> TransferLevelName;
 

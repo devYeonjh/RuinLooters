@@ -18,15 +18,15 @@ protected:
 	virtual void BeginPlay() override;
 
 protected:
-	// Player�� �������� �ڽ�
+	// Player와 겹치는 박스
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	class UBoxComponent* DroppedItemOverlapBox;
 
-	// ������ ��ü
+	// 아이템 객체
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	class UStaticMeshComponent* DroppedItemMainBody;
 
-	// ������ �̸�
+	// 아이템 이름
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	FName DroppedItemName;
 

@@ -20,11 +20,11 @@ void URLBTService_CheckDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uin
     if (Target && SelfPawn)
     {
         const float Distance = FVector::Dist(SelfPawn->GetActorLocation(), Target->GetActorLocation());
-        // �Ÿ��� ��Ÿ�����?ª���� true
+        // 거리가 어택랜지보다 짧으면 true
         bInRange = (Distance <= AttackRange);
     }
 
-    // �Ÿ��� ���� bInRange�� �����?��ȯ
+    // 거리에 따른 bInRange를 블랙보드에 반환
     Blackboard->SetValueAsBool(InRangeKey.SelectedKeyName, bInRange);
 }
 

@@ -21,7 +21,7 @@ void URLGameInstance::Init()
         return;
     }
 
-    // ���?Row �̸� ��ȸ
+    // 데이터 Row 이름 순회
     WeaponRowNames = WeaponDataTable->GetRowNames();
 
     PotionRowNames = PotionDataTable->GetRowNames();
@@ -34,7 +34,7 @@ void URLGameInstance::Init()
 
 FWeaponTableRow* URLGameInstance::GetWeaponInformation(FName InWeaponName)
 {
-    // �̸����� ���� ���� ��ȯ�ޱ�
+    // 이름을 통해 정보 가져오기 받기
     if (FWeaponTableRow* WeaponInformation = WeaponDataTable->FindRow<FWeaponTableRow>(InWeaponName, ContextStr))
     {
         return WeaponInformation;
@@ -46,19 +46,19 @@ FWeaponTableRow* URLGameInstance::GetWeaponInformation(FName InWeaponName)
 
 FWeaponTableRow* URLGameInstance::GetRamdomWeapon()
 {
-    // ���� �ε��� ��ȯ
+    // 랜덤 인덱스 생성
     int32 RandomIndex = FMath::RandRange(0, WeaponRowNames.Num() - 1);
 
-    // �����ϰ� ���õ� �ε����� �̸� ��������
+    // 안전하게 선택된 인덱스의 이름 가져오기
     FName RandomRowName = WeaponRowNames[RandomIndex];
 
-    // �̸����� ������ ���̺����� �̸����� �� ã��
+    // 이름을 통해 데이터 테이블에서 이름에 맞는 줄 찾기
     if (FWeaponTableRow* RandomWeapon = WeaponDataTable->FindRow<FWeaponTableRow>(RandomRowName, ContextStr))
     {
         return RandomWeapon;
     }
 
-    // ���� �� nullptr ��ȯ
+    // 실패 시 nullptr 반환
     return nullptr;
 }
 
@@ -154,34 +154,34 @@ FEnemyAbilityTableRow* URLGameInstance::GetEnemyAbilityInformation(FName InEnemy
     return nullptr;
 }
 
-// SaveGame ����
+// SaveGame 저장
 void URLGameInstance::SetSaveGame(URLPlayerDataAsset* NewSaveData)
 {
     SaveGameInstance = Cast<URLSaveGame>(UGameplayStatics::CreateSaveGameObject(URLSaveGame::StaticClass()));
     SaveGameInstance->SetSaveGameData(NewSaveData);
 
-    // ����
+    // 저장
     UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveGameInstance->SaveSlotName, SaveGameInstance->PlayerIndex);
 }
 
-// SaveGame �ҷ�����
+// SaveGame 불러오기
 URLSaveGame* URLGameInstance::LoadSaveGameData()
 {
-    // �ʱ�ȭ
+    // 초기화
     LoadGameInstance = Cast<URLSaveGame>(UGameplayStatics::CreateSaveGameObject(URLSaveGame::StaticClass()));
 
-    // ���̺� ���� ã��
+    // 세이브 파일 찾기
     if (UGameplayStatics::DoesSaveGameExist("PlayerSaveSlot", 0))
     {
-        // �ִٸ� �ε�
+        // 있다면 로드
         LoadGameInstance = Cast<URLSaveGame>(UGameplayStatics::LoadGameFromSlot("PlayerSaveSlot", 0));
 
         if (LoadGameInstance)
             return LoadGameInstance;
     }
 
-    // ���̺� ���� ã�� ���� ��
-    // Player Stat Asset �ҷ��� �ʱ�ȭ�� ����
+    // 세이브 파일 찾기 못할 때
+    // Player Stat Asset 불러와 초기화한 설정
     URLPlayerDataAsset* NewPlayerStatAsset = LoadObject<URLPlayerDataAsset>(nullptr, TEXT("/Script/Roguelike123.RLPlayerDataAsset'/Game/Assassin/Blueprint/DA_PlayerStat.DA_PlayerStat'"));
     LoadGameInstance->SetSaveGameData(NewPlayerStatAsset);
 
