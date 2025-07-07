@@ -23,7 +23,7 @@ ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 	CurrentHp = 2000;
 	MaxHp = 2000;
 	AttackDamage = 50;
-	Range = 200.0f;
+	Range = 300.0f;
 	AttackSpeed = 1.5f;
 	Defence = 20;
 	
@@ -198,7 +198,7 @@ void ARLCharacterEnemyDragon::Attack()
 void ARLCharacterEnemyDragon::CallAttackCollision()
 {
 	// 드래곤의 현재 위치와 방향
-	FVector StartLocation = GetActorLocation() + FVector(-20.0f, 150.0f, 0.0f);
+	FVector StartLocation = GetActorLocation() + FVector(-80.0f, 200.0f, 0.0f);
 	FVector ForwardVector = GetActorForwardVector();
 
 	// 공격 범위 계산 (앞쪽으로 Range만큼)

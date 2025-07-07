@@ -43,7 +43,7 @@ EBTNodeResult::Type URLBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerC
         Enemy->Attack();
         
         // 공격이 시작되었으므로 InProgress 반환
-        return EBTNodeResult::InProgress;
+        return EBTNodeResult::Succeeded;
     }
 
     return EBTNodeResult::Failed;

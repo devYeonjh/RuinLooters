@@ -23,6 +23,9 @@ public:
 	ARLCharacterBase();
 public:
 	FOnDie CharacterDie;
+	
+	// 공격 완료 델리게이트 추가
+	FOnAttackCompleted OnAttackCompleted;
 
 protected:
 	// 캐릭터 스탯
@@ -138,6 +141,8 @@ public:
 	virtual void CallAttackCollision() override;
 
 	virtual FOnAttackCompleted& GetOnAttackCompleted() override;
+
+	virtual bool IsCanAttack() const override;
 
 	void SwordAttackLineTrace();
 
