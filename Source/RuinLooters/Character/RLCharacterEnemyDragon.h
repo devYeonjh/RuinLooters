@@ -108,5 +108,6 @@ protected:
 	void CapsuleAttackTrace();
 
 	// 몽타주 종료 콜백
+	UFUNCTION()
 	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 };

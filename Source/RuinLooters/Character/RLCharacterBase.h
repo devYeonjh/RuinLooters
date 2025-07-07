@@ -159,6 +159,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	// Attack 몬타주 끝난 후 타이머 콜백
+	UFUNCTION()
 	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	void ApplyWeaponAbility(struct FWeaponTableRow* ApplyWeapon);

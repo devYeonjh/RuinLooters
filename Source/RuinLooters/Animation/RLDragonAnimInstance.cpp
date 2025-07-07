@@ -7,24 +7,37 @@
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "DrawDebugHelpers.h" // for debug line drawing
 
 URLDragonAnimInstance::URLDragonAnimInstance()
 {
-	// 드래곤 비행 상태 초기화
-	bIsFlying = false;
-	bIsFlyingAndMoving = false;
-	FlightSpeed = 0.0f;
-	FlightHeight = 0.0f;
-	VerticalSpeed = 0.0f;
 
-	// 비행 상태 임계값 설정
-	FlightHeightThreshold = 200.0f;  // 200유닛 이상이면 비행으로 간주
-	FlightSpeedThreshold = 50.0f;    // 50유닛/초 이상이면 움직이는 것으로 간주
-	GroundHeightThreshold = 50.0f;   // 지면으로부터 50유닛 이하면 착지로 간주
+}
 
-	// Movement Component 초기화
-	MovementComponent = nullptr;
-	bWasFlyingLastFrame = false;
+void URLDragonAnimInstance::NativeInitializeAnimation()
+{
+	Super::NativeInitializeAnimation();
+
+	OwningPawn = TryGetPawnOwner();
+	// null체크를 확실하게 해야함 애니메이션 블루프린트에서 크래시 방지를 위한 크래시 방지
+	if (OwningPawn)
+	{
+		// 드래곤 비행 상태 초기화
+		bIsFlying = false;
+		bIsFlyingAndMoving = false;
+		FlightSpeed = 0.0f;
+		FlightHeight = 0.0f;
+		VerticalSpeed = 0.0f;
+
+		// 비행 상태 임계값 설정
+		FlightHeightThreshold = 230.0f;  // 250유닛 이상이면 비행으로 간주
+		FlightSpeedThreshold = 50.0f;    // 50유닛/초 이상이면 움직이는 것으로 간주
+		GroundHeightThreshold = 220.0f;   // 지면으로부터 180유닛 이하면 착지로 간주
+
+		// Movement Component 초기화
+		MovementComponent = nullptr;
+		bWasFlyingLastFrame = false;
+	}
 }
 
 void URLDragonAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
@@ -66,9 +79,25 @@ void URLDragonAnimInstance::UpdateFlightStates()
 	CalculateFlightHeight();
 	CalculateFlightSpeed();
 
-	// 비행 상태 판단
-	// 지면으로부터 일정 높이 이상에 있으면 비행 중
-	bIsFlying = (FlightHeight > FlightHeightThreshold);
+	// 비행 상태 판단 (히스테리시스 로직 사용)
+	// 현재 비행 중이 아닐 때: FlightHeightThreshold 이상이면 비행 시작
+	// 현재 비행 중일 때: GroundHeightThreshold 이하면 착지
+	if (!bIsFlying)
+	{
+		// 착지 상태에서 일정 높이 이상 올라가면 비행 시작
+		if (FlightHeight > FlightHeightThreshold)
+		{
+			bIsFlying = true;
+		}
+	}
+	else
+	{
+		// 비행 상태에서 지면 근처로 내려가면 착지
+		if (FlightHeight <= GroundHeightThreshold)
+		{
+			bIsFlying = false;
+		}
+	}
 
 	// 비행 중이면서 수평 이동 속도가 임계값 이상이면 "날면서 움직이는" 상태
 	bIsFlyingAndMoving = bIsFlying && (FlightSpeed > FlightSpeedThreshold);
@@ -101,6 +130,30 @@ void URLDragonAnimInstance::CalculateFlightHeight()
 		ECC_WorldStatic,
 		QueryParams
 	);
+
+	// 디버그: 레이저(라인) 그리기
+	// 충돌했다면 충돌 지점까지, 아니면 EndLocation까지 라인을 그립니다.
+	DrawDebugLine(
+		OwningPawn->GetWorld(),
+		StartLocation,
+		bHit ? HitResult.ImpactPoint : EndLocation,
+		FColor::Red,
+		false,          // 지속 시간 (0이면 한 프레임)
+		0,              // depth priority
+		2.0f            // 선 두께
+	);
+	if (bHit)
+	{
+		// 충돌 지점에 디버그 포인트 표시
+		DrawDebugPoint(
+			OwningPawn->GetWorld(),
+			HitResult.ImpactPoint,
+			10.0f,          // 크기
+			FColor::Yellow,
+			false,
+			0
+		);
+	}
 
 	if (bHit)
 	{
@@ -157,9 +210,10 @@ void URLDragonAnimInstance::UpdateMovementMode()
 			MovementComponent->SetMovementMode(MOVE_Walking);
 			UE_LOG(LogTemp, Warning, TEXT("Dragon has LANDED - Movement mode changed to Walking"));
 		}
-
-		// 이전 프레임 상태 업데이트
-		bWasFlyingLastFrame = bIsFlying;
 	}
+
+	// 매 프레임마다 이전 프레임 상태 업데이트 (상태 변경 여부와 관계없이)
+	bWasFlyingLastFrame = bIsFlying;
+
 }
 

@@ -55,6 +55,8 @@ protected:
 	bool bWasFlyingLastFrame;
 
 public:
+	virtual void NativeInitializeAnimation() override;
+
 	// 애니메이션 업데이트 함수 오버라이드
 	virtual void NativeUpdateAnimation(float DeltaTimeX) override;
 
