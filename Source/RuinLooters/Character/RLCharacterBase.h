@@ -95,8 +95,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	UAnimMontage* RollMontage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DodgeSpeed")
-	float RollSpeed = 1200.f;
+
+	float OriginalMaxWalkSpeed = 0.f; // 구르기 전 원래 속도 저장
 
 	bool bIsRolling = false;
 	bool bIsInvincible = false;
@@ -177,6 +177,8 @@ public:
 	void StartInvincible();
 	UFUNCTION()
 	void EndInvincible();
+
+	virtual void Move(const FInputActionValue& Value) override;
 
 protected:
 	virtual void BeginPlay() override;

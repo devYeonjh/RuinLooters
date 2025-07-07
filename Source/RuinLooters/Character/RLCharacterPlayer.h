@@ -111,9 +111,6 @@ protected:
 	UPROPERTY()
 	class URLPlayerDataAsset* LoadAsset;
 
-	// 원래 속도를 저장
-	float OriginalMaxWalkSpeed;
-
 	// 스킬 버프를 관리하는 핸들
 	FTimerHandle SpeedBuffTimerHandle;
 

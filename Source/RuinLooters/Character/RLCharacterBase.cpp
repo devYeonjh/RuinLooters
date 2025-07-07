@@ -103,10 +103,13 @@ void ARLCharacterBase::Die()
 
 void ARLCharacterBase::Attack()
 {
+    // 구르기 중에는 공격 입력 무시
+    if (bIsRolling) return;
+
     // 점프 중이거나 공중에 떠있으면 공격 불가
     if (!bIsCanAttack || GetCharacterMovement()->IsFalling())
     {
-        if (bCanNextCombo && !GetCharacterMovement()->IsFalling())
+        if (bCanNextCombo)
         {
             bComboInput = true;
         }
@@ -231,7 +234,8 @@ void ARLCharacterBase::Tick(float DeltaTime)
     Super::Tick(DeltaTime);
     if (bIsRolling)
     {
-        AddMovementInput(RollDirection, RollSpeed * DeltaTime);
+        // 구르기 중에는 구르기 방향으로 자동 이동
+        AddMovementInput(RollDirection, 1.0f);
     }
 }
 
@@ -239,11 +243,19 @@ void ARLCharacterBase::Tick(float DeltaTime)
 void ARLCharacterBase::StartRoll()
 {
     if (bIsRolling || !RollMontage) return;
-    // 공중에 떠 있으면 구르기 불가
     if (GetCharacterMovement()->IsFalling()) return;
     bIsRolling = true;
     FVector InputDir = GetLastMovementInputVector();
     RollDirection = InputDir.IsNearlyZero() ? GetActorForwardVector() : InputDir.GetSafeNormal();
+
+    // 구르기 방향을 바라보도록 캐릭터 회전
+    FRotator TargetRot = RollDirection.Rotation();
+    SetActorRotation(TargetRot);
+
+    // 구르기 전 속도 저장 & 1.5배로 설정
+    OriginalMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+    GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed * 1.5f;
+
     PlayAnimMontage(RollMontage);
 }
 
@@ -251,6 +263,8 @@ void ARLCharacterBase::StartRoll()
 void ARLCharacterBase::EndRoll()
 {
     bIsRolling = false;
+    // 구르기 끝나면 원래 속도로 복귀
+    GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed;
 }
 
 // --- 무적 시작(애님 노티파이용) ---
@@ -263,5 +277,11 @@ void ARLCharacterBase::StartInvincible()
 void ARLCharacterBase::EndInvincible()
 {
     bIsInvincible = false;
+}
+
+void ARLCharacterBase::Move(const FInputActionValue& Value)
+{
+    if (bIsRolling) return;
+    Super::Move(Value);
 }
 

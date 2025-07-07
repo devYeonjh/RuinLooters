@@ -253,6 +253,9 @@ void ARLCharacterPlayer::Interaction()
 
 void ARLCharacterPlayer::ApplySpeedBuff()
 {
+    // 구르기 중에는 스킬 입력 무시
+    if (bIsRolling) return;
+
     if (IsCanSkill == true)
     {
         IsCanSkill = false;
