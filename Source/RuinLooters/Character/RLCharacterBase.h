@@ -9,7 +9,7 @@
 #include "RLCharacterBase.generated.h"
 
 // 캐릭터 죽음 델리게이트
-DECLARE_MULTICAST_DELEGATE(FOnDie);
+DECLARE_MULTICAST_DELEGATE(FOnCharacterDie);
 
 /**
  * 
@@ -22,10 +22,7 @@ class RUINLOOTERS_API ARLCharacterBase : public ARuinLootersCharacter, public IR
 public:
 	ARLCharacterBase();
 public:
-	FOnDie CharacterDie;
-	
-	// 공격 완료 델리게이트 추가
-	FOnAttackCompleted OnAttackCompleted;
+	FOnCharacterDie CharacterDie;
 
 protected:
 	// 캐릭터 스탯
@@ -139,10 +136,6 @@ public:
 	virtual void Attack() override;
 
 	virtual void CallAttackCollision() override;
-
-	virtual FOnAttackCompleted& GetOnAttackCompleted() override;
-
-	virtual bool IsCanAttack() const override;
 
 	void SwordAttackLineTrace();
 

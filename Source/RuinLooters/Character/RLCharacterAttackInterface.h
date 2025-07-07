@@ -6,9 +6,6 @@
 #include "UObject/Interface.h"
 #include "RLCharacterAttackInterface.generated.h"
 
-// 공격 완료 델리게이트
-DECLARE_MULTICAST_DELEGATE(FOnAttackCompleted);
-
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class URLCharacterAttackInterface : public UInterface
@@ -27,9 +24,4 @@ public:
 	virtual void Attack();
 
 	virtual void CallAttackCollision();
-	
-	virtual bool IsCanAttack() const;
-	
-	// 공격 완료 델리게이트 접근자
-	virtual FOnAttackCompleted& GetOnAttackCompleted();
 };

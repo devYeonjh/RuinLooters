@@ -25,9 +25,6 @@ public:
 
 	// 드래곤 죽음 델리게이트
 	FOnDragonDie DragonDie;
-	
-	// 공격 완료 델리게이트
-	FOnAttackCompleted OnAttackCompleted;
 
 protected:
 	// 기본 스탯
@@ -108,10 +105,6 @@ public:
 	virtual void Attack() override;
 
 	virtual void CallAttackCollision() override;
-	
-	virtual bool IsCanAttack() const override;
-	
-	virtual FOnAttackCompleted& GetOnAttackCompleted() override;
 
 	// 공격 사운드 재생
 	void PlayAttackSound();

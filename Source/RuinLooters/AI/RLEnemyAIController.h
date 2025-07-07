@@ -7,8 +7,6 @@
 #include "Perception/AIPerceptionTypes.h"
 #include "RLEnemyAIController.generated.h"
 
-class URLBTTask_Attack; // 전방 선언 추가
-
 /**
  * 
  */
@@ -19,13 +17,6 @@ class RUINLOOTERS_API ARLEnemyAIController : public AAIController
 
 public:
     ARLEnemyAIController();
-
-    // BTTask_Attack 인스턴스 등록/해제
-    void RegisterAttackTask(URLBTTask_Attack* AttackTask);
-    void UnregisterAttackTask(URLBTTask_Attack* AttackTask);
-    
-    // 등록된 BTTask_Attack 인스턴스 가져오기
-    URLBTTask_Attack* GetAttackTask() const { return CurrentAttackTask; }
 
 protected:
     UPROPERTY(EditDefaultsOnly, Category = "AI")
@@ -51,11 +42,6 @@ protected:
     // 인식 변화시 호출
     UFUNCTION()
     void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim);
-
-private:
-    // 현재 등록된 공격 태스크
-    UPROPERTY()
-    URLBTTask_Attack* CurrentAttackTask;
 
 public:
     void ShutdownAI();

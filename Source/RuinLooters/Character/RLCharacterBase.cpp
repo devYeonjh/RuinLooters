@@ -14,8 +14,6 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "GameInstance/RLGameInstance.h"
-#include "AI/RLEnemyAIController.h"
-#include "AI/RLBTTask_Attack.h"
 
 ARLCharacterBase::ARLCharacterBase() : WeaponRowName(TEXT("First WeaponRowName Text"))
 {
@@ -55,26 +53,7 @@ void ARLCharacterBase::BeginPlay()
         ComboMaxStep = CurrentMontage->CompositeSections.Num();
     }
     
-    // AI Controller를 통해 BTTask에 바인딩 (적 캐릭터인 경우만)
-    ARLEnemyAIController* EnemyAI = Cast<ARLEnemyAIController>(GetController());
-    if (EnemyAI)
-    {
-        // 약간의 지연 후 바인딩 (AI Controller가 완전히 초기화될 때까지 대기)
-        FTimerHandle BindingTimerHandle;
-        GetWorld()->GetTimerManager().SetTimer(BindingTimerHandle, [this]()
-        {
-            ARLEnemyAIController* EnemyAI = Cast<ARLEnemyAIController>(GetController());
-            if (EnemyAI)
-            {
-                URLBTTask_Attack* AttackTask = EnemyAI->GetAttackTask();
-                if (AttackTask)
-                {
-                    OnAttackCompleted.AddUObject(AttackTask, &URLBTTask_Attack::OnAttackCompleted);
-                    UE_LOG(LogTemp, Warning, TEXT("CharacterBase: Bound to BTTask_Attack through AIController"));
-                }
-            }
-        }, 0.1f, false); // 0.1초 후 바인딩
-    }
+
 }
 
 void ARLCharacterBase::TakeCharacterDamage(int32 RecieveDamage)
@@ -128,9 +107,6 @@ void ARLCharacterBase::Die()
     SetActorEnableCollision(false);
 
     CharacterDie.Broadcast();
-    
-    // 죽음 시 공격 완료 델리게이트의 모든 바인딩 해제
-    OnAttackCompleted.Clear();
 }
 
 void ARLCharacterBase::Attack()
@@ -167,9 +143,6 @@ void ARLCharacterBase::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
     // 공격 끝나면 이동 가능
     //GetCharacterMovement()->SetMovementMode(MOVE_Walking);
     bIsCanAttack = true;
-    
-    // 공격 완료 델리게이트 호출
-    OnAttackCompleted.Broadcast();
 }
 
 void ARLCharacterBase::SwordAttackLineTrace()
@@ -261,15 +234,7 @@ void ARLCharacterBase::PlayComboMontage(int32 ComboStep)
     CurrentComboStep = ComboStep;
 }
 
-FOnAttackCompleted& ARLCharacterBase::GetOnAttackCompleted()
-{
-    return OnAttackCompleted;
-}
 
-bool ARLCharacterBase::IsCanAttack() const
-{
-    return bIsCanAttack && CurrentHp > 0;
-}
 
 
 
