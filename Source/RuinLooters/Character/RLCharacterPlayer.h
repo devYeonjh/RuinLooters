@@ -121,6 +121,7 @@ protected:
 
 	uint8 IsCanSkill : 1;
 
+
 public:
 	FORCEINLINE ARLCharacterPlayer* GetPlayer() { return this; };
 	FORCEINLINE class ARLNPC* GetInteractNPC() { return InteractiveNPC; };
@@ -181,6 +182,9 @@ protected:
 	void SetPlayerStat();
 
 	uint8 CheckEnemy();
+
+	// Tick 오버라이드
+	// virtual void Tick(float DeltaTime) override;
 };
 
 

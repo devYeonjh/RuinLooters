@@ -165,7 +165,8 @@ void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
         EnhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Interaction);
         // ESC
         EnhancedInputComponent->BindAction(SettingsAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::ViewSettingWidget);
-
+        // 롤(구르기) 입력 바인딩 (Shift키)
+        EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::StartRoll);
     }
     else
     {
@@ -315,8 +316,12 @@ FGenericTeamId ARLCharacterPlayer::GetGenericTeamId() const
 
 void ARLCharacterPlayer::TakeCharacterDamage(int32 RecieveDamage)
 {
+    if (bIsInvincible)
+    {
+        // 무적 중이면 데미지 무시
+        return;
+    }
     ARLCharacterBase::TakeCharacterDamage(RecieveDamage);
-
     PlayerHpChange.Broadcast(CurrentHp, MaxHp);
 }
 

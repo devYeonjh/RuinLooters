@@ -91,6 +91,17 @@ protected:
 	
 	
 
+	// --- Roll(구르기) 시스템 추가 ---
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UAnimMontage* RollMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DodgeSpeed")
+	float RollSpeed = 1200.f;
+
+	bool bIsRolling = false;
+	bool bIsInvincible = false;
+	FVector RollDirection;
+
 public:
 	// FORCEINLINE을 이용한 Get, Set 함수 정의
 	FORCEINLINE int32 GetAttackDamage() { return AttackDamage; };
@@ -155,6 +166,18 @@ public:
 	bool bCanNextCombo = false;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
 	bool bIsAttacking = false;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* RollAction;
+
+	// --- 회피 ---
+	void StartRoll();
+	void EndRoll();
+
+	UFUNCTION()
+	void StartInvincible();
+	UFUNCTION()
+	void EndInvincible();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -162,6 +185,9 @@ protected:
 	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	void ApplyWeaponAbility(struct FWeaponTableRow* ApplyWeapon);
+
+	// Tick 오버라이드
+	virtual void Tick(float DeltaTime) override;
 };
 
 

@@ -225,5 +225,43 @@ void ARLCharacterBase::PlayComboMontage(int32 ComboStep)
     CurrentComboStep = ComboStep;
 }
 
+// --- 롤(구르기) Tick 함수 구현 ---
+void ARLCharacterBase::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+    if (bIsRolling)
+    {
+        AddMovementInput(RollDirection, RollSpeed * DeltaTime);
+    }
+}
 
+// --- 롤(구르기) 시작 ---
+void ARLCharacterBase::StartRoll()
+{
+    if (bIsRolling || !RollMontage) return;
+    // 공중에 떠 있으면 구르기 불가
+    if (GetCharacterMovement()->IsFalling()) return;
+    bIsRolling = true;
+    FVector InputDir = GetLastMovementInputVector();
+    RollDirection = InputDir.IsNearlyZero() ? GetActorForwardVector() : InputDir.GetSafeNormal();
+    PlayAnimMontage(RollMontage);
+}
+
+// --- 롤(구르기) 종료 ---
+void ARLCharacterBase::EndRoll()
+{
+    bIsRolling = false;
+}
+
+// --- 무적 시작(애님 노티파이용) ---
+void ARLCharacterBase::StartInvincible()
+{
+    bIsInvincible = true;
+}
+
+// --- 무적 종료(애님 노티파이용) ---
+void ARLCharacterBase::EndInvincible()
+{
+    bIsInvincible = false;
+}
 
