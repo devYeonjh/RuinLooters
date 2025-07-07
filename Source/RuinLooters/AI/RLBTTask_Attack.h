@@ -14,9 +14,25 @@ class RUINLOOTERS_API URLBTTask_Attack : public UBTTaskNode
 {
 	GENERATED_BODY()
 
+public:
+	// 생성자/소멸자 추가
+	URLBTTask_Attack();
+	virtual ~URLBTTask_Attack();
+
 protected:
 	// Task가 시작될 때 호출
-    virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	
+	// Task가 중단될 때 호출
+	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+
+private:
+	// 델리게이트 핸들을 저장할 변수
+	TWeakObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
+	
+	// 공격 완료 콜백 함수
+	UFUNCTION()
+	void OnAttackCompleted();
 };
 
 

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Character/RLCharacterAttackInterface.h"
 #include "Engine/Engine.h"
 #include "RLCharacterEnemyDragon.generated.h"
 
@@ -15,7 +16,7 @@ DECLARE_MULTICAST_DELEGATE(FOnDragonDie);
  * 기본적인 전투 기능과 캡슐 콜리전을 이용한 공격 기능을 포함합니다.
  */
 UCLASS()
-class RUINLOOTERS_API ARLCharacterEnemyDragon : public ACharacter
+class RUINLOOTERS_API ARLCharacterEnemyDragon : public ACharacter, public IRLCharacterAttackInterface
 {
 	GENERATED_BODY()
 
@@ -24,6 +25,9 @@ public:
 
 	// 드래곤 죽음 델리게이트
 	FOnDragonDie DragonDie;
+	
+	// 공격 완료 델리게이트
+	FOnAttackCompleted OnAttackCompleted;
 
 protected:
 	// 기본 스탯
@@ -47,7 +51,7 @@ protected:
 
 	// 애니메이션 몽타주
 	UPROPERTY(EditAnywhere, Category = "Animation")
-	class UAnimMontage* CurrentMontage;
+	class UAnimMontage* AttackMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* DieMontage;
@@ -96,17 +100,23 @@ public:
 
 	// 전투 관련 함수들
 	virtual void TakeDragonDamage(int32 ReceivedDamage);
+
 	virtual void Heal(int32 HealAmount);
+
 	virtual void Die();
-	virtual void Attack();
+
+	virtual void Attack() override;
+
+	virtual void CallAttackCollision() override;
+	
+	virtual bool IsCanAttack() const override;
+	
+	virtual FOnAttackCompleted& GetOnAttackCompleted() override;
 
 	// 공격 사운드 재생
 	void PlayAttackSound();
 
 protected:
-	// 캡슐 콜리전을 이용한 공격 트레이스
-	void CapsuleAttackTrace();
-
 	// 몽타주 종료 콜백
 	UFUNCTION()
 	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);

@@ -6,6 +6,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/RLCharacterPlayer.h"
 #include "Kismet/GameplayStatics.h"
+#include "AI/RLBTTask_Attack.h"
 
 ARLEnemyAIController::ARLEnemyAIController()
 {
@@ -23,6 +24,9 @@ ARLEnemyAIController::ARLEnemyAIController()
 
     Perception->OnTargetPerceptionUpdated.AddDynamic(
         this, &ARLEnemyAIController::OnPerceptionUpdated);
+
+    // BTTask 인스턴스 초기화
+    CurrentAttackTask = nullptr;
 }
 
 void ARLEnemyAIController::OnPossess(APawn* InPawn)
@@ -85,6 +89,22 @@ void ARLEnemyAIController::ShutdownAI()
     // 추적・이동 정지
     StopMovement();
     ClearFocus(EAIFocusPriority::Gameplay);
+}
+
+// BTTask 관리 함수들 추가
+void ARLEnemyAIController::RegisterAttackTask(URLBTTask_Attack* AttackTask)
+{
+    CurrentAttackTask = AttackTask;
+    UE_LOG(LogTemp, Warning, TEXT("AIController: Attack task registered"));
+}
+
+void ARLEnemyAIController::UnregisterAttackTask(URLBTTask_Attack* AttackTask)
+{
+    if (CurrentAttackTask == AttackTask)
+    {
+        CurrentAttackTask = nullptr;
+        UE_LOG(LogTemp, Warning, TEXT("AIController: Attack task unregistered"));
+    }
 }
 
 

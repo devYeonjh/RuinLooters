@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "RuinLootersCharacter.h"
+#include "Character/RLCharacterAttackInterface.h"
 #include "RLEnumRepository.h"
 #include "RLCharacterBase.generated.h"
 
@@ -14,7 +15,7 @@ DECLARE_MULTICAST_DELEGATE(FOnDie);
  * 
  */
 UCLASS()
-class RUINLOOTERS_API ARLCharacterBase : public ARuinLootersCharacter
+class RUINLOOTERS_API ARLCharacterBase : public ARuinLootersCharacter, public IRLCharacterAttackInterface
 {
 	GENERATED_BODY()
 	
@@ -132,7 +133,9 @@ public:
 	void ChangeWeapon(struct FWeaponTableRow* ChangeWeapon);
 
 	/** Called for looking input */
-	void Attack();
+	virtual void Attack() override;
+
+	virtual void CallAttackCollision() override;
 
 	void SwordAttackLineTrace();
 

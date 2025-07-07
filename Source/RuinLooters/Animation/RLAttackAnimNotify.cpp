@@ -3,6 +3,7 @@
 
 #include "Animation/RLAttackAnimNotify.h"
 #include "Character/RLCharacterBase.h"
+#include "Character/RLCharacterAttackInterface.h"
 
 void URLAttackAnimNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
@@ -11,11 +12,10 @@ void URLAttackAnimNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequence
     if (!MeshComp) return;
 
     // ARLCharacterBase 타입인지 확인
-    if (ARLCharacterBase* Character = Cast<ARLCharacterBase>(MeshComp->GetOwner()))
+    if (IRLCharacterAttackInterface* Character = Cast<IRLCharacterAttackInterface>(MeshComp->GetOwner()))
     {
         // 공격 트레이스 발생 및 사운드 재생
-        Character->SwordAttackLineTrace();
-        Character->PlayAttackSound();
+        Character->CallAttackCollision();
     }
 }
 

@@ -13,6 +13,8 @@
 #include "DrawDebugHelpers.h"
 #include "Character/RLCharacterPlayer.h"
 #include "Character/RLCharacterBase.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "AI/RLBTTask_Attack.h"
 
 ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 {
@@ -20,7 +22,7 @@ ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 	CurrentHp = 2000;
 	MaxHp = 2000;
 	AttackDamage = 50;
-	Range = 400.0f;
+	Range = 200.0f;
 	AttackSpeed = 1.5f;
 	Defence = 20;
 	
@@ -32,7 +34,7 @@ ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 	CapsuleAttackHeight = 100.0f;
 	
 	// 애니메이션 몽타주 초기화
-	CurrentMontage = nullptr;
+	AttackMontage = nullptr;
 	DieMontage = nullptr;
 	
 	// 사운드 초기화
@@ -62,6 +64,17 @@ void ARLCharacterEnemyDragon::BeginPlay()
 	{
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ARLCharacterEnemyDragon::OnMontageEnded);
 	}
+	
+	// BTTask_Attack에 델리게이트 바인딩 (약간의 지연 후 실행)
+	FTimerHandle BindingTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(BindingTimerHandle, [this]()
+	{
+		if (URLBTTask_Attack::CurrentInstance)
+		{
+			OnAttackCompleted.AddUObject(URLBTTask_Attack::CurrentInstance, &URLBTTask_Attack::OnAttackCompleted);
+			UE_LOG(LogTemp, Warning, TEXT("Dragon: Bound to BTTask_Attack in BeginPlay"));
+		}
+	}, 0.1f, false); // 0.1초 후 바인딩
 }
 
 void ARLCharacterEnemyDragon::TakeDragonDamage(int32 ReceivedDamage)
@@ -114,6 +127,9 @@ void ARLCharacterEnemyDragon::Die()
 	
 	UE_LOG(LogTemp, Warning, TEXT("Dragon has died"));
 	
+	// 죽음 시 공격 완료 델리게이트의 모든 바인딩 해제
+	OnAttackCompleted.Clear();
+	
 	// 죽음 사운드 재생
 	if (DieSound)
 	{
@@ -124,7 +140,6 @@ void ARLCharacterEnemyDragon::Die()
 	if (DieMontage && AnimInstance)
 	{
 		AnimInstance->Montage_Play(DieMontage);
-		CurrentMontage = DieMontage;
 	}
 	
 	// 콜리전 비활성화
@@ -157,47 +172,38 @@ void ARLCharacterEnemyDragon::Attack()
 	
 	// 공격 사운드 재생
 	PlayAttackSound();
+
+	// 공격 애니메이션 재생
+	if (AttackMontage && AnimInstance)
+	{
+		AnimInstance->Montage_Play(AttackMontage);
+	}
 	
 	// 공격 로그
 	UE_LOG(LogTemp, Warning, TEXT("Dragon is attacking with damage: %d"), AttackDamage);
 	
-	// 캡슐 콜리전 공격 트레이스 실행
-	CapsuleAttackTrace();
+	// 공격 중 움직임 비활성화
+	GetCharacterMovement()->SetMovementMode(MOVE_None);
 	
-	// 공격 쿨다운 시작
+	// 공격 쿨다운 시작 (애니메이션 종료 시 OnMontageEnded에서 재설정)
 	bIsCanAttack = false;
-	
-	// 공격 속도에 따른 쿨다운 타이머 설정
-	FTimerHandle AttackCooldownTimer;
-	GetWorld()->GetTimerManager().SetTimer(AttackCooldownTimer, [this]()
-	{
-		bIsCanAttack = true;
-	}, AttackSpeed, false);
 }
 
-void ARLCharacterEnemyDragon::PlayAttackSound()
-{
-	if (AttackSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, AttackSound, GetActorLocation());
-	}
-}
-
-void ARLCharacterEnemyDragon::CapsuleAttackTrace()
+void ARLCharacterEnemyDragon::CallAttackCollision()
 {
 	// 드래곤의 현재 위치와 방향
-	FVector StartLocation = GetActorLocation();
+	FVector StartLocation = GetActorLocation() + FVector(-20.0f, 150.0f, 0.0f);
 	FVector ForwardVector = GetActorForwardVector();
-	
+
 	// 공격 범위 계산 (앞쪽으로 Range만큼)
 	FVector EndLocation = StartLocation + (ForwardVector * Range);
-	
+
 	// 캡슐 트레이스 파라미터 설정
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 	QueryParams.bTraceComplex = false;
 	QueryParams.bReturnPhysicalMaterial = false;
-	
+
 	// 캡슐 트레이스 실행
 	TArray<FHitResult> HitResults;
 	bool bHit = GetWorld()->SweepMultiByChannel(
@@ -237,14 +243,38 @@ void ARLCharacterEnemyDragon::CapsuleAttackTrace()
 	}
 }
 
+void ARLCharacterEnemyDragon::PlayAttackSound()
+{
+	if (AttackSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, AttackSound, GetActorLocation());
+	}
+}
+
+bool ARLCharacterEnemyDragon::IsCanAttack() const
+{
+	return bIsCanAttack && CurrentHp > 0;
+}
+
+FOnAttackCompleted& ARLCharacterEnemyDragon::GetOnAttackCompleted()
+{
+	return OnAttackCompleted;
+}
+
 void ARLCharacterEnemyDragon::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	// 현재 실행 중인 몽타주가 끝나면 CurrentMontage를 null로 설정
-	if (CurrentMontage == Montage)
+	// 공격 몽타주가 끝나면 다시 공격 가능 상태로 설정
+	if (AttackMontage == Montage)
 	{
-		CurrentMontage = nullptr;
+		bIsCanAttack = true;
+		
+		// 움직임 다시 활성화
+		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		
+		// 공격 완료 델리게이트 호출
+		OnAttackCompleted.Broadcast();
+		
+		UE_LOG(LogTemp, Warning, TEXT("Dragon attack montage ended, can attack and move again"));
 	}
-	
-	// 죽음 몽타주가 끝나면 특별한 처리는 하지 않음 (이미 타이머로 Destroy 설정됨)
 }
 

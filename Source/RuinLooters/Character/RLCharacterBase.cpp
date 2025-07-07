@@ -104,16 +104,14 @@ void ARLCharacterBase::Die()
 void ARLCharacterBase::Attack()
 {
     // 점프 중이거나 공중에 떠있으면 공격 불가
-    if (!bIsCanAttack || GetCharacterMovement()->IsFalling())
+    if (!bIsCanAttack || GetCharacterMovement()->IsFalling() || !bCanNextCombo)
     {
-        if (bCanNextCombo && !GetCharacterMovement()->IsFalling())
-        {
-            bComboInput = true;
-        }
+        UE_LOG(LogTemp, Warning, TEXT("Can't Attack"));
         return;
     }
 
     // Idle 상태에서만 1타 시작
+    bComboInput = false;
     bIsCanAttack = false;
     AnimInstance = GetMesh()->GetAnimInstance();
     CurrentComboStep = 1;
@@ -126,6 +124,10 @@ void ARLCharacterBase::Attack()
         EndDelegate.BindUObject(this, &ARLCharacterBase::OnMontageEnded);
         AnimInstance->Montage_SetEndDelegate(EndDelegate, CurrentMontage);
     }
+}
+
+void ARLCharacterBase::CallAttackCollision()
+{
 }
 
 void ARLCharacterBase::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
