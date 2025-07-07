@@ -18,6 +18,10 @@ public:
 	// 생성자/소멸자 추가
 	URLBTTask_Attack();
 	virtual ~URLBTTask_Attack();
+	
+	// 공격 완료 콜백 함수 (public으로 이동)
+	UFUNCTION()
+	void OnAttackCompleted();
 
 protected:
 	// Task가 시작될 때 호출
@@ -29,10 +33,6 @@ protected:
 private:
 	// 델리게이트 핸들을 저장할 변수
 	TWeakObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
-	
-	// 공격 완료 콜백 함수
-	UFUNCTION()
-	void OnAttackCompleted();
 };
 
 

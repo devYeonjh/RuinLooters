@@ -15,6 +15,7 @@
 #include "Character/RLCharacterBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AI/RLBTTask_Attack.h"
+#include "AI/RLEnemyAIController.h"
 
 ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 {
@@ -65,14 +66,19 @@ void ARLCharacterEnemyDragon::BeginPlay()
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ARLCharacterEnemyDragon::OnMontageEnded);
 	}
 	
-	// BTTask_Attack에 델리게이트 바인딩 (약간의 지연 후 실행)
+	// AI Controller를 통해 BTTask에 바인딩 (약간의 지연 후 실행)
 	FTimerHandle BindingTimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(BindingTimerHandle, [this]()
 	{
-		if (URLBTTask_Attack::CurrentInstance)
+		ARLEnemyAIController* EnemyAI = Cast<ARLEnemyAIController>(GetController());
+		if (EnemyAI)
 		{
-			OnAttackCompleted.AddUObject(URLBTTask_Attack::CurrentInstance, &URLBTTask_Attack::OnAttackCompleted);
-			UE_LOG(LogTemp, Warning, TEXT("Dragon: Bound to BTTask_Attack in BeginPlay"));
+			URLBTTask_Attack* AttackTask = EnemyAI->GetAttackTask();
+			if (AttackTask)
+			{
+				OnAttackCompleted.AddUObject(AttackTask, &URLBTTask_Attack::OnAttackCompleted);
+				UE_LOG(LogTemp, Warning, TEXT("Dragon: Bound to BTTask_Attack through AIController"));
+			}
 		}
 	}, 0.1f, false); // 0.1초 후 바인딩
 }

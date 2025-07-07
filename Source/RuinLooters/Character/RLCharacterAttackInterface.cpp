@@ -17,3 +17,10 @@ bool IRLCharacterAttackInterface::IsCanAttack() const
 {
 	return true; // 기본적으로 공격 가능
 }
+
+FOnAttackCompleted& IRLCharacterAttackInterface::GetOnAttackCompleted()
+{
+	// 더미 델리게이트 반환 (기본 구현)
+	static FOnAttackCompleted DummyDelegate;
+	return DummyDelegate;
+}

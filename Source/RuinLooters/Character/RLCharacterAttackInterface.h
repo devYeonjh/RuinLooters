@@ -31,5 +31,5 @@ public:
 	virtual bool IsCanAttack() const;
 	
 	// 공격 완료 델리게이트 접근자
-	virtual FOnAttackCompleted& GetOnAttackCompleted() = 0;
+	virtual FOnAttackCompleted& GetOnAttackCompleted();
 };

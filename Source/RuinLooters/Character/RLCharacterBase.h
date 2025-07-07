@@ -137,6 +137,8 @@ public:
 
 	virtual void CallAttackCollision() override;
 
+	virtual FOnAttackCompleted& GetOnAttackCompleted() override;
+
 	void SwordAttackLineTrace();
 
 	void PlayAttackSound();
