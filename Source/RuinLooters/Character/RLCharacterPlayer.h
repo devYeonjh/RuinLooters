@@ -50,6 +50,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ProjectileSkillAction;
 
+	// 투사체 스킬 애니메이션 몽타주
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	class UAnimMontage* ProjectileSkillMontage;
+
 	// NPC
 	UPROPERTY()
 	class ARLNPC* InteractiveNPC;
@@ -145,6 +149,13 @@ protected:
 
 	FTimerHandle ProjectileSkillCooldownHandle;
 
+	// 투사체 스킬 중 이동 제한 관련
+	UPROPERTY()
+	uint8 bIsUsingProjectileSkill : 1;
+
+	// 투사체 스킬 사용 시 원래 속도 저장
+	float OriginalWalkSpeedForProjectile;
+
 public:
 	FORCEINLINE ARLCharacterPlayer* GetPlayer() { return this; };
 	FORCEINLINE class ARLNPC* GetInteractNPC() { return InteractiveNPC; };
@@ -215,6 +226,10 @@ protected:
 
 	// 투사체 스킬 쿨다운 관련
 	void OnProjectileSkillCooldownFinished();
+
+	// 투사체 스킬 몽타주 종료 콜백
+	UFUNCTION()
+	void OnProjectileSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 };
 
 

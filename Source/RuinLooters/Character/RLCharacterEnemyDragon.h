@@ -86,7 +86,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dragon Breath")
 	float BreathRange;
 
-	UPROPERTY(EditAnywhere, Category = "Dragon Breath")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dragon Breath")
 	TSubclassOf<class ARLProjectile> ProjectileClass;
 
 	// 투사체 풀링 시스템

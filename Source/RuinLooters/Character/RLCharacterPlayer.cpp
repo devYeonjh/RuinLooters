@@ -28,6 +28,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "../Pool/RLProjectilePool.h"
 #include "../Projectile/RLProjectile.h"
+#include "Animation/AnimMontage.h"
 
 ARLCharacterPlayer::ARLCharacterPlayer()
 {
@@ -41,6 +42,7 @@ ARLCharacterPlayer::ARLCharacterPlayer()
 
     // 투사체 스킬 관련 초기화
     bCanUseProjectileSkill = true;
+    bIsUsingProjectileSkill = false;
     ProjectileDamage = 40;
     ProjectileSpeed = 3000.0f;
     ProjectileSkillCooldown = 3;
@@ -532,8 +534,31 @@ void ARLCharacterPlayer::UseProjectileSkill()
     // 투사체 스킬 사용
     bCanUseProjectileSkill = false;
 
-    // 투사체 발사
-    FirePlayerProjectile();
+    // 투사체 스킬 사용 중 상태로 변경
+    bIsUsingProjectileSkill = true;
+
+    // 애니메이션 몽타주 재생
+    if (ProjectileSkillMontage && AnimInstance)
+    {
+        // 몽타주 종료 콜백 등록
+        FOnMontageEnded EndDelegate;
+        EndDelegate.BindUObject(this, &ARLCharacterPlayer::OnProjectileSkillMontageEnded);
+        AnimInstance->Montage_SetEndDelegate(EndDelegate, ProjectileSkillMontage);
+
+        AnimInstance->Montage_Play(ProjectileSkillMontage);
+        UE_LOG(LogTemp, Log, TEXT("Player projectile skill montage started"));
+
+        // 스킬 사용 중 이동 속도 제한 (원래 속도 저장)
+        OriginalWalkSpeedForProjectile = GetCharacterMovement()->MaxWalkSpeed;
+        GetCharacterMovement()->MaxWalkSpeed = OriginalWalkSpeedForProjectile * 0.3f; // 30%로 감소
+    }
+    else
+    {
+        // 몽타주가 없으면 바로 발사
+        FirePlayerProjectile();
+        bIsUsingProjectileSkill = false;
+        UE_LOG(LogTemp, Warning, TEXT("ProjectileSkillMontage is not set, firing projectile immediately"));
+    }
 
     // 쿨다운 시작
     GetWorldTimerManager().SetTimer(
@@ -605,6 +630,20 @@ void ARLCharacterPlayer::OnProjectileSkillCooldownFinished()
 {
     bCanUseProjectileSkill = true;
     UE_LOG(LogTemp, Log, TEXT("Player projectile skill cooldown finished"));
+}
+
+void ARLCharacterPlayer::OnProjectileSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+    // 투사체 스킬 사용 중 상태 해제
+    bIsUsingProjectileSkill = false;
+
+    // 이동 속도 복원
+    if (GetCharacterMovement())
+    {
+        GetCharacterMovement()->MaxWalkSpeed = OriginalWalkSpeedForProjectile; // 원래 속도로 복원
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Player projectile skill montage ended, movement speed restored"));
 }
 
 
