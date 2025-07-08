@@ -6,6 +6,7 @@
 #include "RuinLootersCharacter.h"
 #include "Character/RLCharacterAttackInterface.h"
 #include "RLEnumRepository.h"
+#include "RLPlayerComboAttackDataAsset.h"
 #include "RLCharacterBase.generated.h"
 
 // 캐릭터 죽음 델리게이트
@@ -58,7 +59,9 @@ protected:
 	UPROPERTY()
 	class UAnimInstance* AnimInstance;
 
-
+	// 콤보 공격 데이터 에셋
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combo")
+	class URLPlayerComboAttackDataAsset* ComboDataAsset;
 
 	// 손 소켓에 붙일 무기
 	UPROPERTY()
@@ -158,6 +161,11 @@ public:
 	bool bCanNextCombo = false;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
 	bool bIsAttacking = false;
+
+	// 콤보 타이머 핸들
+	UPROPERTY()
+	FTimerHandle ComboTimerHandle;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -166,6 +174,19 @@ protected:
 	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	void ApplyWeaponAbility(struct FWeaponTableRow* ApplyWeapon);
+
+	// 콤보 관련 함수들
+	UFUNCTION()
+	void CheckComboInput();
+
+	UFUNCTION()
+	void ResetCombo();
+
+	void StartComboSequence();
+
+	void ProcessNextCombo();
+
+	void SetupComboInputTiming();
 };
 
 
