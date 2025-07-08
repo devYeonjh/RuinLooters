@@ -53,6 +53,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* DieMontage;
 
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	class UAnimMontage* BreathMontage;
+
 	UPROPERTY()
 	class UAnimInstance* AnimInstance;
 
@@ -75,6 +78,20 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dragon Attack")
 	float CapsuleAttackHeight;
+
+	// 브레스 공격 설정
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dragon Breath")
+	int32 BreathDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dragon Breath")
+	float BreathRange;
+
+	UPROPERTY(EditAnywhere, Category = "Dragon Breath")
+	TSubclassOf<class ARLProjectile> ProjectileClass;
+
+	// 투사체 풀링 시스템
+	UPROPERTY()
+	class URLProjectilePool* ProjectilePool;
 
 public:
 	virtual void BeginPlay() override;
@@ -105,6 +122,14 @@ public:
 	virtual void Attack() override;
 
 	virtual void CallAttackCollision() override;
+
+	// 브레스 공격 함수
+	UFUNCTION(BlueprintCallable, Category = "Dragon Breath")
+	void BreathAttack();
+
+	// 브레스 투사체 발사
+	UFUNCTION()
+	void FireBreathProjectile();
 
 	// 공격 사운드 재생
 	void PlayAttackSound();

@@ -26,6 +26,8 @@
 #include "Level/RLLevelTransferPortal.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
+#include "../Pool/RLProjectilePool.h"
+#include "../Projectile/RLProjectile.h"
 
 ARLCharacterPlayer::ARLCharacterPlayer()
 {
@@ -36,6 +38,13 @@ ARLCharacterPlayer::ARLCharacterPlayer()
     LevelName = FName(*UGameplayStatics::GetCurrentLevelName(this, true));
 
     bStageExit = 1;
+
+    // 투사체 스킬 관련 초기화
+    bCanUseProjectileSkill = true;
+    ProjectileDamage = 40;
+    ProjectileSpeed = 3000.0f;
+    ProjectileSkillCooldown = 3;
+    PlayerProjectilePool = nullptr;
 }
 
 void ARLCharacterPlayer::BeginPlay()
@@ -107,6 +116,18 @@ void ARLCharacterPlayer::BeginPlay()
             UE_LOG(LogTemp, Warning, TEXT("LevelName Don't Include Stage"));
         }
     }
+
+    // 플레이어 투사체 풀 초기화
+    if (PlayerProjectileClass)
+    {
+        PlayerProjectilePool = NewObject<URLProjectilePool>(this);
+        PlayerProjectilePool->InitializePool(GetWorld(), PlayerProjectileClass, 15);
+        UE_LOG(LogTemp, Log, TEXT("Player projectile pool initialized"));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Player PlayerProjectileClass is not set"));
+    }
 }
 
 void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -131,6 +152,8 @@ void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
         EnhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Interaction);
         // ESC
         EnhancedInputComponent->BindAction(SettingsAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::ViewSettingWidget);
+        // 투사체 스킬
+        EnhancedInputComponent->BindAction(ProjectileSkillAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::UseProjectileSkill);
 
     }
     else
@@ -489,6 +512,99 @@ uint8 ARLCharacterPlayer::CheckEnemy()
     {
         return true;
     }
+}
+
+void ARLCharacterPlayer::UseProjectileSkill()
+{
+    // 투사체 스킬 사용 가능 여부 확인
+    if (!bCanUseProjectileSkill)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Player projectile skill is on cooldown"));
+        return;
+    }
+
+    // 살아있는 상태 확인
+    if (CurrentHp <= 0)
+    {
+        return;
+    }
+
+    // 투사체 스킬 사용
+    bCanUseProjectileSkill = false;
+
+    // 투사체 발사
+    FirePlayerProjectile();
+
+    // 쿨다운 시작
+    GetWorldTimerManager().SetTimer(
+        ProjectileSkillCooldownHandle,
+        this,
+        &ARLCharacterPlayer::OnProjectileSkillCooldownFinished,
+        ProjectileSkillCooldown,
+        false
+    );
+
+    UE_LOG(LogTemp, Log, TEXT("Player used projectile skill"));
+}
+
+void ARLCharacterPlayer::FirePlayerProjectile()
+{
+    if (!PlayerProjectilePool)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Player projectile pool is not initialized"));
+        return;
+    }
+
+    // 투사체 풀에서 투사체 가져오기
+    ARLProjectile* Projectile = Cast<ARLProjectile>(PlayerProjectilePool->GetProjectile());
+    if (!Projectile)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Failed to get projectile from player pool"));
+        return;
+    }
+
+    // 플레이어 투사체로 설정
+    Projectile->SetupAsPlayerProjectile();
+
+    // 발사 위치 및 방향 설정
+    FVector PlayerLocation = GetActorLocation();
+    FVector PlayerForward = GetActorForwardVector();
+    FVector FireLocation = PlayerLocation + PlayerForward * 80.0f + FVector(0.0f, 0.0f, 20.0f);
+    FVector FireDirection = PlayerForward;
+
+    // 플레이어 투사체 설정 생성
+    FProjectileSettings PlayerSettings;
+    PlayerSettings.ProjectileType = EProjectileType::PlayerProjectile;
+    PlayerSettings.Damage = ProjectileDamage;
+    PlayerSettings.Speed = ProjectileSpeed;
+    PlayerSettings.LifeTime = 3.0f;
+    PlayerSettings.CollisionRadius = 15.0f;
+    PlayerSettings.bCanPierceEnemies = true;
+    PlayerSettings.MaxPierceCount = 3;
+
+    // 투사체 초기화 및 발사
+    Projectile->InitializeProjectile(FireLocation, FireDirection, PlayerSettings);
+
+    // 투사체 소유자 설정
+    Projectile->SetOwner(this);
+
+    // 투사체 반환 처리를 위한 타이머 (생존 시간 후 자동 반환)
+    FTimerHandle ReturnTimerHandle;
+    GetWorld()->GetTimerManager().SetTimer(ReturnTimerHandle, [this, Projectile]()
+    {
+        if (PlayerProjectilePool && Projectile)
+        {
+            PlayerProjectilePool->ReturnProjectile(Projectile);
+        }
+    }, 3.0f, false);
+
+    UE_LOG(LogTemp, Log, TEXT("Player projectile fired"));
+}
+
+void ARLCharacterPlayer::OnProjectileSkillCooldownFinished()
+{
+    bCanUseProjectileSkill = true;
+    UE_LOG(LogTemp, Log, TEXT("Player projectile skill cooldown finished"));
 }
 
 

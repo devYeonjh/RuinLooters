@@ -47,6 +47,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* SettingsAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ProjectileSkillAction;
+
 	// NPC
 	UPROPERTY()
 	class ARLNPC* InteractiveNPC;
@@ -121,6 +124,27 @@ protected:
 
 	uint8 IsCanSkill : 1;
 
+	// 투사체 스킬 관련
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Projectile")
+	TSubclassOf<class ARLProjectile> PlayerProjectileClass;
+
+	UPROPERTY()
+	class URLProjectilePool* PlayerProjectilePool;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Projectile")
+	int32 ProjectileDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Projectile")
+	float ProjectileSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Projectile")
+	int32 ProjectileSkillCooldown;
+
+	UPROPERTY()
+	uint8 bCanUseProjectileSkill : 1;
+
+	FTimerHandle ProjectileSkillCooldownHandle;
+
 public:
 	FORCEINLINE ARLCharacterPlayer* GetPlayer() { return this; };
 	FORCEINLINE class ARLNPC* GetInteractNPC() { return InteractiveNPC; };
@@ -158,6 +182,13 @@ public:
 
 	void ShowStagePortalWidget();
 
+	// 투사체 스킬 관련 함수
+	UFUNCTION(BlueprintCallable, Category = "Player Projectile")
+	void UseProjectileSkill();
+
+	UFUNCTION(BlueprintCallable, Category = "Player Projectile")
+	void FirePlayerProjectile();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -181,6 +212,9 @@ protected:
 	void SetPlayerStat();
 
 	uint8 CheckEnemy();
+
+	// 투사체 스킬 쿨다운 관련
+	void OnProjectileSkillCooldownFinished();
 };
 
 
