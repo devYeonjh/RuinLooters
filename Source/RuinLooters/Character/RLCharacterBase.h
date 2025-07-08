@@ -165,6 +165,8 @@ protected:
 	FTimerHandle ComboTimerHandle;
 
 	bool HasNextComboCommand = false;
+
+	float AttackSpeedRate = 1.0f;
 };
 
 

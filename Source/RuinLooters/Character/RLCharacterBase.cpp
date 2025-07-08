@@ -180,6 +180,7 @@ void ARLCharacterBase::Attack()
 
 void ARLCharacterBase::ProcessComboCommand()
 {
+    UE_LOG(LogTemp, Warning, TEXT("CurrentCombo is : %d"), CurrentCombo);
     if (CurrentCombo == 0)
     {
         ComboActionBegin();
@@ -193,6 +194,7 @@ void ARLCharacterBase::ProcessComboCommand()
     else
     {
         HasNextComboCommand = true;
+        
     }
 }
 
@@ -205,7 +207,7 @@ void ARLCharacterBase::ComboActionBegin()
     GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
 
     // Animation Setting
-    const float AttackSpeedRate = 1.0f;
+    AttackSpeedRate = 1.5f;
     AnimInstance = GetMesh()->GetAnimInstance();
     AnimInstance->Montage_Play(ComboActionMontage, AttackSpeedRate);
 
@@ -229,7 +231,6 @@ void ARLCharacterBase::SetComboCheckTimer()
     int32 ComboIndex = CurrentCombo - 1;
     ensure(ComboActionData->EffectiveFrameCount.IsValidIndex(ComboIndex));
 
-    const float AttackSpeedRate = 1.0f;
     float ComboEffectiveTime = (ComboActionData->EffectiveFrameCount[ComboIndex] / ComboActionData->FrameRate) / AttackSpeedRate;
     if (ComboEffectiveTime > 0.0f)
     {
@@ -239,7 +240,7 @@ void ARLCharacterBase::SetComboCheckTimer()
 
 void ARLCharacterBase::ComboCheck()
 {
-    ComboTimerHandle.Invalidate();
+     ComboTimerHandle.Invalidate();
     if (HasNextComboCommand)
     {
         AnimInstance = GetMesh()->GetAnimInstance();
