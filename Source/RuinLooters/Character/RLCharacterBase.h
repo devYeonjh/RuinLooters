@@ -50,7 +50,7 @@ protected:
 
 	// 공격 애니메이션
 	UPROPERTY(EditAnywhere, Category = "Animation")
-	class UAnimMontage* CurrentMontage;
+	class UAnimMontage* ComboActionMontage;
 
 	// 죽음 애니메이션
 	UPROPERTY(EditAnywhere, Category = "Animation")
@@ -61,7 +61,7 @@ protected:
 
 	// 콤보 공격 데이터 에셋
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combo")
-	class URLPlayerComboAttackDataAsset* ComboDataAsset;
+	class URLPlayerComboAttackDataAsset* ComboActionData;
 
 	// 손 소켓에 붙일 무기
 	UPROPERTY()
@@ -144,49 +144,27 @@ public:
 
 	void PlayAttackSound();
 
-	// 공격 가능시간인지 확인
-	uint8 bIsCanAttack : 1;
-
-	// 콤보 섹션으로 점프하는 함수
-	void PlayComboMontage(int32 ComboStep);
-
-	// 콤보 시스템 상태 변수
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
-	int32 CurrentComboStep = 0;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
-	int32 ComboMaxStep = 0;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
-	bool bComboInput = false;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
-	bool bCanNextCombo = false;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
-	bool bIsAttacking = false;
-
-	// 콤보 타이머 핸들
-	UPROPERTY()
-	FTimerHandle ComboTimerHandle;
-
 protected:
 	virtual void BeginPlay() override;
-
-	// Attack 몬타주 끝난 후 타이머 콜백
-	UFUNCTION()
-	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	void ApplyWeaponAbility(struct FWeaponTableRow* ApplyWeapon);
 
 	// 콤보 관련 함수들
-	UFUNCTION()
-	void CheckComboInput();
+	void ProcessComboCommand();
 
-	UFUNCTION()
-	void ResetCombo();
+	void ComboActionBegin();
 
-	void StartComboSequence();
+	void ComboActionEnd(UAnimMontage* Montage, bool bInterrupted);
 
-	void ProcessNextCombo();
+	void SetComboCheckTimer();
 
-	void SetupComboInputTiming();
+	void ComboCheck();
+
+	int32 CurrentCombo = 0;
+
+	FTimerHandle ComboTimerHandle;
+
+	bool HasNextComboCommand = false;
 };
 
 
