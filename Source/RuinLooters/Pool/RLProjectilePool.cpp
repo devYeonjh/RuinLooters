@@ -7,7 +7,7 @@
 
 URLProjectilePool::URLProjectilePool()
 {
-    MaxPoolSize = 20;
+    MaxPoolSize = 5;
     WorldRef = nullptr;
     ProjectileClassRef = nullptr;
 }

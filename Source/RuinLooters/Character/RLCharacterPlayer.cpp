@@ -540,17 +540,8 @@ void ARLCharacterPlayer::UseProjectileSkill()
     // 애니메이션 몽타주 재생
     if (ProjectileSkillMontage && AnimInstance)
     {
-        // 몽타주 종료 콜백 등록
-        FOnMontageEnded EndDelegate;
-        EndDelegate.BindUObject(this, &ARLCharacterPlayer::OnProjectileSkillMontageEnded);
-        AnimInstance->Montage_SetEndDelegate(EndDelegate, ProjectileSkillMontage);
-
         AnimInstance->Montage_Play(ProjectileSkillMontage);
         UE_LOG(LogTemp, Log, TEXT("Player projectile skill montage started"));
-
-        // 스킬 사용 중 이동 속도 제한 (원래 속도 저장)
-        OriginalWalkSpeedForProjectile = GetCharacterMovement()->MaxWalkSpeed;
-        GetCharacterMovement()->MaxWalkSpeed = OriginalWalkSpeedForProjectile * 0.3f; // 30%로 감소
     }
     else
     {
@@ -560,11 +551,14 @@ void ARLCharacterPlayer::UseProjectileSkill()
         UE_LOG(LogTemp, Warning, TEXT("ProjectileSkillMontage is not set, firing projectile immediately"));
     }
 
-    // 쿨다운 시작
+    // 쿨다운 시작 (람다함수 사용)
     GetWorldTimerManager().SetTimer(
         ProjectileSkillCooldownHandle,
-        this,
-        &ARLCharacterPlayer::OnProjectileSkillCooldownFinished,
+        [this]()
+        {
+            bCanUseProjectileSkill = true;
+            UE_LOG(LogTemp, Log, TEXT("Player projectile skill cooldown finished"));
+        },
         ProjectileSkillCooldown,
         false
     );
@@ -588,9 +582,6 @@ void ARLCharacterPlayer::FirePlayerProjectile()
         return;
     }
 
-    // 플레이어 투사체로 설정
-    Projectile->SetupAsPlayerProjectile();
-
     // 발사 위치 및 방향 설정
     FVector PlayerLocation = GetActorLocation();
     FVector PlayerForward = GetActorForwardVector();
@@ -607,11 +598,18 @@ void ARLCharacterPlayer::FirePlayerProjectile()
     PlayerSettings.bCanPierceEnemies = true;
     PlayerSettings.MaxPierceCount = 3;
 
+    // 투사체 가시성 및 콜리전 활성화 (풀에서 가져온 경우 숨겨져 있을 수 있음)
+    Projectile->SetActorHiddenInGame(false);
+    Projectile->SetActorEnableCollision(true);
+
     // 투사체 초기화 및 발사
     Projectile->InitializeProjectile(FireLocation, FireDirection, PlayerSettings);
 
     // 투사체 소유자 설정
     Projectile->SetOwner(this);
+
+    UE_LOG(LogTemp, Warning, TEXT("Player projectile fired - Location: %s, Direction: %s, Speed: %f"), 
+           *FireLocation.ToString(), *FireDirection.ToString(), ProjectileSpeed);
 
     // 투사체 반환 처리를 위한 타이머 (생존 시간 후 자동 반환)
     FTimerHandle ReturnTimerHandle;
@@ -624,26 +622,6 @@ void ARLCharacterPlayer::FirePlayerProjectile()
     }, 3.0f, false);
 
     UE_LOG(LogTemp, Log, TEXT("Player projectile fired"));
-}
-
-void ARLCharacterPlayer::OnProjectileSkillCooldownFinished()
-{
-    bCanUseProjectileSkill = true;
-    UE_LOG(LogTemp, Log, TEXT("Player projectile skill cooldown finished"));
-}
-
-void ARLCharacterPlayer::OnProjectileSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-    // 투사체 스킬 사용 중 상태 해제
-    bIsUsingProjectileSkill = false;
-
-    // 이동 속도 복원
-    if (GetCharacterMovement())
-    {
-        GetCharacterMovement()->MaxWalkSpeed = OriginalWalkSpeedForProjectile; // 원래 속도로 복원
-    }
-
-    UE_LOG(LogTemp, Log, TEXT("Player projectile skill montage ended, movement speed restored"));
 }
 
 

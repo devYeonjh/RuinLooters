@@ -224,12 +224,7 @@ protected:
 
 	uint8 CheckEnemy();
 
-	// 투사체 스킬 쿨다운 관련
-	void OnProjectileSkillCooldownFinished();
-
-	// 투사체 스킬 몽타주 종료 콜백
-	UFUNCTION()
-	void OnProjectileSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	// 투사체 스킬 관련 함수들
 };
 
 
