@@ -28,7 +28,7 @@ void URLProjectilePool::InitializePool(UWorld* World, TSubclassOf<ARLProjectile>
     ClearPool();
 
     // 초기 투사체들 생성
-    for (int32 i = 0; i < MaxPoolSize; i++)
+    for (int8 i = 0; i < MaxPoolSize; i++)
     {
         ARLProjectile* NewProjectile = CreateNewProjectile();
         if (NewProjectile)
