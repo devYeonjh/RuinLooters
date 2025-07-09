@@ -4,6 +4,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Character/RLCharacterPlayer.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 
 URLGliderComponent::URLGliderComponent()
 {
@@ -11,6 +13,8 @@ URLGliderComponent::URLGliderComponent()
     bIsActive = false;
     OwnerCharacter = nullptr;
     MovementComponent = nullptr;
+    
+    // 글라이더 메시 컴포넌트 생성
     GliderMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GliderMesh"));
     GliderMesh->SetVisibility(false);
     GliderMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -19,6 +23,15 @@ URLGliderComponent::URLGliderComponent()
     {
         GliderMesh->SetStaticMesh(GliderAsset.Object);
     }
+    
+    // 나이아가라 파티클 컴포넌트들 생성 (좌우 2개)
+    GliderParticleLeft = CreateDefaultSubobject<UNiagaraComponent>(TEXT("GliderParticleLeft"));
+    GliderParticleLeft->SetVisibility(false);
+    GliderParticleLeft->SetAutoActivate(false);
+    
+    GliderParticleRight = CreateDefaultSubobject<UNiagaraComponent>(TEXT("GliderParticleRight"));
+    GliderParticleRight->SetVisibility(false);
+    GliderParticleRight->SetAutoActivate(false);
 }
 
 void URLGliderComponent::BeginPlay()
@@ -39,6 +52,33 @@ void URLGliderComponent::BeginPlay()
             GliderMesh->AttachToComponent(OwnerCharacter->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
             GliderMesh->SetRelativeLocation(FVector(0, 0, 100));
             GliderMesh->SetRelativeRotation(FRotator(90, 90, -90)); // 동일하게 적용
+        }
+        
+        // 나이아가라 파티클들을 GliderMesh의 소켓들에 부착
+        if (GliderParticleLeft && GliderMesh)
+        {
+            GliderParticleLeft->AttachToComponent(GliderMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, LeftSocketName);
+            
+            // 나이아가라 시스템 설정
+            if (GliderParticleSystem)
+            {
+                GliderParticleLeft->SetAsset(GliderParticleSystem);
+            }
+            
+            UE_LOG(LogTemp, Log, TEXT("[GLIDER] Left particle attached to socket: %s"), *LeftSocketName.ToString());
+        }
+        
+        if (GliderParticleRight && GliderMesh)
+        {
+            GliderParticleRight->AttachToComponent(GliderMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, RightSocketName);
+            
+            // 나이아가라 시스템 설정
+            if (GliderParticleSystem)
+            {
+                GliderParticleRight->SetAsset(GliderParticleSystem);
+            }
+            
+            UE_LOG(LogTemp, Log, TEXT("[GLIDER] Right particle attached to socket: %s"), *RightSocketName.ToString());
         }
     }
     else
@@ -79,6 +119,22 @@ void URLGliderComponent::ActivateGlider()
             GliderTargetScale = FVector(1,1,1); // 목표는 1
             bGliderScaling = true;
         }
+        
+        // 나이아가라 파티클들 활성화
+        if (GliderParticleLeft)
+        {
+            GliderParticleLeft->SetVisibility(true);
+            GliderParticleLeft->Activate();
+            UE_LOG(LogTemp, Log, TEXT("[GLIDER] Left particle activated"));
+        }
+        
+        if (GliderParticleRight)
+        {
+            GliderParticleRight->SetVisibility(true);
+            GliderParticleRight->Activate();
+            UE_LOG(LogTemp, Log, TEXT("[GLIDER] Right particle activated"));
+        }
+        
         SpawnPortalEffect();
         if (OwnerCharacter)
         {
@@ -103,6 +159,22 @@ void URLGliderComponent::DeactivateGlider()
             GliderTargetScale = FVector(0,0,0); // 목표는 0 (줄어들며 사라짐)
             bGliderScaling = true;
         }
+        
+        // 나이아가라 파티클들 비활성화
+        if (GliderParticleLeft)
+        {
+            GliderParticleLeft->Deactivate();
+            GliderParticleLeft->SetVisibility(false);
+            UE_LOG(LogTemp, Log, TEXT("[GLIDER] Left particle deactivated"));
+        }
+        
+        if (GliderParticleRight)
+        {
+            GliderParticleRight->Deactivate();
+            GliderParticleRight->SetVisibility(false);
+            UE_LOG(LogTemp, Log, TEXT("[GLIDER] Right particle deactivated"));
+        }
+        
         SpawnPortalEffect();
         if (OwnerCharacter)
         {

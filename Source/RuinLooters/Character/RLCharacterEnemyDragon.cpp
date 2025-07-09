@@ -32,7 +32,7 @@ ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 	
 	// 캡슐 콜리전 공격 설정
 	CapsuleAttackRadius = 200.0f;
-	CapsuleAttackHeight = 100.0f;
+	CapsuleAttackHeight = 400.0f;
 	
 	// 브레스 공격 설정
 	BreathDamage = 75;
@@ -198,11 +198,21 @@ void ARLCharacterEnemyDragon::Attack()
 void ARLCharacterEnemyDragon::CallAttackCollision()
 {
 	// 드래곤의 현재 위치와 방향
-	FVector StartLocation = GetActorLocation() + FVector(-80.0f, 200.0f, 0.0f);
+	FVector StartLocation = GetActorLocation();
 	FVector ForwardVector = GetActorForwardVector();
+	FVector RightVector = GetActorRightVector();
 
 	// 공격 범위 계산 (앞쪽으로 Range만큼)
 	FVector EndLocation = StartLocation + (ForwardVector * Range);
+
+	// 드래곤의 현재 회전을 쿼터니언으로 가져오기
+	FQuat DragonQuat = GetActorRotation().Quaternion();
+
+	// 드래곤의 로컬 Up 축을 기준으로 90도 회전 (드래곤 기준 상대적 회전)
+	FQuat ExtraRot = FQuat(RightVector, FMath::DegreesToRadians(90.f));
+
+	// 최종 회전값 생성 (드래곤 기준 상대적)
+	FQuat CapsuleRot = ExtraRot * DragonQuat;
 
 	// 캡슐 트레이스 파라미터 설정
 	FCollisionQueryParams QueryParams;
@@ -215,7 +225,7 @@ void ARLCharacterEnemyDragon::CallAttackCollision()
 		HitResults,
 		StartLocation,
 		EndLocation,
-		FQuat::Identity,
+		CapsuleRot,
 		ECollisionChannel::ECC_Pawn,
 		FCollisionShape::MakeCapsule(CapsuleAttackRadius, CapsuleAttackHeight),
 		QueryParams
@@ -224,7 +234,7 @@ void ARLCharacterEnemyDragon::CallAttackCollision()
 
 	FColor DebugColor = bHit ? FColor::Red : FColor::Green;
 	DrawDebugCapsule(GetWorld(), (StartLocation + EndLocation) / 2, CapsuleAttackHeight, CapsuleAttackRadius,
-		FQuat::Identity, DebugColor, false, 2.0f);
+		CapsuleRot, DebugColor, false, 2.0f);
 
 
 	// 피격된 액터들 처리
