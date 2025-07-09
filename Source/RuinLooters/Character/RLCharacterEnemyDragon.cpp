@@ -209,7 +209,6 @@ void ARLCharacterEnemyDragon::CallAttackCollision()
 	QueryParams.AddIgnoredActor(this);
 	QueryParams.bTraceComplex = false;
 	QueryParams.bReturnPhysicalMaterial = false;
-
 	// 캡슐 트레이스 실행
 	TArray<FHitResult> HitResults;
 	bool bHit = GetWorld()->SweepMultiByChannel(

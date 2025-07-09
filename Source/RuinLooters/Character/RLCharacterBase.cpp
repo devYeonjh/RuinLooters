@@ -14,6 +14,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "GameInstance/RLGameInstance.h"
+#include "RLGliderComponent.h"
 
 ARLCharacterBase::ARLCharacterBase() : WeaponRowName(TEXT("First WeaponRowName Text"))
 {
@@ -196,6 +197,87 @@ void ARLCharacterBase::ProcessComboCommand()
         HasNextComboCommand = true;
         
     }
+    if (!CurrentMontage || !AnimInstance) return;
+    if (ComboStep > 0 && ComboStep <= CurrentMontage->CompositeSections.Num())
+    {
+        FName SectionName = CurrentMontage->CompositeSections[ComboStep - 1].SectionName;
+        UE_LOG(LogTemp, Warning, TEXT("[PlayComboMontage] Step: %d, SectionName: %s"), ComboStep, *SectionName.ToString());
+        if (AnimInstance->Montage_IsPlaying(CurrentMontage))
+        {
+            AnimInstance->Montage_JumpToSection(SectionName, CurrentMontage);
+            UE_LOG(LogTemp, Warning, TEXT("[PlayComboMontage] Jumped to section: %s"), *SectionName.ToString());
+        }
+        else
+        {
+            AnimInstance->Montage_Play(CurrentMontage, AttackSpeed);
+            AnimInstance->Montage_JumpToSection(SectionName, CurrentMontage);
+            UE_LOG(LogTemp, Warning, TEXT("[PlayComboMontage] Montage played and jumped to section: %s"), *SectionName.ToString());
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("[PlayComboMontage] Invalid ComboStep: %d (Max: %d)"), ComboStep, CurrentMontage->CompositeSections.Num());
+    }
+    CurrentComboStep = ComboStep;
+}
+
+// --- 롤(구르기) Tick 함수 구현 ---
+void ARLCharacterBase::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+    if (bIsRolling)
+    {
+        // 구르기 중에는 구르기 방향으로 자동 이동
+        AddMovementInput(RollDirection, 1.0f);
+    }
+}
+
+// --- 롤(구르기) 시작 ---
+void ARLCharacterBase::StartRoll()
+{
+    ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(this);
+    if (Player && Player->GliderComponent && Player->GliderComponent->IsGliderActive())
+        return;
+    if (bIsRolling || !RollMontage) return;
+    if (GetCharacterMovement()->IsFalling()) return;
+    bIsRolling = true;
+    FVector InputDir = GetLastMovementInputVector();
+    RollDirection = InputDir.IsNearlyZero() ? GetActorForwardVector() : InputDir.GetSafeNormal();
+
+    // 구르기 방향을 바라보도록 캐릭터 회전
+    FRotator TargetRot = RollDirection.Rotation();
+    SetActorRotation(TargetRot);
+
+    // 구르기 전 속도 저장 & 1.5배로 설정
+    OriginalMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+    GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed * 1.5f;
+
+    PlayAnimMontage(RollMontage);
+}
+
+// --- 롤(구르기) 종료 ---
+void ARLCharacterBase::EndRoll()
+{
+    bIsRolling = false;
+    // 구르기 끝나면 원래 속도로 복귀
+    GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed;
+}
+
+// --- 무적 시작(애님 노티파이용) ---
+void ARLCharacterBase::StartInvincible()
+{
+    bIsInvincible = true;
+}
+
+// --- 무적 종료(애님 노티파이용) ---
+void ARLCharacterBase::EndInvincible()
+{
+    bIsInvincible = false;
+}
+
+void ARLCharacterBase::Move(const FInputActionValue& Value)
+{
+    Super::Move(Value);
 }
 
 void ARLCharacterBase::ComboActionBegin()

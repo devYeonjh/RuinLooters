@@ -29,6 +29,8 @@
 #include "../Pool/RLProjectilePool.h"
 #include "../Projectile/RLProjectile.h"
 #include "Animation/AnimMontage.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "GameFramework/SpringArmComponent.h"
 
 ARLCharacterPlayer::ARLCharacterPlayer()
 {
@@ -47,6 +49,7 @@ ARLCharacterPlayer::ARLCharacterPlayer()
     ProjectileSpeed = 3000.0f;
     ProjectileSkillCooldown = 3;
     PlayerProjectilePool = nullptr;
+    GliderComponent = CreateDefaultSubobject<URLGliderComponent>(TEXT("GliderComponent"));
 }
 
 void ARLCharacterPlayer::BeginPlay()
@@ -149,7 +152,7 @@ void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
         // Attacking
 
-        EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ARLCharacterBase::Attack);
+        EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Attack);
         EnhancedInputComponent->BindAction(SkillAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::ApplySpeedBuff);
         EnhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Interaction);
         // ESC
@@ -157,6 +160,9 @@ void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
         // 투사체 스킬
         EnhancedInputComponent->BindAction(ProjectileSkillAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::UseProjectileSkill);
 
+        // 롤(구르기) 입력 바인딩 (Shift키)
+        EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::StartRoll);
+        EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::HandleJumpOrGlide);
     }
     else
     {
@@ -243,6 +249,9 @@ void ARLCharacterPlayer::Interaction()
 
 void ARLCharacterPlayer::ApplySpeedBuff()
 {
+    // 구르기 중에는 스킬 입력 무시
+    if (bIsRolling) return;
+
     if (IsCanSkill == true)
     {
         IsCanSkill = false;
@@ -306,8 +315,12 @@ FGenericTeamId ARLCharacterPlayer::GetGenericTeamId() const
 
 void ARLCharacterPlayer::TakeCharacterDamage(int32 RecieveDamage)
 {
+    if (bIsInvincible)
+    {
+        // 무적 중이면 데미지 무시
+        return;
+    }
     ARLCharacterBase::TakeCharacterDamage(RecieveDamage);
-
     PlayerHpChange.Broadcast(CurrentHp, MaxHp);
 }
 
@@ -656,6 +669,67 @@ void ARLCharacterPlayer::OnProjectileSkillMontageEnded(UAnimMontage* Montage, bo
     bIsUsingProjectileSkill = false;
     
     UE_LOG(LogTemp, Warning, TEXT("Player projectile skill montage ended - Movement restored"));
+void ARLCharacterPlayer::HandleJumpOrGlide()
+{
+    if (GliderComponent && GliderComponent->GetOwner() == this && !GliderComponent->IsGliderActive() && GetCharacterMovement()->IsFalling())
+    {
+        FVector Start = GetActorLocation();
+        FVector End = Start - FVector(0, 0, 1000.0f);
+        FHitResult Hit;
+        FCollisionQueryParams Params;
+        Params.AddIgnoredActor(this);
+        bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
+        float Height = bHit ? (Start.Z - Hit.Location.Z) : 1000.0f;
+        if (Height > 500.0f) // 200cm 이상일 때만 글라이더 진입 허용
+        {
+            GliderComponent->ActivateGlider();
+            return;
+        }
+    }
+    Super::Jump();
+}
+
+void ARLCharacterPlayer::StartRoll()
+{
+    if (GliderComponent && GliderComponent->IsGliderActive())
+    {
+        return;
+    }
+    Super::StartRoll();
+}
+
+void ARLCharacterPlayer::Attack()
+{
+    if (GliderComponent && GliderComponent->IsGliderActive())
+    {
+        return;
+    }
+    Super::Attack();
+}
+
+void ARLCharacterPlayer::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+    if (GliderComponent && GliderComponent->IsGliderActive())
+    {
+        FVector Start = GetActorLocation();
+        FVector End = Start - FVector(0, 0, 120.0f); // 120cm downward
+        FHitResult Hit;
+        FCollisionQueryParams Params;
+        Params.AddIgnoredActor(this);
+        bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
+        if (bHit)
+        {
+            GliderComponent->DeactivateGlider();
+        }
+        // Print velocity for debugging
+        FVector Velocity = GetCharacterMovement()->Velocity;
+    }
+    if (CameraBoom)
+    {
+        float InterpSpeed = 3.0f; // 부드러운 속도
+        CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, CameraTargetArmLength, DeltaTime, InterpSpeed);
+    }
 }
 
 

@@ -22,6 +22,8 @@ class RUINLOOTERS_API ARLCharacterBase : public ARuinLootersCharacter, public IR
 	
 public:
 	ARLCharacterBase();
+	virtual void Attack();
+	virtual void StartRoll();
 public:
 	FOnCharacterDie CharacterDie;
 
@@ -95,6 +97,17 @@ protected:
 	
 	
 
+	// --- Roll(구르기) 시스템 추가 ---
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UAnimMontage* RollMontage;
+
+
+	float OriginalMaxWalkSpeed = 0.f; // 구르기 전 원래 속도 저장
+
+	bool bIsRolling = false;
+	bool bIsInvincible = false;
+	FVector RollDirection;
+
 public:
 	// FORCEINLINE을 이용한 Get, Set 함수 정의
 	FORCEINLINE int32 GetAttackDamage() { return AttackDamage; };
@@ -144,6 +157,18 @@ public:
 
 	void PlayAttackSound();
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* RollAction;
+
+	void EndRoll();
+
+	UFUNCTION()
+	void StartInvincible();
+	UFUNCTION()
+	void EndInvincible();
+
+	virtual void Move(const FInputActionValue& Value) override;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -167,6 +192,8 @@ protected:
 	bool HasNextComboCommand = false;
 
 	float AttackSpeedRate = 1.0f;
+	// Tick 오버라이드
+	virtual void Tick(float DeltaTime) override;
 };
 
 

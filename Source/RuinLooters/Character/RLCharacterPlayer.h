@@ -6,6 +6,7 @@
 #include "Character/RLCharacterBase.h"
 #include "GenericTeamAgentInterface.h"
 #include "Containers/Array.h"
+#include "RLGliderComponent.h"
 #include "RLCharacterPlayer.generated.h"
 
 /**
@@ -31,7 +32,11 @@ public:
 	// PlayerUI Widget -> Hp, SkillCool
 	FPlayerCalculateHp PlayerHpChange;
 	FSkillCoolTime SkillCoolChange;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Glider", meta = (AllowPrivateAccess = "true"))
+	URLGliderComponent* GliderComponent;
 
+public:
+	float CameraTargetArmLength = 400.0f; // 카메라 목표 거리(기본값)
 
 protected:
 	// Input Actions
@@ -118,9 +123,6 @@ protected:
 	UPROPERTY()
 	class URLPlayerDataAsset* LoadAsset;
 
-	// 원래 속도를 저장
-	float OriginalMaxWalkSpeed;
-
 	// 스킬 버프를 관리하는 핸들
 	FTimerHandle SpeedBuffTimerHandle;
 
@@ -206,9 +208,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Player Projectile")
 	void FirePlayerProjectile();
+	void HandleJumpOrGlide();
+	virtual void StartRoll();
+	virtual void Attack() override;
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
