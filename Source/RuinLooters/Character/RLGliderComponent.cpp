@@ -1,6 +1,7 @@
 #include "RLGliderComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/Controller.h"
 #include "Components/StaticMeshComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Character/RLCharacterPlayer.h"
@@ -88,6 +89,19 @@ void URLGliderComponent::ActivateGlider()
                 Player->CameraTargetArmLength = 1200.0f; // 글라이딩 시 더 멀리
             }
         }
+        // 글라이드 모드: 엔진 자동 회전 비활성화 (진입 전 상태 저장)
+        OriginalUseControllerRotationYaw = OwnerCharacter->bUseControllerRotationYaw;
+        OriginalOrientRotationToMovement = MovementComponent->bOrientRotationToMovement;
+        OwnerCharacter->bUseControllerRotationYaw = false;
+        if (MovementComponent)
+        {
+            MovementComponent->bOrientRotationToMovement = false;
+        }
+        // 활공 AnimMontage 재생
+        if (GlideAnimMontage && OwnerCharacter->GetMesh() && OwnerCharacter->GetMesh()->GetAnimInstance())
+        {
+            OwnerCharacter->GetMesh()->GetAnimInstance()->Montage_Play(GlideAnimMontage, 1.0f);
+        }
     }
 }
 
@@ -112,6 +126,17 @@ void URLGliderComponent::DeactivateGlider()
                 Player->CameraTargetArmLength = 400.0f; // 원래 거리로 복귀
             }
         }
+        // 글라이드 모드 해제: 진입 전 상태로 복구
+        OwnerCharacter->bUseControllerRotationYaw = OriginalUseControllerRotationYaw;
+        if (MovementComponent)
+        {
+            MovementComponent->bOrientRotationToMovement = OriginalOrientRotationToMovement;
+        }
+        // 활공 AnimMontage 중지
+        if (GlideAnimMontage && OwnerCharacter->GetMesh() && OwnerCharacter->GetMesh()->GetAnimInstance())
+        {
+            OwnerCharacter->GetMesh()->GetAnimInstance()->Montage_Stop(0.2f, GlideAnimMontage);
+        }
     }
 }
 
@@ -123,6 +148,39 @@ bool URLGliderComponent::IsGliderActive() const
 void URLGliderComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+    // 글라이드 모드일 때 하강 속도 제한 및 관성적 회전
+    if (bIsActive && OwnerCharacter && MovementComponent)
+    {
+        FVector Vel = OwnerCharacter->GetVelocity();
+        if (Vel.Z < -GliderMaxFallSpeed)
+        {
+            Vel.Z = -GliderMaxFallSpeed;
+            MovementComponent->Velocity = Vel;
+        }
+        // 관성적 회전: 인풋이 있으면 그 방향, 없으면 마지막 방향/속도/전방
+        FVector InputDir = OwnerCharacter->GetLastMovementInputVector();
+        if (!InputDir.IsNearlyZero())
+        {
+            LastGlideInputDirection = InputDir.GetSafeNormal();
+        }
+        FVector TargetDir = LastGlideInputDirection;
+        if (TargetDir.IsNearlyZero())
+        {
+            FVector Vel2D = OwnerCharacter->GetVelocity();
+            Vel2D.Z = 0;
+            if (!Vel2D.IsNearlyZero())
+                TargetDir = Vel2D.GetSafeNormal();
+            else
+                TargetDir = OwnerCharacter->GetActorForwardVector();
+        }
+        FRotator CurrentRot = OwnerCharacter->GetActorRotation();
+        FRotator TargetRot = TargetDir.Rotation();
+        TargetRot.Pitch = 0.0f;
+        TargetRot.Roll = 0.0f;
+        float InterpSpeed = 0.5f;
+        FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, InterpSpeed);
+        OwnerCharacter->SetActorRotation(NewRot);
+    }
     // 기존 GliderMesh 스케일 애니메이션
     if (bGliderScaling && GliderMesh)
     {

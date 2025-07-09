@@ -27,6 +27,7 @@ private:
     float OriginalGravityScale;
     float OriginalAirControl;
     float OriginalMaxWalkSpeed;
+    float GliderMaxFallSpeed = 600.0f;    // 글라이드 모드용 낙하속도(절반)
     class ACharacter* OwnerCharacter;
     class UCharacterMovementComponent* MovementComponent;
     UPROPERTY(VisibleAnywhere, Category="Glider")
@@ -36,10 +37,15 @@ private:
     UPROPERTY(EditDefaultsOnly, Category="Glider")
     float GliderAirControl = 0.7f;
     UPROPERTY(EditDefaultsOnly, Category="Glider")
-    float GliderMaxWalkSpeed = 300.0f;
+    float GliderMaxWalkSpeed = 400.0f;
     FVector GliderTargetScale = FVector(1,1,1);
     bool bGliderScaling = false;
     UPROPERTY(EditDefaultsOnly, Category="Glider|Effect")
     TSoftClassPtr<AActor> PortalEffectClass;
     TArray<AActor*> ActivePortalEffects;
+    FVector LastGlideInputDirection = FVector::ZeroVector; // 글라이드 관성 회전용
+    bool OriginalUseControllerRotationYaw = false;
+    bool OriginalOrientRotationToMovement = true;
+    UPROPERTY(EditDefaultsOnly, Category="Glider|Animation")
+    UAnimMontage* GlideAnimMontage = nullptr;
 }; 
