@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "AIController.h"
 #include "Perception/AIPerceptionTypes.h"
+#include "Engine/TimerHandle.h"
 #include "RLEnemyAIController.generated.h"
 
 /**
@@ -17,6 +18,12 @@ class RUINLOOTERS_API ARLEnemyAIController : public AAIController
 
 public:
     ARLEnemyAIController();
+
+    // 블랙보드 키 상수들
+    static const FName TargetKey;
+    static const FName bInRangeKey;
+    static const FName StartSkyPointKey;
+    static const FName CurrentSkyPointKey;
 
 protected:
     UPROPERTY(EditDefaultsOnly, Category = "AI")
@@ -36,12 +43,19 @@ protected:
     UPROPERTY()
     class ARLCharacterPlayer* Player;
 
+    // 타이머 핸들
+    FTimerHandle StartSkyPointTimerHandle;
+
     // 빙의된 후 호출
     virtual void OnPossess(APawn* InPawn) override;
 
     // 인식 변화시 호출
     UFUNCTION()
     void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim);
+
+    // StartSkyPointKey 설정 함수
+    UFUNCTION()
+    void SetStartSkyPoint();
 
 public:
     void ShutdownAI();

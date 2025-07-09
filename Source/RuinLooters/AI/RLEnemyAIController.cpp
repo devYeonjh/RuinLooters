@@ -7,6 +7,12 @@
 #include "Character/RLCharacterPlayer.h"
 #include "Kismet/GameplayStatics.h"
 
+// 블랙보드 키 상수들 정의
+const FName ARLEnemyAIController::TargetKey(TEXT("TargetKey"));
+const FName ARLEnemyAIController::bInRangeKey(TEXT("bInRangeKey"));
+const FName ARLEnemyAIController::StartSkyPointKey(TEXT("StartSkyPointKey"));
+const FName ARLEnemyAIController::CurrentSkyPointKey(TEXT("CurrentSkyPointKey"));
+
 ARLEnemyAIController::ARLEnemyAIController()
 {
     Perception = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("Perception"));
@@ -44,9 +50,24 @@ void ARLEnemyAIController::OnPossess(APawn* InPawn)
         // 현재 AAIController::Blackboard 대신에 가져온 블랙보드 트리 시작
         RunBehaviorTree(BehaviorTreeAsset);
         UE_LOG(LogTemp, Warning, TEXT("Controller OnPossess"));
+
+        // 1초 후 StartSkyPointKey 설정
+        GetWorld()->GetTimerManager().SetTimer(StartSkyPointTimerHandle, this, &ARLEnemyAIController::SetStartSkyPoint, 1.0f, false);
     }
 }
 
+void ARLEnemyAIController::SetStartSkyPoint()
+{
+    if (!Blackboard) return;
+
+    // 현재 폰의 위치를 StartSkyPointKey로 설정
+    if (APawn* ControlledPawn = GetPawn())
+    {
+        FVector StartSkyPoint = ControlledPawn->GetActorLocation();
+        Blackboard->SetValueAsVector(StartSkyPointKey, StartSkyPoint);
+        UE_LOG(LogTemp, Warning, TEXT("StartSkyPointKey set to: %s"), *StartSkyPoint.ToString());
+    }
+}
 
 void ARLEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim)
 {
@@ -60,15 +81,15 @@ void ARLEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim)
         if (Stim.WasSuccessfullySensed())
         {
             // "TargetKey"를 키로 타겟 설정
-            Blackboard->SetValueAsObject(TEXT("TargetKey"), Player);
+            Blackboard->SetValueAsObject(TargetKey, Player);
             UE_LOG(LogTemp, Warning, TEXT("Enemy Detected Player"));
         }
         // 시야에서 사라졌다면
         else
         {
-            Player = Cast<ARLCharacterPlayer>(Blackboard->GetValueAsObject(TEXT("TargetKey")));
+            Player = Cast<ARLCharacterPlayer>(Blackboard->GetValueAsObject(TargetKey));
             if (Player == Actor)
-                Blackboard->ClearValue(TEXT("TargetKey"));
+                Blackboard->ClearValue(TargetKey);
         }
     }
 }
