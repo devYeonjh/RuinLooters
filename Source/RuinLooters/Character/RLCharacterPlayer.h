@@ -146,6 +146,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Projectile")
 	int32 ProjectileSkillCooldown;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Projectile")
+	float ProjectileCollisionRadius;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Projectile")
+	float ProjectileCollisionHeight;
+
 	UPROPERTY()
 	uint8 bCanUseProjectileSkill : 1;
 

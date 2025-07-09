@@ -28,6 +28,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "../Pool/RLProjectilePool.h"
 #include "../Projectile/RLProjectile.h"
+#include "../Projectile/RLPlayerProjectile.h"
 #include "Animation/AnimMontage.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -49,6 +50,10 @@ ARLCharacterPlayer::ARLCharacterPlayer()
     ProjectileSpeed = 3000.0f;
     ProjectileSkillCooldown = 3;
     PlayerProjectilePool = nullptr;
+    
+    // 투사체 콜리전 설정 초기화
+    ProjectileCollisionRadius = 15.0f;   // 플레이어 투사체 반지름
+    ProjectileCollisionHeight = 200.0f;  // 플레이어 투사체 높이 (사용자가 200.0f로 수정함)
     GliderComponent = CreateDefaultSubobject<URLGliderComponent>(TEXT("GliderComponent"));
 }
 
@@ -563,43 +568,16 @@ void ARLCharacterPlayer::UseProjectileSkill()
         GetCharacterMovement()->SetMovementMode(MOVE_None);
         
         UE_LOG(LogTemp, Warning, TEXT("Player projectile skill montage started - Length: %f"), MontageLength);
-        UE_LOG(LogTemp, Warning, TEXT("Montage delegate bound successfully"));
-        
-        // 안전장치: 몽타주 길이 + 0.5초 후 강제로 이동 복원
-        GetWorldTimerManager().SetTimer(
-            SafetyTimerHandle,
-            [this]()
-            {
-                if (bIsUsingProjectileSkill)
-                {
-                    UE_LOG(LogTemp, Warning, TEXT("Safety timer triggered - Force restoring movement"));
-                    GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-                    bIsUsingProjectileSkill = false;
-                }
-            },
-            MontageLength + 0.5f,
-            false
-        );
-    }
-    else
-    {
-        // 몽타주가 없으면 발사 안함
-        UE_LOG(LogTemp, Warning, TEXT("ProjectileSkillMontage is not set, firing projectile immediately"));
     }
 
     // 쿨다운 시작 (람다함수 사용)
     GetWorldTimerManager().SetTimer(
-        ProjectileSkillCooldownHandle,
-        [this]()
+        ProjectileSkillCooldownHandle,[this]()
         {
             bCanUseProjectileSkill = true;
             UE_LOG(LogTemp, Log, TEXT("Player projectile skill cooldown finished"));
-        },
-        ProjectileSkillCooldown,
-        false
+        }, ProjectileSkillCooldown, false
     );
-
-    UE_LOG(LogTemp, Log, TEXT("Player used projectile skill"));
 }
 
 void ARLCharacterPlayer::FirePlayerProjectile()
@@ -610,54 +588,53 @@ void ARLCharacterPlayer::FirePlayerProjectile()
         return;
     }
 
-    // 투사체 풀에서 투사체 가져오기
-    ARLProjectile* Projectile = Cast<ARLProjectile>(PlayerProjectilePool->GetProjectile());
-    if (!Projectile)
+    // 투사체 풀에서 투사체 가져오기 (ARLPlayerProjectile로 캐스트)
+    ARLPlayerProjectile* PlayerProjectile = Cast<ARLPlayerProjectile>(PlayerProjectilePool->GetProjectile());
+    if (!PlayerProjectile)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Failed to get projectile from player pool"));
+        UE_LOG(LogTemp, Warning, TEXT("Failed to get player projectile from pool"));
         return;
     }
 
     // 발사 위치 및 방향 설정
     FVector PlayerLocation = GetActorLocation();
-    FVector PlayerForward = GetActorForwardVector();
-    FVector FireLocation = PlayerLocation + PlayerForward * 80.0f + FVector(0.0f, 0.0f, 20.0f);
-    FVector FireDirection = PlayerForward;
-
-    // 플레이어 투사체 설정 생성
-    FProjectileSettings PlayerSettings;
-    PlayerSettings.ProjectileType = EProjectileType::PlayerProjectile;
-    PlayerSettings.Damage = ProjectileDamage;
-    PlayerSettings.Speed = ProjectileSpeed;
-    PlayerSettings.LifeTime = 3.0f;
-    PlayerSettings.CollisionRadius = 15.0f;
-    PlayerSettings.bCanPierceEnemies = true;
-    PlayerSettings.MaxPierceCount = 3;
+    FVector FireLocation = PlayerLocation + FVector(0.0f, 0.0f, 220.0f);
+    
+    // 카메라가 바라보는 방향으로 발사 (컨트롤러 회전 기준)
+    FVector FireDirection = PlayerController ? PlayerController->GetControlRotation().Vector() : GetActorForwardVector();
 
     // 투사체 가시성 및 콜리전 활성화 (풀에서 가져온 경우 숨겨져 있을 수 있음)
-    Projectile->SetActorHiddenInGame(false);
-    Projectile->SetActorEnableCollision(true);
+    PlayerProjectile->SetActorHiddenInGame(false);
+    PlayerProjectile->SetActorEnableCollision(true);
+
+    // 플레이어 설정값으로 투사체 설정 (캐릭터에서 설정한 콜리전 값 사용)
+    PlayerProjectile->SetupWithPlayerSettings(
+        ProjectileCollisionRadius,  // 캐릭터에서 설정한 반지름
+        ProjectileCollisionHeight,  // 캐릭터에서 설정한 높이
+        ProjectileDamage,           // 캐릭터에서 설정한 데미지
+        ProjectileSpeed             // 캐릭터에서 설정한 속도
+    );
 
     // 투사체 초기화 및 발사
-    Projectile->InitializeProjectile(FireLocation, FireDirection, PlayerSettings);
+    PlayerProjectile->InitializeProjectile(FireLocation, FireDirection, PlayerProjectile->GetProjectileSettings());
 
     // 투사체 소유자 설정
-    Projectile->SetOwner(this);
+    PlayerProjectile->SetOwner(this);
 
-    UE_LOG(LogTemp, Warning, TEXT("Player projectile fired - Location: %s, Direction: %s, Speed: %f"), 
-           *FireLocation.ToString(), *FireDirection.ToString(), ProjectileSpeed);
+    UE_LOG(LogTemp, Warning, TEXT("Player projectile fired - Location: %s, Direction: %s, Radius: %f, Height: %f"), 
+           *FireLocation.ToString(), *FireDirection.ToString(), ProjectileCollisionRadius, ProjectileCollisionHeight);
 
     // 투사체 반환 처리를 위한 타이머 (생존 시간 후 자동 반환)
     FTimerHandle ReturnTimerHandle;
-    GetWorld()->GetTimerManager().SetTimer(ReturnTimerHandle, [this, Projectile]()
+    GetWorld()->GetTimerManager().SetTimer(ReturnTimerHandle, [this, PlayerProjectile]()
     {
-        if (PlayerProjectilePool && Projectile)
+        if (PlayerProjectilePool && PlayerProjectile)
         {
-            PlayerProjectilePool->ReturnProjectile(Projectile);
+            PlayerProjectilePool->ReturnProjectile(PlayerProjectile);
         }
-    }, 3.0f, false);
+    }, 30.0f, false);  // 플레이어 투사체의 생존 시간에 맞춤
 
-    UE_LOG(LogTemp, Log, TEXT("Player projectile fired"));
+    UE_LOG(LogTemp, Log, TEXT("Player projectile fired with custom collision settings"));
 }
 
 void ARLCharacterPlayer::OnProjectileSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted)

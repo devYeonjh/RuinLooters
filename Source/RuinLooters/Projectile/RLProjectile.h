@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Components/SphereComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -38,6 +38,9 @@ struct FProjectileSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Basic Settings")
 	float CollisionRadius = 25.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Basic Settings")
+	float CollisionHeight = 50.0f;
+
 	// 관통 설정
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pierce Settings")
 	bool bCanPierceEnemies = false;
@@ -55,6 +58,7 @@ struct FProjectileSettings
 		Speed = 2000.0f;
 		LifeTime = 5.0f;
 		CollisionRadius = 25.0f;
+		CollisionHeight = 50.0f;
 		bCanPierceEnemies = false;
 		MaxPierceCount = 1;
 		ProjectileType = EProjectileType::Generic;
@@ -72,7 +76,7 @@ public:
 protected:
 	// 콜리전 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	USphereComponent* SphereCollision;
+	UCapsuleComponent* CapsuleCollision;
 
 	// 파티클 시스템 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -120,16 +124,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void ApplyProjectileSettings(const FProjectileSettings& Settings);
 
-	// 프리셋 설정 함수들
-	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SetupAsPlayerProjectile();
+	// 프리셋 설정 함수들 (제거됨 - 각 파생 클래스에서 처리)
 
-	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SetupAsDragonBreath();
-
-	// 충돌 이벤트
+	// 충돌 이벤트 (가상 함수로 변경)
 	UFUNCTION()
-	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
+	virtual void OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	// Getter/Setter
 	FORCEINLINE const FProjectileSettings& GetProjectileSettings() const { return ProjectileSettings; }
@@ -147,6 +146,9 @@ protected:
 	// 관통 가능한지 확인
 	bool CanPierceTarget(AActor* Target);
 
-	// 데미지 적용 (타입에 따라 다른 처리)
-	void ApplyDamageToTarget(AActor* Target);
+	// 데미지 적용 (타입에 따라 다른 처리) - 가상 함수로 변경
+	virtual void ApplyDamageToTarget(AActor* Target);
+
+	// 유효한 타겟인지 확인 - 새로 추가된 가상 함수
+	virtual bool IsValidTarget(AActor* Target);
 }; 

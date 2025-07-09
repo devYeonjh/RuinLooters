@@ -16,6 +16,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "../Pool/RLProjectilePool.h"
 #include "../Projectile/RLProjectile.h"
+#include "../Projectile/RLDragonProjectile.h"
 
 ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 {
@@ -40,6 +41,10 @@ ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 	
 	// 투사체 풀 초기화
 	ProjectilePool = nullptr;
+	
+	// 브레스 투사체 콜리전 설정 초기화
+	BreathProjectileCollisionRadius = 30.0f;  // 드래곤 브레스 투사체 반지름
+	BreathProjectileCollisionHeight = 60.0f;  // 드래곤 브레스 투사체 높이
 	
 	// 애니메이션 몽타주 초기화
 	AttackMontage = nullptr;
@@ -307,48 +312,50 @@ void ARLCharacterEnemyDragon::FireBreathProjectile()
 		return;
 	}
 	
-	// 투사체 풀에서 투사체 가져오기
-	ARLProjectile* Projectile = Cast<ARLProjectile>(ProjectilePool->GetProjectile());
-	if (!Projectile)
+	// 투사체 풀에서 투사체 가져오기 (ARLDragonProjectile로 캐스트)
+	ARLDragonProjectile* DragonProjectile = Cast<ARLDragonProjectile>(ProjectilePool->GetProjectile());
+	if (!DragonProjectile)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to get projectile from pool"));
+		UE_LOG(LogTemp, Warning, TEXT("Failed to get dragon projectile from pool"));
 		return;
 	}
-	
-	// 드래곤 브레스로 설정
-	Projectile->SetupAsDragonBreath();
 	
 	// 발사 위치 및 방향 설정
 	FVector DragonMouthLocation = GetActorLocation() + GetActorForwardVector() * 100.0f + FVector(0.0f, 0.0f, 50.0f);
 	FVector FireDirection = GetActorForwardVector();
 	
-	// 드래곤 브레스 설정 생성
-	FProjectileSettings DragonSettings;
-	DragonSettings.ProjectileType = EProjectileType::DragonBreath;
-	DragonSettings.Damage = BreathDamage;
-	DragonSettings.Speed = 1500.0f;
-	DragonSettings.LifeTime = 5.0f;
-	DragonSettings.CollisionRadius = 25.0f;
-	DragonSettings.bCanPierceEnemies = false;
-	DragonSettings.MaxPierceCount = 1;
+	// 투사체 가시성 및 콜리전 활성화 (풀에서 가져온 경우 숨겨져 있을 수 있음)
+	DragonProjectile->SetActorHiddenInGame(false);
+	DragonProjectile->SetActorEnableCollision(true);
+	
+	// 드래곤 설정값으로 투사체 설정 (캐릭터에서 설정한 콜리전 값 사용)
+	DragonProjectile->SetupWithDragonSettings(
+		BreathProjectileCollisionRadius,  // 캐릭터에서 설정한 반지름
+		BreathProjectileCollisionHeight,  // 캐릭터에서 설정한 높이
+		BreathDamage,                     // 캐릭터에서 설정한 데미지
+		1500.0f                           // 브레스 속도
+	);
 	
 	// 투사체 초기화 및 발사
-	Projectile->InitializeProjectile(DragonMouthLocation, FireDirection, DragonSettings);
+	DragonProjectile->InitializeProjectile(DragonMouthLocation, FireDirection, DragonProjectile->GetProjectileSettings());
 	
 	// 투사체 소유자 설정
-	Projectile->SetOwner(this);
+	DragonProjectile->SetOwner(this);
+	
+	UE_LOG(LogTemp, Warning, TEXT("Dragon breath projectile fired - Location: %s, Direction: %s, Radius: %f, Height: %f"), 
+           *DragonMouthLocation.ToString(), *FireDirection.ToString(), BreathProjectileCollisionRadius, BreathProjectileCollisionHeight);
 	
 	// 투사체 반환 처리를 위한 타이머 (생존 시간 후 자동 반환)
 	FTimerHandle ReturnTimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(ReturnTimerHandle, [this, Projectile]()
+	GetWorld()->GetTimerManager().SetTimer(ReturnTimerHandle, [this, DragonProjectile]()
 	{
-		if (ProjectilePool && Projectile)
+		if (ProjectilePool && DragonProjectile)
 		{
-			ProjectilePool->ReturnProjectile(Projectile);
+			ProjectilePool->ReturnProjectile(DragonProjectile);
 		}
-	}, 5.0f, false);
+	}, 5.0f, false);  // 드래곤 투사체의 생존 시간에 맞춤
 	
-	UE_LOG(LogTemp, Log, TEXT("Dragon breath projectile fired"));
+	UE_LOG(LogTemp, Log, TEXT("Dragon breath projectile fired with custom collision settings"));
 }
 
 void ARLCharacterEnemyDragon::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
