@@ -6,6 +6,7 @@
 #include "Character/RLCharacterBase.h"
 #include "GenericTeamAgentInterface.h"
 #include "Containers/Array.h"
+#include "RLGliderComponent.h"
 #include "RLCharacterPlayer.generated.h"
 
 /**
@@ -31,7 +32,11 @@ public:
 	// PlayerUI Widget -> Hp, SkillCool
 	FPlayerCalculateHp PlayerHpChange;
 	FSkillCoolTime SkillCoolChange;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Glider", meta = (AllowPrivateAccess = "true"))
+	URLGliderComponent* GliderComponent;
 
+public:
+	float CameraTargetArmLength = 400.0f; // 카메라 목표 거리(기본값)
 
 protected:
 	// Input Actions
@@ -46,7 +51,6 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* SettingsAction;
-
 	// NPC
 	UPROPERTY()
 	class ARLNPC* InteractiveNPC;
@@ -156,8 +160,13 @@ public:
 
 	void ShowStagePortalWidget();
 
+	void HandleJumpOrGlide();
+	virtual void StartRoll();
+	virtual void Attack() override;
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;

@@ -20,6 +20,8 @@ class RUINLOOTERS_API ARLCharacterBase : public ARuinLootersCharacter
 	
 public:
 	ARLCharacterBase();
+	virtual void Attack();
+	virtual void StartRoll();
 public:
 	FOnDie CharacterDie;
 
@@ -143,7 +145,6 @@ public:
 	void ChangeWeapon(struct FWeaponTableRow* ChangeWeapon);
 
 	/** Called for looking input */
-	void Attack();
 
 	void SwordAttackLineTrace();
 
@@ -166,11 +167,11 @@ public:
 	bool bCanNextCombo = false;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
 	bool bIsAttacking = false;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
+	bool bComboInputBuffered = false; // 입력 버퍼 플래그
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* RollAction;
 
-	// --- 회피 ---
-	void StartRoll();
 	void EndRoll();
 
 	UFUNCTION()

@@ -14,6 +14,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "GameInstance/RLGameInstance.h"
+#include "RLGliderComponent.h"
 
 ARLCharacterBase::ARLCharacterBase() : WeaponRowName(TEXT("First WeaponRowName Text"))
 {
@@ -103,40 +104,51 @@ void ARLCharacterBase::Die()
 
 void ARLCharacterBase::Attack()
 {
-    // 구르기 중에는 공격 입력 무시
+    UE_LOG(LogTemp, Warning, TEXT("[Attack] bIsAttacking: %s, CurrentComboStep: %d"), bIsAttacking ? TEXT("true") : TEXT("false"), CurrentComboStep);
     if (bIsRolling) return;
 
-    // 점프 중이거나 공중에 떠있으면 공격 불가
-    if (!bIsCanAttack || GetCharacterMovement()->IsFalling())
+    ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(this);
+    if (Player && Player->GliderComponent && Player->GliderComponent->IsGliderActive())
+        return;
+
+    // 공격 중(콤보 중)일 때
+    if (bIsAttacking)
     {
-        if (bCanNextCombo)
+        // 마지막 콤보가 아니고, 버퍼가 비어있을 때만 버퍼 세팅
+        if (CurrentComboStep < ComboMaxStep && !bComboInputBuffered)
         {
-            bComboInput = true;
+            bComboInputBuffered = true;
         }
+        // 공격 중에는 절대 1타로 돌아가지 않음!
         return;
     }
 
-    // Idle 상태에서만 1타 시작
-    bIsCanAttack = false;
-    AnimInstance = GetMesh()->GetAnimInstance();
-    CurrentComboStep = 1;
-    PlayComboMontage(CurrentComboStep);
-    // 공격 시작 시 이동 불가
-    //GetCharacterMovement()->DisableMovement();
-    if (AnimInstance && CurrentMontage)
+    // 공격 중이 아니고, 공격 가능 상태일 때만 1타 시작
+    if (bIsCanAttack && !GetCharacterMovement()->IsFalling())
     {
-        FOnMontageEnded EndDelegate;
-        EndDelegate.BindUObject(this, &ARLCharacterBase::OnMontageEnded);
-        AnimInstance->Montage_SetEndDelegate(EndDelegate, CurrentMontage);
+        bIsCanAttack = false;
+        bIsAttacking = true;
+        AnimInstance = GetMesh()->GetAnimInstance();
+        if (CurrentMontage)
+            ComboMaxStep = CurrentMontage->CompositeSections.Num();
+
+        PlayComboMontage(1); // 1타(Combo1) 섹션 재생
+
+        if (AnimInstance && CurrentMontage)
+        {
+            FOnMontageEnded EndDelegate;
+            EndDelegate.BindUObject(this, &ARLCharacterBase::OnMontageEnded);
+            AnimInstance->Montage_SetEndDelegate(EndDelegate, CurrentMontage);
+        }
     }
+    // 그 외(공격 불가, 공중 등)는 아무 동작 없음
 }
 
 void ARLCharacterBase::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
     UE_LOG(LogTemp, Warning, TEXT("Montage ended. Timer will stop."));
-    // 공격 끝나면 이동 가능
-    //GetCharacterMovement()->SetMovementMode(MOVE_Walking);
     bIsCanAttack = true;
+    bIsAttacking = false; // 공격 종료
 }
 
 void ARLCharacterBase::SwordAttackLineTrace()
@@ -215,15 +227,22 @@ void ARLCharacterBase::PlayComboMontage(int32 ComboStep)
     if (ComboStep > 0 && ComboStep <= CurrentMontage->CompositeSections.Num())
     {
         FName SectionName = CurrentMontage->CompositeSections[ComboStep - 1].SectionName;
+        UE_LOG(LogTemp, Warning, TEXT("[PlayComboMontage] Step: %d, SectionName: %s"), ComboStep, *SectionName.ToString());
         if (AnimInstance->Montage_IsPlaying(CurrentMontage))
         {
             AnimInstance->Montage_JumpToSection(SectionName, CurrentMontage);
+            UE_LOG(LogTemp, Warning, TEXT("[PlayComboMontage] Jumped to section: %s"), *SectionName.ToString());
         }
         else
         {
             AnimInstance->Montage_Play(CurrentMontage, AttackSpeed);
             AnimInstance->Montage_JumpToSection(SectionName, CurrentMontage);
+            UE_LOG(LogTemp, Warning, TEXT("[PlayComboMontage] Montage played and jumped to section: %s"), *SectionName.ToString());
         }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("[PlayComboMontage] Invalid ComboStep: %d (Max: %d)"), ComboStep, CurrentMontage->CompositeSections.Num());
     }
     CurrentComboStep = ComboStep;
 }
@@ -242,6 +261,9 @@ void ARLCharacterBase::Tick(float DeltaTime)
 // --- 롤(구르기) 시작 ---
 void ARLCharacterBase::StartRoll()
 {
+    ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(this);
+    if (Player && Player->GliderComponent && Player->GliderComponent->IsGliderActive())
+        return;
     if (bIsRolling || !RollMontage) return;
     if (GetCharacterMovement()->IsFalling()) return;
     bIsRolling = true;
@@ -281,7 +303,6 @@ void ARLCharacterBase::EndInvincible()
 
 void ARLCharacterBase::Move(const FInputActionValue& Value)
 {
-    if (bIsRolling) return;
     Super::Move(Value);
 }
 

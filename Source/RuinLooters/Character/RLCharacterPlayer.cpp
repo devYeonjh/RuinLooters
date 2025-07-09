@@ -26,6 +26,8 @@
 #include "Level/RLLevelTransferPortal.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "GameFramework/SpringArmComponent.h"
 
 ARLCharacterPlayer::ARLCharacterPlayer()
 {
@@ -70,6 +72,8 @@ ARLCharacterPlayer::ARLCharacterPlayer()
     LevelName = FName(*UGameplayStatics::GetCurrentLevelName(this, true));
 
     bStageExit = 1;
+
+    GliderComponent = CreateDefaultSubobject<URLGliderComponent>(TEXT("GliderComponent"));
 }
 
 void ARLCharacterPlayer::BeginPlay()
@@ -160,13 +164,14 @@ void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
         // Attacking
 
-        EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ARLCharacterBase::Attack);
+        EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Attack);
         EnhancedInputComponent->BindAction(SkillAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::ApplySpeedBuff);
         EnhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Interaction);
         // ESC
         EnhancedInputComponent->BindAction(SettingsAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::ViewSettingWidget);
         // 롤(구르기) 입력 바인딩 (Shift키)
         EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::StartRoll);
+        EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::HandleJumpOrGlide);
     }
     else
     {
@@ -530,6 +535,69 @@ uint8 ARLCharacterPlayer::CheckEnemy()
     else
     {
         return true;
+    }
+}
+
+void ARLCharacterPlayer::HandleJumpOrGlide()
+{
+    if (GliderComponent && GliderComponent->GetOwner() == this && !GliderComponent->IsGliderActive() && GetCharacterMovement()->IsFalling())
+    {
+        FVector Start = GetActorLocation();
+        FVector End = Start - FVector(0, 0, 1000.0f);
+        FHitResult Hit;
+        FCollisionQueryParams Params;
+        Params.AddIgnoredActor(this);
+        bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
+        float Height = bHit ? (Start.Z - Hit.Location.Z) : 1000.0f;
+        if (Height > 500.0f) // 200cm 이상일 때만 글라이더 진입 허용
+        {
+            GliderComponent->ActivateGlider();
+            return;
+        }
+    }
+    Super::Jump();
+}
+
+void ARLCharacterPlayer::StartRoll()
+{
+    if (GliderComponent && GliderComponent->IsGliderActive())
+    {
+        return;
+    }
+    Super::StartRoll();
+}
+
+void ARLCharacterPlayer::Attack()
+{
+    if (GliderComponent && GliderComponent->IsGliderActive())
+    {
+        return;
+    }
+    Super::Attack();
+}
+
+void ARLCharacterPlayer::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+    if (GliderComponent && GliderComponent->IsGliderActive())
+    {
+        FVector Start = GetActorLocation();
+        FVector End = Start - FVector(0, 0, 120.0f); // 120cm downward
+        FHitResult Hit;
+        FCollisionQueryParams Params;
+        Params.AddIgnoredActor(this);
+        bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
+        if (bHit)
+        {
+            GliderComponent->DeactivateGlider();
+        }
+        // Print velocity for debugging
+        FVector Velocity = GetCharacterMovement()->Velocity;
+    }
+    if (CameraBoom)
+    {
+        float InterpSpeed = 3.0f; // 부드러운 속도
+        CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, CameraTargetArmLength, DeltaTime, InterpSpeed);
     }
 }
 
