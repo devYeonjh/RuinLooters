@@ -197,28 +197,6 @@ void ARLCharacterBase::ProcessComboCommand()
         HasNextComboCommand = true;
         
     }
-    if (!CurrentMontage || !AnimInstance) return;
-    if (ComboStep > 0 && ComboStep <= CurrentMontage->CompositeSections.Num())
-    {
-        FName SectionName = CurrentMontage->CompositeSections[ComboStep - 1].SectionName;
-        UE_LOG(LogTemp, Warning, TEXT("[PlayComboMontage] Step: %d, SectionName: %s"), ComboStep, *SectionName.ToString());
-        if (AnimInstance->Montage_IsPlaying(CurrentMontage))
-        {
-            AnimInstance->Montage_JumpToSection(SectionName, CurrentMontage);
-            UE_LOG(LogTemp, Warning, TEXT("[PlayComboMontage] Jumped to section: %s"), *SectionName.ToString());
-        }
-        else
-        {
-            AnimInstance->Montage_Play(CurrentMontage, AttackSpeed);
-            AnimInstance->Montage_JumpToSection(SectionName, CurrentMontage);
-            UE_LOG(LogTemp, Warning, TEXT("[PlayComboMontage] Montage played and jumped to section: %s"), *SectionName.ToString());
-        }
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("[PlayComboMontage] Invalid ComboStep: %d (Max: %d)"), ComboStep, CurrentMontage->CompositeSections.Num());
-    }
-    CurrentComboStep = ComboStep;
 }
 
 // --- 롤(구르기) Tick 함수 구현 ---

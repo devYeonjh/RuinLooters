@@ -22,7 +22,7 @@ class RUINLOOTERS_API ARLCharacterBase : public ARuinLootersCharacter, public IR
 	
 public:
 	ARLCharacterBase();
-	virtual void Attack();
+
 	virtual void StartRoll();
 public:
 	FOnCharacterDie CharacterDie;

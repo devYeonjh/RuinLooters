@@ -663,12 +663,14 @@ void ARLCharacterPlayer::FirePlayerProjectile()
 void ARLCharacterPlayer::OnProjectileSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
     UE_LOG(LogTemp, Warning, TEXT("OnProjectileSkillMontageEnded called! Interrupted: %s"), bInterrupted ? TEXT("true") : TEXT("false"));
-    
+
     // 몽타주 종료 시 이동 모드 복원
     GetCharacterMovement()->SetMovementMode(MOVE_Walking);
     bIsUsingProjectileSkill = false;
-    
+
     UE_LOG(LogTemp, Warning, TEXT("Player projectile skill montage ended - Movement restored"));
+}
+
 void ARLCharacterPlayer::HandleJumpOrGlide()
 {
     if (GliderComponent && GliderComponent->GetOwner() == this && !GliderComponent->IsGliderActive() && GetCharacterMovement()->IsFalling())
