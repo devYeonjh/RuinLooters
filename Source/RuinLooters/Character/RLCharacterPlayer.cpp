@@ -537,7 +537,7 @@ uint8 ARLCharacterPlayer::CheckEnemy()
 void ARLCharacterPlayer::UseProjectileSkill()
 {
     // 투사체 스킬 사용 가능 여부 확인
-    if (!bCanUseProjectileSkill)
+    if (!bCanUseProjectileSkill || GetCharacterMovement()->IsFalling())
     {
         UE_LOG(LogTemp, Warning, TEXT("Player projectile skill is on cooldown"));
         return;
@@ -683,6 +683,12 @@ void ARLCharacterPlayer::Attack()
     {
         return;
     }
+
+    if (GetCharacterMovement()->IsFalling())
+    {
+        return;
+    }
+
     Super::Attack();
 }
 

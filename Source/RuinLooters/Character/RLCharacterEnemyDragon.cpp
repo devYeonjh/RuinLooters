@@ -46,6 +46,9 @@ ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 	BreathProjectileCollisionRadius = 30.0f;  // 드래곤 브레스 투사체 반지름
 	BreathProjectileCollisionHeight = 60.0f;  // 드래곤 브레스 투사체 높이
 	
+	// 폭발 파티클 템플릿 초기화
+	ExplosionParticleTemplate = nullptr;
+	
 	// 애니메이션 몽타주 초기화
 	AttackMontage = nullptr;
 	DieMontage = nullptr;
@@ -84,6 +87,8 @@ void ARLCharacterEnemyDragon::BeginPlay()
 		ProjectilePool = NewObject<URLProjectilePool>(this);
 		ProjectilePool->InitializePool(GetWorld(), ProjectileClass, 10);
 		UE_LOG(LogTemp, Log, TEXT("Dragon projectile pool initialized"));
+		
+
 	}
 	else
 	{
@@ -335,6 +340,14 @@ void ARLCharacterEnemyDragon::FireBreathProjectile()
 		BreathDamage,                     // 캐릭터에서 설정한 데미지
 		1500.0f                           // 브레스 속도
 	);
+	
+	// 폭발 파티클 템플릿 설정 (발사체 파티클과 별개)
+	if (ExplosionParticleTemplate)
+	{
+		DragonProjectile->SetExplosionParticleTemplate(ExplosionParticleTemplate);
+	}
+	
+
 	
 	// 투사체 초기화 및 발사
 	DragonProjectile->InitializeProjectile(DragonMouthLocation, FireDirection, DragonProjectile->GetProjectileSettings());

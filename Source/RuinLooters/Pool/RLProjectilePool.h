@@ -37,6 +37,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Object Pool")
 	void ClearPool();
 
+	// 폭발 파티클 전용 풀 초기화
+	UFUNCTION(BlueprintCallable, Category = "Explosion Pool")
+	void InitializeExplosionPool(UWorld* World, TSubclassOf<ARLProjectile> ExplosionClass, int32 PoolSize = 10);
+
+	// 폭발 파티클 가져오기
+	UFUNCTION(BlueprintCallable, Category = "Explosion Pool")
+	ARLProjectile* GetExplosionEffect();
+
+	// 폭발 파티클 반환
+	UFUNCTION(BlueprintCallable, Category = "Explosion Pool")
+	void ReturnExplosionEffect(ARLProjectile* ExplosionEffect);
+
 protected:
 	// 사용 가능한 투사체들
 	UPROPERTY()
@@ -46,9 +58,19 @@ protected:
 	UPROPERTY()
 	TArray<ARLProjectile*> ActiveProjectiles;
 
+	// 폭발 파티클 관련 (별도 풀)
+	UPROPERTY()
+	TArray<ARLProjectile*> AvailableExplosionEffects;
+
+	UPROPERTY()
+	TArray<ARLProjectile*> ActiveExplosionEffects;
+
 	// 최대 풀 크기
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pool Settings")
 	int32 MaxPoolSize;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pool Settings")
+	int32 MaxExplosionPoolSize;
 
 	// 월드 레퍼런스
 	UPROPERTY()
@@ -58,13 +80,25 @@ protected:
 	UPROPERTY()
 	TSubclassOf<ARLProjectile> ProjectileClassRef;
 
+	// 폭발 파티클 클래스
+	UPROPERTY()
+	TSubclassOf<ARLProjectile> ExplosionClassRef;
+
 private:
 	// 새 투사체 생성
 	ARLProjectile* CreateNewProjectile();
+
+	// 새 폭발 파티클 생성
+	ARLProjectile* CreateNewExplosionEffect();
 
 public:
 	// Getter 함수들
 	FORCEINLINE int32 GetAvailableCount() const { return AvailableProjectiles.Num(); }
 	FORCEINLINE int32 GetActiveCount() const { return ActiveProjectiles.Num(); }
 	FORCEINLINE int32 GetMaxPoolSize() const { return MaxPoolSize; }
+	
+	// 폭발 파티클 Getter 함수들
+	FORCEINLINE int32 GetAvailableExplosionCount() const { return AvailableExplosionEffects.Num(); }
+	FORCEINLINE int32 GetActiveExplosionCount() const { return ActiveExplosionEffects.Num(); }
+	FORCEINLINE int32 GetMaxExplosionPoolSize() const { return MaxExplosionPoolSize; }
 }; 

@@ -89,6 +89,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dragon Breath")
 	TSubclassOf<class ARLProjectile> ProjectileClass;
 
+	// 폭발 파티클 템플릿 (투사체 충돌 시 생성되는 파티클)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dragon Breath")
+	class UParticleSystem* ExplosionParticleTemplate;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dragon Breath")
 	float BreathProjectileCollisionRadius;
 

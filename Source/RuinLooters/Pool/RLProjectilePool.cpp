@@ -7,9 +7,11 @@
 
 URLProjectilePool::URLProjectilePool()
 {
-    MaxPoolSize = 5;
+    MaxPoolSize = 10;
+    MaxExplosionPoolSize = 5;  // 폭발 파티클은 작은 풀 크기
     WorldRef = nullptr;
     ProjectileClassRef = nullptr;
+    ExplosionClassRef = nullptr;
 }
 
 void URLProjectilePool::InitializePool(UWorld* World, TSubclassOf<ARLProjectile> ProjectileClass, int32 PoolSize)
@@ -117,8 +119,27 @@ void URLProjectilePool::ClearPool()
         }
     }
 
+    // 폭발 파티클 제거
+    for (ARLProjectile* ExplosionEffect : AvailableExplosionEffects)
+    {
+        if (ExplosionEffect && IsValid(ExplosionEffect))
+        {
+            ExplosionEffect->Destroy();
+        }
+    }
+
+    for (ARLProjectile* ExplosionEffect : ActiveExplosionEffects)
+    {
+        if (ExplosionEffect && IsValid(ExplosionEffect))
+        {
+            ExplosionEffect->Destroy();
+        }
+    }
+
     AvailableProjectiles.Empty();
     ActiveProjectiles.Empty();
+    AvailableExplosionEffects.Empty();
+    ActiveExplosionEffects.Empty();
 }
 
 ARLProjectile* URLProjectilePool::CreateNewProjectile()
@@ -139,4 +160,127 @@ ARLProjectile* URLProjectilePool::CreateNewProjectile()
     );
 
     return NewProjectile;
+}
+
+void URLProjectilePool::InitializeExplosionPool(UWorld* World, TSubclassOf<ARLProjectile> ExplosionClass, int32 PoolSize)
+{
+    if (!World || !ExplosionClass)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("URLProjectilePool::InitializeExplosionPool - Invalid World or ExplosionClass"));
+        return;
+    }
+
+    WorldRef = World;
+    ExplosionClassRef = ExplosionClass;
+    MaxExplosionPoolSize = PoolSize;
+
+    // 기존 폭발 파티클 풀 정리
+    for (ARLProjectile* ExplosionEffect : AvailableExplosionEffects)
+    {
+        if (ExplosionEffect && IsValid(ExplosionEffect))
+        {
+            ExplosionEffect->Destroy();
+        }
+    }
+
+    for (ARLProjectile* ExplosionEffect : ActiveExplosionEffects)
+    {
+        if (ExplosionEffect && IsValid(ExplosionEffect))
+        {
+            ExplosionEffect->Destroy();
+        }
+    }
+
+    AvailableExplosionEffects.Empty();
+    ActiveExplosionEffects.Empty();
+
+    // 초기 폭발 파티클들 생성
+    for (int8 i = 0; i < MaxExplosionPoolSize; i++)
+    {
+        ARLProjectile* NewExplosionEffect = CreateNewExplosionEffect();
+        if (NewExplosionEffect)
+        {
+            NewExplosionEffect->SetPooled(true);
+            NewExplosionEffect->SetActorHiddenInGame(true);
+            NewExplosionEffect->SetActorEnableCollision(false);
+            AvailableExplosionEffects.Add(NewExplosionEffect);
+        }
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("URLProjectilePool::InitializeExplosionPool - Explosion pool initialized with %d effects"), AvailableExplosionEffects.Num());
+}
+
+ARLProjectile* URLProjectilePool::GetExplosionEffect()
+{
+    if (!WorldRef || !ExplosionClassRef)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("URLProjectilePool::GetExplosionEffect - Explosion pool not initialized"));
+        return nullptr;
+    }
+
+    ARLProjectile* ExplosionEffect = nullptr;
+
+    // 사용 가능한 폭발 파티클이 있는지 확인
+    if (AvailableExplosionEffects.Num() > 0)
+    {
+        ExplosionEffect = AvailableExplosionEffects.Pop();
+    }
+    else
+    {
+        // 사용 가능한 폭발 파티클이 없으면 새로 생성
+        ExplosionEffect = CreateNewExplosionEffect();
+        if (ExplosionEffect)
+        {
+            ExplosionEffect->SetPooled(true);
+            UE_LOG(LogTemp, Warning, TEXT("URLProjectilePool::GetExplosionEffect - Explosion pool exhausted, created new effect"));
+        }
+    }
+
+    if (ExplosionEffect)
+    {
+        ActiveExplosionEffects.Add(ExplosionEffect);
+        ExplosionEffect->SetActorHiddenInGame(false);
+        ExplosionEffect->SetActorEnableCollision(false); // 폭발 파티클은 콜리전 비활성화
+    }
+
+    return ExplosionEffect;
+}
+
+void URLProjectilePool::ReturnExplosionEffect(ARLProjectile* ExplosionEffect)
+{
+    if (!ExplosionEffect || !ExplosionEffect->IsPooled())
+    {
+        return;
+    }
+
+    // 활성 목록에서 제거
+    ActiveExplosionEffects.RemoveSingle(ExplosionEffect);
+
+    // 폭발 파티클 비활성화
+    ExplosionEffect->DeactivateProjectile();
+    ExplosionEffect->SetActorHiddenInGame(true);
+    ExplosionEffect->SetActorEnableCollision(false);
+
+    // 사용 가능한 목록에 다시 추가
+    AvailableExplosionEffects.Add(ExplosionEffect);
+}
+
+ARLProjectile* URLProjectilePool::CreateNewExplosionEffect()
+{
+    if (!WorldRef || !ExplosionClassRef)
+    {
+        return nullptr;
+    }
+
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+    ARLProjectile* NewExplosionEffect = WorldRef->SpawnActor<ARLProjectile>(
+        ExplosionClassRef, 
+        FVector::ZeroVector, 
+        FRotator::ZeroRotator, 
+        SpawnParams
+    );
+
+    return NewExplosionEffect;
 } 

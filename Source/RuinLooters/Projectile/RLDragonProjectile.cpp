@@ -1,6 +1,8 @@
 #include "RLDragonProjectile.h"
 #include "../Character/RLCharacterPlayer.h"
 #include "../Character/RLCharacterEnemyDragon.h"
+#include "../Pool/RLProjectilePool.h"
+#include "Kismet/GameplayStatics.h"
 
 ARLDragonProjectile::ARLDragonProjectile()
 {
@@ -9,6 +11,9 @@ ARLDragonProjectile::ARLDragonProjectile()
     ProjectileSettings.bCanPierceEnemies = false;
     ProjectileSettings.MaxPierceCount = 1;
     ProjectileSettings.LifeTime = 5.0f;
+    
+    // 폭발 파티클 템플릿 초기화
+    ExplosionParticleTemplate = nullptr;
     
     UE_LOG(LogTemp, Log, TEXT("Dragon Projectile created"));
 }
@@ -32,6 +37,12 @@ void ARLDragonProjectile::SetupWithDragonSettings(float CollisionRadius, float C
            CollisionRadius, CollisionHeight, Damage, Speed);
 }
 
+void ARLDragonProjectile::SetExplosionParticleTemplate(UParticleSystem* InExplosionTemplate)
+{
+    ExplosionParticleTemplate = InExplosionTemplate;
+    UE_LOG(LogTemp, Log, TEXT("Dragon Projectile explosion particle template set"));
+}
+
 void ARLDragonProjectile::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
     if (!OtherActor || OtherActor == this || OtherActor == GetOwner())
@@ -48,7 +59,10 @@ void ARLDragonProjectile::OnOverlap(UPrimitiveComponent* OverlappedComponent, AA
     // 지형(WorldStatic)에 충돌했는지 확인
     if (OtherComponent && OtherComponent->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic)
     {
-        UE_LOG(LogTemp, Log, TEXT("Dragon Projectile hit terrain/world static - returning to pool"));
+        UE_LOG(LogTemp, Log, TEXT("Dragon Projectile hit terrain/world static - creating explosion"));
+        
+        // 폭발 파티클 생성
+        CreateExplosionEffect(GetActorLocation());
         
         // 파티클 시스템 정지
         if (ParticleSystem)
@@ -80,6 +94,9 @@ void ARLDragonProjectile::OnOverlap(UPrimitiveComponent* OverlappedComponent, AA
             UE_LOG(LogTemp, Log, TEXT("Dragon Projectile hit player %s - stopping"), 
                    *OtherActor->GetName());
         }
+        
+        // 폭발 파티클 생성 (플레이어와 충돌 시)
+        CreateExplosionEffect(GetActorLocation());
         
         // 드래곤 투사체는 플레이어에게 맞으면 정지
         if (ParticleSystem)
@@ -124,4 +141,27 @@ bool ARLDragonProjectile::IsValidTarget(AActor* Target)
 
     // 드래곤 투사체는 플레이어에게만 데미지
     return Cast<ARLCharacterPlayer>(Target) != nullptr;
+}
+
+
+
+void ARLDragonProjectile::CreateExplosionEffect(FVector Location)
+{
+    if (!ExplosionParticleTemplate)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No explosion particle template set for Dragon Projectile"));
+        return;
+    }
+
+    // 폭발 파티클을 직접 생성 (발사체 파티클과 별개)
+    UGameplayStatics::SpawnEmitterAtLocation(
+        GetWorld(), 
+        ExplosionParticleTemplate, 
+        Location, 
+        FRotator::ZeroRotator,
+        FVector(1.0f), // 기본 스케일
+        true  // Auto destroy when finished
+    );
+    
+    UE_LOG(LogTemp, Log, TEXT("Dragon Projectile explosion particle spawned at location: %s"), *Location.ToString());
 } 
