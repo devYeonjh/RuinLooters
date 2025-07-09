@@ -156,6 +156,9 @@ protected:
 	// 투사체 스킬 사용 시 원래 속도 저장
 	float OriginalWalkSpeedForProjectile;
 
+	// 안전 타이머 핸들
+	FTimerHandle SafetyTimerHandle;
+
 public:
 	FORCEINLINE ARLCharacterPlayer* GetPlayer() { return this; };
 	FORCEINLINE class ARLNPC* GetInteractNPC() { return InteractiveNPC; };
@@ -197,6 +200,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Player Projectile")
 	void UseProjectileSkill();
 
+	// 투사체 스킬 몽타주 종료 콜백
+	UFUNCTION()
+	void OnProjectileSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
 	UFUNCTION(BlueprintCallable, Category = "Player Projectile")
 	void FirePlayerProjectile();
 
@@ -225,6 +232,8 @@ protected:
 	uint8 CheckEnemy();
 
 	// 투사체 스킬 관련 함수들
+
+	FOnMontageEnded MontageEndedDelegate;
 };
 
 

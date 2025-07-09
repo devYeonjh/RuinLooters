@@ -540,14 +540,37 @@ void ARLCharacterPlayer::UseProjectileSkill()
     // 애니메이션 몽타주 재생
     if (ProjectileSkillMontage && AnimInstance)
     {
-        AnimInstance->Montage_Play(ProjectileSkillMontage);
-        UE_LOG(LogTemp, Log, TEXT("Player projectile skill montage started"));
+        // 몽타주 종료 콜백 설정
+        MontageEndedDelegate.BindUObject(this, &ARLCharacterPlayer::OnProjectileSkillMontageEnded);
+        
+        // 몽타주 재생 및 델리게이트 설정
+        float MontageLength = AnimInstance->Montage_Play(ProjectileSkillMontage);
+        AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, ProjectileSkillMontage);
+        
+        GetCharacterMovement()->SetMovementMode(MOVE_None);
+        
+        UE_LOG(LogTemp, Warning, TEXT("Player projectile skill montage started - Length: %f"), MontageLength);
+        UE_LOG(LogTemp, Warning, TEXT("Montage delegate bound successfully"));
+        
+        // 안전장치: 몽타주 길이 + 0.5초 후 강제로 이동 복원
+        GetWorldTimerManager().SetTimer(
+            SafetyTimerHandle,
+            [this]()
+            {
+                if (bIsUsingProjectileSkill)
+                {
+                    UE_LOG(LogTemp, Warning, TEXT("Safety timer triggered - Force restoring movement"));
+                    GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+                    bIsUsingProjectileSkill = false;
+                }
+            },
+            MontageLength + 0.5f,
+            false
+        );
     }
     else
     {
-        // 몽타주가 없으면 바로 발사
-        FirePlayerProjectile();
-        bIsUsingProjectileSkill = false;
+        // 몽타주가 없으면 발사 안함
         UE_LOG(LogTemp, Warning, TEXT("ProjectileSkillMontage is not set, firing projectile immediately"));
     }
 
@@ -622,6 +645,17 @@ void ARLCharacterPlayer::FirePlayerProjectile()
     }, 3.0f, false);
 
     UE_LOG(LogTemp, Log, TEXT("Player projectile fired"));
+}
+
+void ARLCharacterPlayer::OnProjectileSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+    UE_LOG(LogTemp, Warning, TEXT("OnProjectileSkillMontageEnded called! Interrupted: %s"), bInterrupted ? TEXT("true") : TEXT("false"));
+    
+    // 몽타주 종료 시 이동 모드 복원
+    GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+    bIsUsingProjectileSkill = false;
+    
+    UE_LOG(LogTemp, Warning, TEXT("Player projectile skill montage ended - Movement restored"));
 }
 
 
