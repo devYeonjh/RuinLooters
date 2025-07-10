@@ -54,7 +54,10 @@ protected:
 	class UAnimMontage* DieMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Animation")
-	class UAnimMontage* BreathMontage;
+	class UAnimMontage* GroundBreathMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	class UAnimMontage* SkyBreathMontage;
 
 	UPROPERTY()
 	class UAnimInstance* AnimInstance;

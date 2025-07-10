@@ -24,6 +24,7 @@ public:
     static const FName bInRangeKey;
     static const FName StartSkyPointKey;
     static const FName CurrentSkyPointKey;
+    static const FName bIsHpLowKey;
 
 protected:
     UPROPERTY(EditDefaultsOnly, Category = "AI")

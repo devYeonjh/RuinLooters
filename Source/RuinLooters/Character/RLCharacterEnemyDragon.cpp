@@ -17,6 +17,7 @@
 #include "../Pool/RLProjectilePool.h"
 #include "../Projectile/RLProjectile.h"
 #include "../Projectile/RLDragonProjectile.h"
+#include "AIController.h"
 
 ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 {
@@ -52,6 +53,8 @@ ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 	// 애니메이션 몽타주 초기화
 	AttackMontage = nullptr;
 	DieMontage = nullptr;
+	GroundBreathMontage = nullptr;
+	SkyBreathMontage = nullptr;
 	
 	// 사운드 초기화
 	AttackSound = nullptr;
@@ -87,13 +90,13 @@ void ARLCharacterEnemyDragon::BeginPlay()
 		ProjectilePool = NewObject<URLProjectilePool>(this);
 		ProjectilePool->InitializePool(GetWorld(), ProjectileClass, 10);
 		UE_LOG(LogTemp, Log, TEXT("Dragon projectile pool initialized"));
-		
-
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Dragon ProjectileClass is not set"));
 	}
+
+	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 }
 
 void ARLCharacterEnemyDragon::TakeDragonDamage(int32 ReceivedDamage)
@@ -289,10 +292,18 @@ void ARLCharacterEnemyDragon::BreathAttack()
 	// 브레스 공격 사운드 재생
 	PlayAttackSound();
 	
-	// 브레스 애니메이션 재생
-	if (BreathMontage && AnimInstance)
+	// 현재 MovementMode에 따라 다른 브레스 애니메이션 재생
+	EMovementMode CurrentMovementMode = GetCharacterMovement()->MovementMode;
+	
+	if (CurrentMovementMode == MOVE_Walking)
 	{
-		AnimInstance->Montage_Play(BreathMontage);
+		AnimInstance->Montage_Play(GroundBreathMontage);
+		UE_LOG(LogTemp, Log, TEXT("Dragon using ground breath montage"));
+	}
+	else if (CurrentMovementMode == MOVE_Flying)
+	{
+		AnimInstance->Montage_Play(SkyBreathMontage);
+		UE_LOG(LogTemp, Log, TEXT("Dragon using sky breath montage"));
 	}
 	
 	// 브레스 공격 로그
@@ -303,10 +314,6 @@ void ARLCharacterEnemyDragon::BreathAttack()
 	
 	// 공격 쿨다운 시작
 	bIsCanAttack = false;
-	
-	// 투사체 발사 (애니메이션 노티파이에서 호출하거나 타이머로 호출)
-	FTimerHandle BreathTimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(BreathTimerHandle, this, &ARLCharacterEnemyDragon::FireBreathProjectile, 0.5f, false);
 }
 
 void ARLCharacterEnemyDragon::FireBreathProjectile()
@@ -325,9 +332,32 @@ void ARLCharacterEnemyDragon::FireBreathProjectile()
 		return;
 	}
 	
-	// 발사 위치 및 방향 설정
+	// 발사 위치 설정
 	FVector DragonMouthLocation = GetActorLocation() + GetActorForwardVector() * 100.0f + FVector(0.0f, 0.0f, 50.0f);
-	FVector FireDirection = GetActorForwardVector();
+	
+	// 타겟 방향 계산 (AI 컨트롤러의 포커스 타겟 사용)
+	FVector FireDirection = GetActorForwardVector(); // 기본값
+	
+	// AI 컨트롤러에서 현재 포커스 타겟 가져오기
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		if (AActor* FocusActor = AIController->GetFocusActor())
+		{
+			// 타겟의 위치로 방향 계산
+			FVector TargetLocation = FocusActor->GetActorLocation();
+			FireDirection = (TargetLocation - DragonMouthLocation).GetSafeNormal();
+			
+			UE_LOG(LogTemp, Log, TEXT("Dragon firing at focus target: %s"), *TargetLocation.ToString());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Dragon has no focus target, firing forward"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Dragon has no AI controller, firing forward"));
+	}
 	
 	// 투사체 가시성 및 콜리전 활성화 (풀에서 가져온 경우 숨겨져 있을 수 있음)
 	DragonProjectile->SetActorHiddenInGame(false);
@@ -374,14 +404,26 @@ void ARLCharacterEnemyDragon::FireBreathProjectile()
 void ARLCharacterEnemyDragon::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	// 공격 몽타주가 끝나면 다시 공격 가능 상태로 설정
-	if (AttackMontage == Montage || BreathMontage == Montage)
+	if (AttackMontage == Montage || GroundBreathMontage == Montage || SkyBreathMontage == Montage)
 	{
 		bIsCanAttack = true;
 		
-		// 움직임 다시 활성화
-		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		
-		UE_LOG(LogTemp, Warning, TEXT("Dragon attack montage ended, can attack and move again"));
+		// 움직임 다시 활성화 (원래 상태로 복원)
+		if (GroundBreathMontage == Montage)
+		{
+			GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+			UE_LOG(LogTemp, Warning, TEXT("Dragon ground breath montage ended, returning to walking"));
+		}
+		else if (SkyBreathMontage == Montage)
+		{
+			GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+			UE_LOG(LogTemp, Warning, TEXT("Dragon sky breath montage ended, returning to flying"));
+		}
+		else
+		{
+			GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+			UE_LOG(LogTemp, Warning, TEXT("Dragon attack montage ended, can attack and move again"));
+		}
 	}
 }
 

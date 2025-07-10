@@ -12,13 +12,14 @@ const FName ARLEnemyAIController::TargetKey(TEXT("TargetKey"));
 const FName ARLEnemyAIController::bInRangeKey(TEXT("bInRangeKey"));
 const FName ARLEnemyAIController::StartSkyPointKey(TEXT("StartSkyPointKey"));
 const FName ARLEnemyAIController::CurrentSkyPointKey(TEXT("CurrentSkyPointKey"));
+const FName ARLEnemyAIController::bIsHpLowKey(TEXT("bIsHpLowKey"));
 
 ARLEnemyAIController::ARLEnemyAIController()
 {
     Perception = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("Perception"));
     SightCfg = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("Sight"));
-    SightCfg->SightRadius = 1500.f;
-    SightCfg->LoseSightRadius = 1800.f;
+    SightCfg->SightRadius = 3000.f;
+    SightCfg->LoseSightRadius = 3300.f;
     SightCfg->PeripheralVisionAngleDegrees = 180.f;
     Perception->ConfigureSense(*SightCfg);
     Perception->SetDominantSense(SightCfg->GetSenseImplementation());
@@ -27,8 +28,7 @@ ARLEnemyAIController::ARLEnemyAIController()
     SightCfg->DetectionByAffiliation.bDetectFriendlies = false;  // 같은 팀 감지
     SightCfg->DetectionByAffiliation.bDetectNeutrals = false;  // 중립 감지
 
-    Perception->OnTargetPerceptionUpdated.AddDynamic(
-        this, &ARLEnemyAIController::OnPerceptionUpdated);
+    Perception->OnTargetPerceptionUpdated.AddDynamic(this, &ARLEnemyAIController::OnPerceptionUpdated);
 }
 
 void ARLEnemyAIController::OnPossess(APawn* InPawn)
