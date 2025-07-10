@@ -15,7 +15,13 @@ ARLDragonProjectile::ARLDragonProjectile()
     // 폭발 파티클 템플릿 초기화
     ExplosionParticleTemplate = nullptr;
     
-    UE_LOG(LogTemp, Log, TEXT("Dragon Projectile created"));
+    // Block 충돌 이벤트 바인딩 (지형과의 충돌 처리용)
+    if (CapsuleCollision)
+    {
+        CapsuleCollision->OnComponentHit.AddDynamic(this, &ARLDragonProjectile::OnHit);
+    }
+    
+    UE_LOG(LogTemp, Log, TEXT("Dragon Projectile created with hit detection"));
 }
 
 void ARLDragonProjectile::SetupWithDragonSettings(float CollisionRadius, float CollisionHeight, int32 Damage, float Speed)
@@ -56,31 +62,8 @@ void ARLDragonProjectile::OnOverlap(UPrimitiveComponent* OverlappedComponent, AA
         return;
     }
 
-    // 지형(WorldStatic)에 충돌했는지 확인
-    if (OtherComponent && OtherComponent->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic)
-    {
-        UE_LOG(LogTemp, Log, TEXT("Dragon Projectile hit terrain/world static - creating explosion"));
-        
-        // 폭발 파티클 생성
-        CreateExplosionEffect(GetActorLocation());
-        
-        // 파티클 시스템 정지
-        if (ParticleSystem)
-        {
-            ParticleSystem->Deactivate();
-        }
-
-        // 오브젝트 풀로 반환 또는 삭제
-        if (bIsPooled)
-        {
-            OnLifeTimeExpired();
-        }
-        else
-        {
-            Destroy();
-        }
-        return;
-    }
+    // 지형(WorldStatic)과의 충돌은 OnHit에서 처리됨 (Block 충돌)
+    // 여기서는 Overlap 충돌만 처리
 
     // 유효한 타겟인지 확인 (플레이어에게만 데미지)
     if (IsValidTarget(OtherActor))
@@ -164,4 +147,66 @@ void ARLDragonProjectile::CreateExplosionEffect(FVector Location)
     );
     
     UE_LOG(LogTemp, Log, TEXT("Dragon Projectile explosion particle spawned at location: %s"), *Location.ToString());
+}
+
+void ARLDragonProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+    if (!OtherActor || OtherActor == this || OtherActor == GetOwner())
+    {
+        return;
+    }
+
+    // 드래곤 투사체는 드래곤 타입과 충돌하지 않음
+    if (Cast<ARLCharacterEnemyDragon>(OtherActor))
+    {
+        return;
+    }
+
+    // 지형(WorldStatic)이나 다른 Block 객체와 충돌했을 때 처리
+    if (OtherComp && OtherComp->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Dragon Projectile hit terrain/world static - creating explosion at hit point"));
+        
+        // 충돌 지점에 폭발 파티클 생성
+        CreateExplosionEffect(Hit.Location);
+        
+        // 파티클 시스템 정지
+        if (ParticleSystem)
+        {
+            ParticleSystem->Deactivate();
+        }
+
+        // 오브젝트 풀로 반환 또는 삭제
+        if (bIsPooled)
+        {
+            OnLifeTimeExpired();
+        }
+        else
+        {
+            Destroy();
+        }
+        return;
+    }
+
+    // 다른 Block 객체와 충돌했을 때도 폭발 생성 (벽, 장애물 등)
+    UE_LOG(LogTemp, Log, TEXT("Dragon Projectile hit block object: %s - creating explosion"), *OtherActor->GetName());
+    
+    // 충돌 지점에 폭발 파티클 생성
+    CreateExplosionEffect(Hit.Location);
+    
+    // 파티클 시스템 정지
+    if (ParticleSystem)
+    {
+        ParticleSystem->Deactivate();
+    }
+
+    // 오브젝트 풀로 반환 또는 삭제
+    if (bIsPooled)
+    {
+        OnLifeTimeExpired();
+    }
+    else
+    {
+        Destroy();
+    }
 } 
