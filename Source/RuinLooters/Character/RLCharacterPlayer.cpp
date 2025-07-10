@@ -32,6 +32,7 @@
 #include "Animation/AnimMontage.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Engine/DamageEvents.h"
 
 ARLCharacterPlayer::ARLCharacterPlayer()
 {
@@ -318,15 +319,16 @@ FGenericTeamId ARLCharacterPlayer::GetGenericTeamId() const
     return FGenericTeamId(TeamID);
 }
 
-void ARLCharacterPlayer::TakeCharacterDamage(int32 RecieveDamage)
+float ARLCharacterPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
     if (bIsInvincible)
     {
         // 무적 중이면 데미지 무시
-        return;
+        return 0.0f;
     }
-    ARLCharacterBase::TakeCharacterDamage(RecieveDamage);
+    float ActualDamage = ARLCharacterBase::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
     PlayerHpChange.Broadcast(CurrentHp, MaxHp);
+    return ActualDamage;
 }
 
 void ARLCharacterPlayer::TakeCharacterHeal(int32 RecieveHealAmount)
@@ -338,7 +340,7 @@ void ARLCharacterPlayer::TakeCharacterHeal(int32 RecieveHealAmount)
 
 void ARLCharacterPlayer::TakeCharacterMaxHealth(int32 UpScale)
 {
-    int32 TotalMaxHp = GetMaxHp() + UpScale;
+    float TotalMaxHp = GetMaxHp() + UpScale;
     SetCurrentHp(GetCurrentHp() + UpScale);
     SetMaxHp(TotalMaxHp);
 }

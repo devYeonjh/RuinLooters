@@ -44,8 +44,8 @@ void URLBTService_CheckHp::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* No
     }
     
     // 현재 체력과 최대 체력 가져오기
-    int32 CurrentHp = Dragon->GetCurrentHp();
-    int32 MaxHp = Dragon->GetMaxHp();
+    float CurrentHp = Dragon->GetCurrentHp();
+    float MaxHp = Dragon->GetMaxHp();
     
     // 체력이 0 이하이거나 최대 체력이 0 이하인 경우 예외 처리
     if (MaxHp <= 0)
@@ -54,7 +54,7 @@ void URLBTService_CheckHp::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* No
     }
     
     // 체력 비율 계산
-    float HpRatio = static_cast<float>(CurrentHp) / static_cast<float>(MaxHp);
+    float HpRatio = CurrentHp / MaxHp;
     
     // 체력이 임계값 이하인지 확인
     bool bIsHpLow = HpRatio <= HpThreshold;
@@ -63,6 +63,6 @@ void URLBTService_CheckHp::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* No
     BlackboardComp->SetValueAsBool(bIsHpLowKey.SelectedKeyName, bIsHpLow);
     
     // 디버그 로그 (선택적)
-    UE_LOG(LogTemp, Log, TEXT("Dragon HP Check: %d/%d (%.2f%%), IsHpLow: %s"), 
+    UE_LOG(LogTemp, Log, TEXT("Dragon HP Check: %.1f/%.1f (%.2f%%), IsHpLow: %s"), 
            CurrentHp, MaxHp, HpRatio * 100.0f, bIsHpLow ? TEXT("True") : TEXT("False"));
 } 

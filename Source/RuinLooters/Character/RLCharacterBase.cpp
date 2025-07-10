@@ -15,11 +15,13 @@
 #include "Blueprint/UserWidget.h"
 #include "GameInstance/RLGameInstance.h"
 #include "RLGliderComponent.h"
+#include "Engine/DamageEvents.h"
+#include "Particles/ParticleSystem.h"
 
 ARLCharacterBase::ARLCharacterBase() : WeaponRowName(TEXT("First WeaponRowName Text"))
 {
     // 기본 스탯 초기화 (블루프린트에서 덮어쓰기 가능)
-    MaxHp = 100;
+    MaxHp = 100.0f;
     CurrentHp = MaxHp;
     AttackDamage = 0;
     Defence = 5;
@@ -47,10 +49,10 @@ void ARLCharacterBase::BeginPlay()
     AnimInstance = GetMesh()->GetAnimInstance();
 }
 
-void ARLCharacterBase::TakeCharacterDamage(int32 RecieveDamage)
+float ARLCharacterBase::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
     // 방어력만큼 데미지 감소
-    int32 DamageApplied = FMath::Max(1, RecieveDamage - Defence);
+    float DamageApplied = FMath::Max(1.0f, DamageAmount - Defence);
     CurrentHp -= DamageApplied;
 
     if (CurrentHp < 0)
@@ -58,7 +60,14 @@ void ARLCharacterBase::TakeCharacterDamage(int32 RecieveDamage)
         CurrentHp = 0;
     }
 
-    if (CurrentHp == 0)
+    // 타격 파티클 이펙트 생성
+    if (HitParticleTemplate)
+    {
+        FVector HitLocation = GetActorLocation() + FVector(0.0f, 0.0f, 50.0f); // 캐릭터 중앙 위치
+        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticleTemplate, HitLocation);
+    }
+
+    if (CurrentHp <= 0)
     {
         Die();
     }
@@ -68,17 +77,18 @@ void ARLCharacterBase::TakeCharacterDamage(int32 RecieveDamage)
         UGameplayStatics::PlaySoundAtLocation(this, HitSound, GetActorLocation());
     }
 
+    return DamageApplied;
 }
 
 void ARLCharacterBase::TakeCharacterHeal(int32 RecieveHealAmount)
 {
-    UE_LOG(LogTemp, Warning, TEXT("PreviousHp: %d."), CurrentHp);
+    UE_LOG(LogTemp, Warning, TEXT("PreviousHp: %.1f."), CurrentHp);
 
-    int32 TotalHp = RecieveHealAmount + CurrentHp;
+    float TotalHp = RecieveHealAmount + CurrentHp;
 
-    CurrentHp = FMath::Clamp(TotalHp, 0, MaxHp);
+    CurrentHp = FMath::Clamp(TotalHp, 0.0f, MaxHp);
 
-    UE_LOG(LogTemp, Warning, TEXT("CurrentHp: %d."), CurrentHp);
+    UE_LOG(LogTemp, Warning, TEXT("CurrentHp: %.1f."), CurrentHp);
 }
 
 void ARLCharacterBase::Die()
@@ -130,7 +140,8 @@ void ARLCharacterBase::SwordAttackLineTrace()
         ARLCharacterBase* HitChar = Cast<ARLCharacterBase>(Hit.GetActor());
         if (HitChar)
         {
-            HitChar->TakeCharacterDamage(AttackDamage);
+            FDamageEvent DamageEvent;
+            HitChar->TakeDamage((float)AttackDamage, DamageEvent, nullptr, this);
         }
     }
 }

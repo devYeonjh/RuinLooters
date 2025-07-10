@@ -5,7 +5,7 @@ using UnrealBuildTool;
 public class RuinLooters : ModuleRules
 {
 	public RuinLooters(ReadOnlyTargetRules Target) : base(Target)
-	{s
+	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
         PublicIncludePaths.AddRange(new string[] { "RuinLooters" });

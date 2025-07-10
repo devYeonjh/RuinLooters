@@ -18,12 +18,14 @@
 #include "../Projectile/RLProjectile.h"
 #include "../Projectile/RLDragonProjectile.h"
 #include "AIController.h"
+#include "Engine/DamageEvents.h"
+#include "Particles/ParticleSystem.h"
 
 ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 {
 	// 기본 스탯 설정
-	CurrentHp = 2000;
-	MaxHp = 2000;
+	    CurrentHp = 2000.0f;
+    MaxHp = 2000.0f;
 	AttackDamage = 50;
 	Range = 300.0f;
 	AttackSpeed = 1.5f;
@@ -111,17 +113,24 @@ void ARLCharacterEnemyDragon::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void ARLCharacterEnemyDragon::TakeDragonDamage(int32 ReceivedDamage)
+float ARLCharacterEnemyDragon::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
 	// 이미 죽었다면 데미지 무시
 	if (CurrentHp <= 0)
 	{
-		return;
+		return 0.0f;
 	}
 	
 	// 방어력 적용
-	int32 ActualDamage = FMath::Max(1, ReceivedDamage - Defence);
-	CurrentHp = FMath::Max(0, CurrentHp - ActualDamage);
+	float ActualDamage = FMath::Max(1.0f, DamageAmount - Defence);
+	CurrentHp = FMath::Max(0.0f, CurrentHp - ActualDamage);
+	
+	// 타격 파티클 이펙트 생성
+	if (HitParticleTemplate)
+	{
+		FVector HitLocation = GetActorLocation() + FVector(0.0f, 0.0f, 100.0f); // 드래곤 중앙 위치 (높게)
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticleTemplate, HitLocation);
+	}
 	
 	// 피격 사운드 재생
 	if (HitSound)
@@ -130,13 +139,15 @@ void ARLCharacterEnemyDragon::TakeDragonDamage(int32 ReceivedDamage)
 	}
 	
 	// 데미지 로그 출력
-	UE_LOG(LogTemp, Warning, TEXT("Dragon received %d damage (actual: %d), HP: %d/%d"), ReceivedDamage, ActualDamage, CurrentHp, MaxHp);
+	UE_LOG(LogTemp, Warning, TEXT("Dragon received %.1f damage (actual: %.1f), HP: %.1f/%.1f"), DamageAmount, ActualDamage, CurrentHp, MaxHp);
 	
 	// HP가 0 이하가 되면 죽음 처리
 	if (CurrentHp <= 0)
 	{
 		Die();
 	}
+	
+	return ActualDamage;
 }
 
 void ARLCharacterEnemyDragon::Heal(int32 HealAmount)
@@ -146,10 +157,10 @@ void ARLCharacterEnemyDragon::Heal(int32 HealAmount)
 		return;
 	}
 	
-	int32 OldHp = CurrentHp;
+	float OldHp = CurrentHp;
 	CurrentHp = FMath::Min(MaxHp, CurrentHp + HealAmount);
 	
-	UE_LOG(LogTemp, Warning, TEXT("Dragon healed %d HP: %d/%d"), CurrentHp - OldHp, CurrentHp, MaxHp);
+	UE_LOG(LogTemp, Warning, TEXT("Dragon healed %.1f HP: %.1f/%.1f"), CurrentHp - OldHp, CurrentHp, MaxHp);
 }
 
 void ARLCharacterEnemyDragon::Die()
@@ -274,9 +285,10 @@ void ARLCharacterEnemyDragon::CallAttackCollision()
 				ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(HitActor);
 				if (Player)
 				{
-					// 플레이어에게 데미지 적용
-					Player->TakeCharacterDamage(AttackDamage);
-					UE_LOG(LogTemp, Warning, TEXT("Dragon hit player for %d damage"), AttackDamage);
+									// 플레이어에게 데미지 적용
+				FDamageEvent DamageEvent;
+				Player->TakeDamage((float)AttackDamage, DamageEvent, nullptr, this);
+				UE_LOG(LogTemp, Warning, TEXT("Dragon hit player for %d damage"), AttackDamage);
 				}
 			}
 		}
