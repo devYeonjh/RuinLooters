@@ -224,7 +224,7 @@ void ARLCharacterEnemyDragon::Attack()
 	// 공격 로그
 	UE_LOG(LogTemp, Warning, TEXT("Dragon is attacking with damage: %d"), AttackDamage);
 	
-	// 공격 중 움직임 비활성화
+	// 공격 중 이동 정지
 	GetCharacterMovement()->SetMovementMode(MOVE_None);
 	
 	// 공격 쿨다운 시작 (애니메이션 종료 시 OnMontageEnded에서 재설정)
@@ -333,7 +333,7 @@ void ARLCharacterEnemyDragon::BreathAttack()
 	// 브레스 공격 로그
 	UE_LOG(LogTemp, Warning, TEXT("Dragon is breathing fire with damage: %d"), BreathDamage);
 	
-	// 브레스 공격 중 움직임 비활성화
+	// 브레스 공격 중 이동 정지
 	GetCharacterMovement()->SetMovementMode(MOVE_None);
 	
 	// 공격 쿨다운 시작
@@ -425,22 +425,10 @@ void ARLCharacterEnemyDragon::OnMontageEnded(UAnimMontage* Montage, bool bInterr
 	{
 		bIsCanAttack = true;
 		
-		// 움직임 다시 활성화 (원래 상태로 복원)
-		if (GroundBreathMontage == Montage)
-		{
-			GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-			UE_LOG(LogTemp, Warning, TEXT("Dragon ground breath montage ended, returning to walking"));
-		}
-		else if (SkyBreathMontage == Montage)
-		{
-			GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-			UE_LOG(LogTemp, Warning, TEXT("Dragon sky breath montage ended, returning to flying"));
-		}
-		else
-		{
-			GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-			UE_LOG(LogTemp, Warning, TEXT("Dragon attack montage ended, can attack and move again"));
-		}
+		// 공격/브레스 종료 후 Flying 모드로 복원
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		
+		UE_LOG(LogTemp, Warning, TEXT("Dragon attack/breath montage ended, returning to flying mode"));
 	}
 }
 
