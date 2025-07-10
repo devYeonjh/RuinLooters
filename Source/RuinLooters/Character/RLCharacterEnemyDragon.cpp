@@ -13,6 +13,11 @@
 #include "DrawDebugHelpers.h"
 #include "Character/RLCharacterPlayer.h"
 #include "Character/RLCharacterBase.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "../Pool/RLProjectilePool.h"
+#include "../Projectile/RLProjectile.h"
+#include "../Projectile/RLDragonProjectile.h"
+#include "AIController.h"
 
 ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 {
@@ -20,7 +25,7 @@ ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 	CurrentHp = 2000;
 	MaxHp = 2000;
 	AttackDamage = 50;
-	Range = 400.0f;
+	Range = 300.0f;
 	AttackSpeed = 1.5f;
 	Defence = 20;
 	
@@ -29,11 +34,27 @@ ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 	
 	// 캡슐 콜리전 공격 설정
 	CapsuleAttackRadius = 200.0f;
-	CapsuleAttackHeight = 100.0f;
+	CapsuleAttackHeight = 400.0f;
+	
+	// 브레스 공격 설정
+	BreathDamage = 75;
+	BreathRange = 1000.0f;
+	
+	// 투사체 풀 초기화
+	ProjectilePool = nullptr;
+	
+	// 브레스 투사체 콜리전 설정 초기화
+	BreathProjectileCollisionRadius = 30.0f;  // 드래곤 브레스 투사체 반지름
+	BreathProjectileCollisionHeight = 60.0f;  // 드래곤 브레스 투사체 높이
+	
+	// 폭발 파티클 템플릿 초기화
+	ExplosionParticleTemplate = nullptr;
 	
 	// 애니메이션 몽타주 초기화
-	CurrentMontage = nullptr;
+	AttackMontage = nullptr;
 	DieMontage = nullptr;
+	GroundBreathMontage = nullptr;
+	SkyBreathMontage = nullptr;
 	
 	// 사운드 초기화
 	AttackSound = nullptr;
@@ -62,6 +83,32 @@ void ARLCharacterEnemyDragon::BeginPlay()
 	{
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ARLCharacterEnemyDragon::OnMontageEnded);
 	}
+	
+	// 투사체 풀 초기화
+	if (ProjectileClass)
+	{
+		ProjectilePool = NewObject<URLProjectilePool>(this);
+		ProjectilePool->InitializePool(GetWorld(), ProjectileClass, 10);
+		UE_LOG(LogTemp, Log, TEXT("Dragon projectile pool initialized"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Dragon ProjectileClass is not set"));
+	}
+
+	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+}
+
+void ARLCharacterEnemyDragon::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// 투사체 풀 정리
+	if (ProjectilePool)
+	{
+		ProjectilePool->CleanupActiveProjectiles();
+		UE_LOG(LogTemp, Warning, TEXT("Dragon EndPlay: Cleaned up projectile pool"));
+	}
+	
+	Super::EndPlay(EndPlayReason);
 }
 
 void ARLCharacterEnemyDragon::TakeDragonDamage(int32 ReceivedDamage)
@@ -124,7 +171,6 @@ void ARLCharacterEnemyDragon::Die()
 	if (DieMontage && AnimInstance)
 	{
 		AnimInstance->Montage_Play(DieMontage);
-		CurrentMontage = DieMontage;
 	}
 	
 	// 콜리전 비활성화
@@ -157,54 +203,54 @@ void ARLCharacterEnemyDragon::Attack()
 	
 	// 공격 사운드 재생
 	PlayAttackSound();
+
+	// 공격 애니메이션 재생
+	if (AttackMontage && AnimInstance)
+	{
+		AnimInstance->Montage_Play(AttackMontage);
+	}
 	
 	// 공격 로그
 	UE_LOG(LogTemp, Warning, TEXT("Dragon is attacking with damage: %d"), AttackDamage);
 	
-	// 캡슐 콜리전 공격 트레이스 실행
-	CapsuleAttackTrace();
+	// 공격 중 움직임 비활성화
+	GetCharacterMovement()->SetMovementMode(MOVE_None);
 	
-	// 공격 쿨다운 시작
+	// 공격 쿨다운 시작 (애니메이션 종료 시 OnMontageEnded에서 재설정)
 	bIsCanAttack = false;
-	
-	// 공격 속도에 따른 쿨다운 타이머 설정
-	FTimerHandle AttackCooldownTimer;
-	GetWorld()->GetTimerManager().SetTimer(AttackCooldownTimer, [this]()
-	{
-		bIsCanAttack = true;
-	}, AttackSpeed, false);
 }
 
-void ARLCharacterEnemyDragon::PlayAttackSound()
-{
-	if (AttackSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, AttackSound, GetActorLocation());
-	}
-}
-
-void ARLCharacterEnemyDragon::CapsuleAttackTrace()
+void ARLCharacterEnemyDragon::CallAttackCollision()
 {
 	// 드래곤의 현재 위치와 방향
 	FVector StartLocation = GetActorLocation();
 	FVector ForwardVector = GetActorForwardVector();
-	
+	FVector RightVector = GetActorRightVector();
+
 	// 공격 범위 계산 (앞쪽으로 Range만큼)
 	FVector EndLocation = StartLocation + (ForwardVector * Range);
-	
+
+	// 드래곤의 현재 회전을 쿼터니언으로 가져오기
+	FQuat DragonQuat = GetActorRotation().Quaternion();
+
+	// 드래곤의 로컬 Up 축을 기준으로 90도 회전 (드래곤 기준 상대적 회전)
+	FQuat ExtraRot = FQuat(RightVector, FMath::DegreesToRadians(90.f));
+
+	// 최종 회전값 생성 (드래곤 기준 상대적)
+	FQuat CapsuleRot = ExtraRot * DragonQuat;
+
 	// 캡슐 트레이스 파라미터 설정
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 	QueryParams.bTraceComplex = false;
 	QueryParams.bReturnPhysicalMaterial = false;
-	
 	// 캡슐 트레이스 실행
 	TArray<FHitResult> HitResults;
 	bool bHit = GetWorld()->SweepMultiByChannel(
 		HitResults,
 		StartLocation,
 		EndLocation,
-		FQuat::Identity,
+		CapsuleRot,
 		ECollisionChannel::ECC_Pawn,
 		FCollisionShape::MakeCapsule(CapsuleAttackRadius, CapsuleAttackHeight),
 		QueryParams
@@ -213,7 +259,7 @@ void ARLCharacterEnemyDragon::CapsuleAttackTrace()
 
 	FColor DebugColor = bHit ? FColor::Red : FColor::Green;
 	DrawDebugCapsule(GetWorld(), (StartLocation + EndLocation) / 2, CapsuleAttackHeight, CapsuleAttackRadius,
-		FQuat::Identity, DebugColor, false, 2.0f);
+		CapsuleRot, DebugColor, false, 2.0f);
 
 
 	// 피격된 액터들 처리
@@ -237,14 +283,152 @@ void ARLCharacterEnemyDragon::CapsuleAttackTrace()
 	}
 }
 
-void ARLCharacterEnemyDragon::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+void ARLCharacterEnemyDragon::PlayAttackSound()
 {
-	// 현재 실행 중인 몽타주가 끝나면 CurrentMontage를 null로 설정
-	if (CurrentMontage == Montage)
+	if (AttackSound)
 	{
-		CurrentMontage = nullptr;
+		UGameplayStatics::PlaySoundAtLocation(this, AttackSound, GetActorLocation());
+	}
+}
+
+
+
+void ARLCharacterEnemyDragon::BreathAttack()
+{
+	// 브레스 공격 가능 상태 확인
+	if (!bIsCanAttack || CurrentHp <= 0)
+	{
+		return;
 	}
 	
-	// 죽음 몽타주가 끝나면 특별한 처리는 하지 않음 (이미 타이머로 Destroy 설정됨)
+	// 브레스 공격 사운드 재생
+	PlayAttackSound();
+	
+	// 현재 MovementMode에 따라 다른 브레스 애니메이션 재생
+	EMovementMode CurrentMovementMode = GetCharacterMovement()->MovementMode;
+	
+	if (CurrentMovementMode == MOVE_Walking)
+	{
+		AnimInstance->Montage_Play(GroundBreathMontage);
+		UE_LOG(LogTemp, Log, TEXT("Dragon using ground breath montage"));
+	}
+	else if (CurrentMovementMode == MOVE_Flying)
+	{
+		AnimInstance->Montage_Play(SkyBreathMontage);
+		UE_LOG(LogTemp, Log, TEXT("Dragon using sky breath montage"));
+	}
+	
+	// 브레스 공격 로그
+	UE_LOG(LogTemp, Warning, TEXT("Dragon is breathing fire with damage: %d"), BreathDamage);
+	
+	// 브레스 공격 중 움직임 비활성화
+	GetCharacterMovement()->SetMovementMode(MOVE_None);
+	
+	// 공격 쿨다운 시작
+	bIsCanAttack = false;
+}
+
+void ARLCharacterEnemyDragon::FireBreathProjectile()
+{
+	if (!ProjectilePool)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Dragon projectile pool is not initialized"));
+		return;
+	}
+	
+	// 투사체 풀에서 투사체 가져오기 (ARLDragonProjectile로 캐스트)
+	ARLDragonProjectile* DragonProjectile = Cast<ARLDragonProjectile>(ProjectilePool->GetProjectile());
+	if (!DragonProjectile)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to get dragon projectile from pool"));
+		return;
+	}
+	
+	// 발사 위치 설정
+	FVector DragonMouthLocation = GetActorLocation() + GetActorForwardVector() * 100.0f + FVector(0.0f, 0.0f, 50.0f);
+	
+	// 타겟 방향 계산 (AI 컨트롤러의 포커스 타겟 사용)
+	FVector FireDirection = GetActorForwardVector(); // 기본값
+	
+	// AI 컨트롤러에서 현재 포커스 타겟 가져오기
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		if (AActor* FocusActor = AIController->GetFocusActor())
+		{
+			// 타겟의 위치로 방향 계산
+			FVector TargetLocation = FocusActor->GetActorLocation();
+			FireDirection = (TargetLocation - DragonMouthLocation).GetSafeNormal();
+			
+			UE_LOG(LogTemp, Log, TEXT("Dragon firing at focus target: %s"), *TargetLocation.ToString());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Dragon has no focus target, firing forward"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Dragon has no AI controller, firing forward"));
+	}
+	
+	// 투사체 가시성 및 콜리전 활성화 (풀에서 가져온 경우 숨겨져 있을 수 있음)
+	DragonProjectile->SetActorHiddenInGame(false);
+	DragonProjectile->SetActorEnableCollision(true);
+	
+	// 드래곤 설정값으로 투사체 설정 (캐릭터에서 설정한 콜리전 값 사용)
+	DragonProjectile->SetupWithDragonSettings(
+		BreathProjectileCollisionRadius,  // 캐릭터에서 설정한 반지름
+		BreathProjectileCollisionHeight,  // 캐릭터에서 설정한 높이
+		BreathDamage,                     // 캐릭터에서 설정한 데미지
+		1500.0f                           // 브레스 속도
+	);
+	
+	// 폭발 파티클 템플릿 설정 (발사체 파티클과 별개)
+	if (ExplosionParticleTemplate)
+	{
+		DragonProjectile->SetExplosionParticleTemplate(ExplosionParticleTemplate);
+	}
+	
+
+	
+	// 투사체 초기화 및 발사 (자체 생존 시간으로 자동 반환)
+	DragonProjectile->InitializeProjectile(DragonMouthLocation, FireDirection, DragonProjectile->GetProjectileSettings());
+	
+	// 투사체 소유자 설정
+	DragonProjectile->SetOwner(this);
+	
+	UE_LOG(LogTemp, Warning, TEXT("Dragon breath projectile fired - Location: %s, Direction: %s, Radius: %f, Height: %f"), 
+           *DragonMouthLocation.ToString(), *FireDirection.ToString(), BreathProjectileCollisionRadius, BreathProjectileCollisionHeight);
+	
+	// 타이머 제거 - 대신 발사체 자체의 생존 시간(LifeTime)을 이용하여 자동 반환
+	// ARLProjectile::OnLifeTimeExpired()에서 자동으로 풀에 반환됨
+	
+	UE_LOG(LogTemp, Log, TEXT("Dragon breath projectile fired with auto-return on lifetime expiration"));
+}
+
+void ARLCharacterEnemyDragon::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	// 공격 몽타주가 끝나면 다시 공격 가능 상태로 설정
+	if (AttackMontage == Montage || GroundBreathMontage == Montage || SkyBreathMontage == Montage)
+	{
+		bIsCanAttack = true;
+		
+		// 움직임 다시 활성화 (원래 상태로 복원)
+		if (GroundBreathMontage == Montage)
+		{
+			GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+			UE_LOG(LogTemp, Warning, TEXT("Dragon ground breath montage ended, returning to walking"));
+		}
+		else if (SkyBreathMontage == Montage)
+		{
+			GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+			UE_LOG(LogTemp, Warning, TEXT("Dragon sky breath montage ended, returning to flying"));
+		}
+		else
+		{
+			GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+			UE_LOG(LogTemp, Warning, TEXT("Dragon attack montage ended, can attack and move again"));
+		}
+	}
 }
 

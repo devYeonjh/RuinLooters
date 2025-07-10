@@ -5,11 +5,11 @@ using UnrealBuildTool;
 public class RuinLooters : ModuleRules
 {
 	public RuinLooters(ReadOnlyTargetRules Target) : base(Target)
-	{
+	{s
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
         PublicIncludePaths.AddRange(new string[] { "RuinLooters" });
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule", "UMG", "LevelSequence", "MovieScene" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule", "UMG", "LevelSequence", "MovieScene", "Niagara" });
 	}
 }

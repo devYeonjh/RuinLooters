@@ -5,7 +5,7 @@ void UInvincibleRollNotifyState::NotifyBegin(USkeletalMeshComponent* MeshComp, U
 {
     if (ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(MeshComp->GetOwner()))
     {
-        Player->StartInvincible();
+        //Player->StartInvincible();
     }
 }
 
@@ -13,6 +13,6 @@ void UInvincibleRollNotifyState::NotifyEnd(USkeletalMeshComponent* MeshComp, UAn
 {
     if (ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(MeshComp->GetOwner()))
     {
-        Player->EndInvincible();
+        //Player->EndInvincible();
     }
 } 

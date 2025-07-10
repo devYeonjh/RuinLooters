@@ -51,6 +51,14 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* SettingsAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ProjectileSkillAction;
+
+	// 투사체 스킬 애니메이션 몽타주
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	class UAnimMontage* ProjectileSkillMontage;
+
 	// NPC
 	UPROPERTY()
 	class ARLNPC* InteractiveNPC;
@@ -122,6 +130,42 @@ protected:
 
 	uint8 IsCanSkill : 1;
 
+	// 투사체 스킬 관련
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Projectile")
+	TSubclassOf<class ARLProjectile> PlayerProjectileClass;
+
+	UPROPERTY()
+	class URLProjectilePool* PlayerProjectilePool;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Projectile")
+	int32 ProjectileDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Projectile")
+	float ProjectileSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Projectile")
+	int32 ProjectileSkillCooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Projectile")
+	float ProjectileCollisionRadius;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Projectile")
+	float ProjectileCollisionHeight;
+
+	UPROPERTY()
+	uint8 bCanUseProjectileSkill : 1;
+
+	FTimerHandle ProjectileSkillCooldownHandle;
+
+	// 투사체 스킬 중 이동 제한 관련
+	UPROPERTY()
+	uint8 bIsUsingProjectileSkill : 1;
+
+	// 투사체 스킬 사용 시 원래 속도 저장
+	float OriginalWalkSpeedForProjectile;
+
+	// 안전 타이머 핸들
+	FTimerHandle SafetyTimerHandle;
 
 public:
 	FORCEINLINE ARLCharacterPlayer* GetPlayer() { return this; };
@@ -160,6 +204,16 @@ public:
 
 	void ShowStagePortalWidget();
 
+	// 투사체 스킬 관련 함수
+	UFUNCTION(BlueprintCallable, Category = "Player Projectile")
+	void UseProjectileSkill();
+
+	// 투사체 스킬 몽타주 종료 콜백
+	UFUNCTION()
+	void OnProjectileSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	UFUNCTION(BlueprintCallable, Category = "Player Projectile")
+	void FirePlayerProjectile();
 	void HandleJumpOrGlide();
 	virtual void StartRoll();
 	virtual void Attack() override;
@@ -189,8 +243,9 @@ protected:
 
 	uint8 CheckEnemy();
 
-	// Tick 오버라이드
-	// virtual void Tick(float DeltaTime) override;
+	// 투사체 스킬 관련 함수들
+
+	FOnMontageEnded MontageEndedDelegate;
 };
 
 

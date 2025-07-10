@@ -25,7 +25,7 @@ void URLBTService_CheckDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uin
     }
 
     // 거리에 따른 bInRange를 블랙보드에 반환
-    Blackboard->SetValueAsBool(InRangeKey.SelectedKeyName, bInRange);
+    Blackboard->SetValueAsBool(bInRangeKey.SelectedKeyName, bInRange);
 }
 
 

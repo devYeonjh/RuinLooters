@@ -4,6 +4,8 @@
 #include "UObject/SoftObjectPtr.h"
 #include "Components/ActorComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "RLGliderComponent.generated.h"
 
 
@@ -32,6 +34,25 @@ private:
     class UCharacterMovementComponent* MovementComponent;
     UPROPERTY(VisibleAnywhere, Category="Glider")
     UStaticMeshComponent* GliderMesh;
+    
+    // 나이아가라 파티클 컴포넌트들 (좌우 2개)
+    UPROPERTY(VisibleAnywhere, Category="Glider")
+    UNiagaraComponent* GliderParticleLeft;
+    
+    UPROPERTY(VisibleAnywhere, Category="Glider")
+    UNiagaraComponent* GliderParticleRight;
+    
+    // 나이아가라 시스템 에셋
+    UPROPERTY(EditDefaultsOnly, Category="Glider")
+    UNiagaraSystem* GliderParticleSystem;
+    
+    // 파티클이 부착될 소켓 이름들
+    UPROPERTY(EditDefaultsOnly, Category="Glider")
+    FName LeftSocketName = TEXT("Left");
+    
+    UPROPERTY(EditDefaultsOnly, Category="Glider")
+    FName RightSocketName = TEXT("Right");
+    
     UPROPERTY(EditDefaultsOnly, Category="Glider")
     float GliderGravityScale = 0.2f;
     UPROPERTY(EditDefaultsOnly, Category="Glider")

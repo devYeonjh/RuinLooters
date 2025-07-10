@@ -21,9 +21,9 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
     FVector Velocity;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-    uint8 bShouldMove : 1;
+    bool bShouldMove;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-    uint8 bIsFalling : 1;
+    bool bIsFalling;
     UPROPERTY()
     FVector CurrentAcceleration;
 

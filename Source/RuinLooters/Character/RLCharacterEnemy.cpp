@@ -13,28 +13,19 @@ ARLCharacterEnemy::ARLCharacterEnemy()
     // 메시가 컨트롤러 회전을 따라 회전하도록
     bUseControllerRotationYaw = true;
 
-    Money = 50;
+	Money = 50;
 
-    // HP 체력바 UI
-    static ConstructorHelpers::FClassFinder<UUserWidget> WBPClass(
-        TEXT("/Game/Assassin/UI/WBP_HpBar"));
-    if (WBPClass.Succeeded())
-    {
-        // 컴포넌트 생성 및 위치 설정
-        HealthBarComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBar"));
-        HealthBarComponent->SetupAttachment(GetMesh());
-        HealthBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
-        HealthBarComponent->SetDrawSize(FVector2D(200, 20));
-        HealthBarComponent->SetRelativeLocation(FVector(0, 0, 200));
+	// HP 체력바 UI
+	// 컴포넌트 생성 및 위치 설정
+	HealthBarComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBar"));
+	HealthBarComponent->SetupAttachment(GetMesh());
+	HealthBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	HealthBarComponent->SetDrawSize(FVector2D(200, 20));
+	HealthBarComponent->SetRelativeLocation(FVector(0, 0, 200));
 
-        // 컴포넌트에 위젯을 설정 지정
-        HealthBarComponent->SetWidgetClass(WBPClass.Class);
-        UE_LOG(LogTemp, Log, TEXT("WBPClass Load Success"));
-    }
-    else
-    {
-        UE_LOG(LogTemp, Log, TEXT("WBPClass Load Failed"));
-    }
+	// 컴포넌트에 위젯을 설정 지정
+	HealthBarComponent->SetWidgetClass(HpWidgetClass);
+
 }
 
 FGenericTeamId ARLCharacterEnemy::GetGenericTeamId() const

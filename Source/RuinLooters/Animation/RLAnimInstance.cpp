@@ -10,7 +10,7 @@ void URLAnimInstance::NativeInitializeAnimation()
 	Super::NativeInitializeAnimation();
 
 	OwningPawn = TryGetPawnOwner();
-	// null���� Ȯ������ ������ �ִϸ��̼� ��������Ʈ�� ������ �� ũ���� �߻�
+	// null체크를 확실하게 해야함 애니메이션 블루프린트에서 크래시 방지를 위한 크래시 방지
 	if (OwningPawn)
 	{
 		Velocity = FVector::ZeroVector;
@@ -25,7 +25,7 @@ void URLAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 	Super::NativeUpdateAnimation(DeltaTimeX);
 
 	OwningPawn = TryGetPawnOwner();
-	// null���� Ȯ������ ������ �ִϸ��̼� ��������Ʈ�� ������ �� ũ���� �߻�
+	// null체크를 확실하게 해야함 애니메이션 블루프린트에서 크래시 방지를 위한 크래시 방지
 	if (!OwningPawn)
 	{
 		Velocity = FVector::ZeroVector;
@@ -35,16 +35,16 @@ void URLAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 		return;
 	}
 
-	// ĳ������ �ӵ� ���ϱ�
+	// 캐릭터의 속도 구하기
 	Velocity = OwningPawn->GetVelocity();
 	GroundSpeed = Velocity.Size2D();
 
-	// ĳ���� �̵�
+	// 캐릭터 이동
 	FVector Direction = FVector(Velocity.X, Velocity.Y, 0.0f);
 	Direction.Normalize();
 	FVector NewLocation =  Direction * GroundSpeed * DeltaTimeX;
 
-	// ���� ���� �Ǻ�
+	// 낙하 상태 판별
 	UCharacterMovementComponent* MoveComp = Cast<UCharacterMovementComponent>(OwningPawn->GetMovementComponent());
 	if (MoveComp)
 	{

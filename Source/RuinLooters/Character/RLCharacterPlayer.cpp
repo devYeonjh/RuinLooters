@@ -26,6 +26,10 @@
 #include "Level/RLLevelTransferPortal.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
+#include "../Pool/RLProjectilePool.h"
+#include "../Projectile/RLProjectile.h"
+#include "../Projectile/RLPlayerProjectile.h"
+#include "Animation/AnimMontage.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/SpringArmComponent.h"
 
@@ -34,45 +38,22 @@ ARLCharacterPlayer::ARLCharacterPlayer()
     IsCanSkill = true;
     bIsCharacterInteractWithNPC = false;
 
-    // Player UI Ref
-    static ConstructorHelpers::FClassFinder<UUserWidget> PlayerUIClassRef(TEXT("/Game/Assassin/UI/WBP_PlayerUIWidget.WBP_PlayerUIWidget_C"));
-    if (PlayerUIClassRef.Succeeded())
-    {
-        PlayerUIClass = PlayerUIClassRef.Class;
-    }
-
-    // SettingWidget Ref
-    static ConstructorHelpers::FClassFinder<UUserWidget> SettingsWidgetClassRef(TEXT("/Game/Assassin/UI/WBP_SettingWidget.WBP_SettingWidget_C"));
-    if (SettingsWidgetClassRef.Succeeded())
-    {
-        SettingsWidgetClass = SettingsWidgetClassRef.Class;
-    }
-
-    static ConstructorHelpers::FClassFinder<UUserWidget> PlayerDieUIClassRef(TEXT("/Game/Assassin/UI/WBP_PlayerDead.WBP_PlayerDead_C"));
-    if (PlayerDieUIClassRef.Succeeded())
-    {
-        PlayerDieUIClass = PlayerDieUIClassRef.Class;
-    }
-
-    // StageClearWidget Ref
-    static ConstructorHelpers::FClassFinder<UUserWidget> StageClearWidgetRef(TEXT("/Game/Assassin/UI/WBP_StageClearMessageWidget.WBP_StageClearMessageWidget_C"));
-    if (StageClearWidgetRef.Succeeded())
-    {
-        StageClearWidgetClass = StageClearWidgetRef.Class;
-    }
-
-    // PortalWidget Ref
-    static ConstructorHelpers::FClassFinder<UUserWidget> StagePortalWidgetClassRef(TEXT("/Game/Assassin/UI/WBP_StageClearPortalWidget.WBP_StageClearPortalWidget_C"));
-    if (StagePortalWidgetClassRef.Succeeded())
-    {
-        StagePortalWidgetClass = StagePortalWidgetClassRef.Class;
-    }
-
     // 현재 이름 저장
     LevelName = FName(*UGameplayStatics::GetCurrentLevelName(this, true));
 
     bStageExit = 1;
 
+    // 투사체 스킬 관련 초기화
+    bCanUseProjectileSkill = true;
+    bIsUsingProjectileSkill = false;
+    ProjectileDamage = 40;
+    ProjectileSpeed = 3000.0f;
+    ProjectileSkillCooldown = 3;
+    PlayerProjectilePool = nullptr;
+    
+    // 투사체 콜리전 설정 초기화
+    ProjectileCollisionRadius = 15.0f;   // 플레이어 투사체 반지름
+    ProjectileCollisionHeight = 200.0f;  // 플레이어 투사체 높이 (사용자가 200.0f로 수정함)
     GliderComponent = CreateDefaultSubobject<URLGliderComponent>(TEXT("GliderComponent"));
 }
 
@@ -145,6 +126,18 @@ void ARLCharacterPlayer::BeginPlay()
             UE_LOG(LogTemp, Warning, TEXT("LevelName Don't Include Stage"));
         }
     }
+
+    // 플레이어 투사체 풀 초기화
+    if (PlayerProjectileClass)
+    {
+        PlayerProjectilePool = NewObject<URLProjectilePool>(this);
+        PlayerProjectilePool->InitializePool(GetWorld(), PlayerProjectileClass, 15);
+        UE_LOG(LogTemp, Log, TEXT("Player projectile pool initialized"));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Player PlayerProjectileClass is not set"));
+    }
 }
 
 void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -169,6 +162,9 @@ void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
         EnhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Interaction);
         // ESC
         EnhancedInputComponent->BindAction(SettingsAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::ViewSettingWidget);
+        // 투사체 스킬
+        EnhancedInputComponent->BindAction(ProjectileSkillAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::UseProjectileSkill);
+
         // 롤(구르기) 입력 바인딩 (Shift키)
         EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::StartRoll);
         EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::HandleJumpOrGlide);
@@ -419,12 +415,12 @@ void ARLCharacterPlayer::GetSaveGame()
     }
 }
 
-//  ̵  ÷̾   
+// 레벨 이동시 플레이어 데이터 저장
 void ARLCharacterPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     Super::EndPlay(EndPlayReason);
 
-    // Ÿ̸ Ŭ
+    // 타이머 클리어
     GetWorldTimerManager().ClearAllTimersForObject(this);
 
     // ü ʱȭ ƴ    ư ʹٸ CurrentHp > 0 ֱ
@@ -446,13 +442,13 @@ void ARLCharacterPlayer::SetPlayerStat()
 {
     if (CurrentHp <= 0)
     {
-        // ÷̾�?׾ ʱȭ
+        // 플레이어가 죽었을때 초기화
         PlayerStat = DuplicateObject<URLPlayerDataAsset>(LoadAsset, this);
         UE_LOG(LogTemp, Warning, TEXT("PlayerStat Reset"));
     }
     else
     {
-        //    ¿  ÷̾  
+        // 레벨 이동등 살아있을 때 플레이어 데이터 저장
         PlayerStat->PlayerMoney = Money;
         PlayerStat->MaxHp = MaxHp;
         PlayerStat->CurrentHp = CurrentHp;
@@ -508,26 +504,26 @@ void ARLCharacterPlayer::ShowStagePortalWidget()
 
 uint8 ARLCharacterPlayer::CheckEnemy()
 {
-    // ���� �� Enemy ��ȯ 
+    // 현재 살아있는 Enemy 반환
     TArray<AActor*> FoundEnemies;
     UGameplayStatics::GetAllActorsOfClass(World, ARLCharacterEnemy::StaticClass(), FoundEnemies);
 
-    // ʱȭ
+    // 초기화
     WorldAliveEnemys = 0;
 
-    // AActor*& Ÿ ϸ�?ü   , AActor*б 
+    // AActor*& 타입이므로 참조형 구조체이지만, AActor*로 받기
     for (AActor* FoundEnemy : FoundEnemies)
     {
         ARLCharacterEnemy* WorldEnemy = Cast<ARLCharacterEnemy>(FoundEnemy);
 
-        // Enemy ǰ  
+        // Enemy 체력 검사
         if (WorldEnemy && WorldEnemy->GetCurrentHp() != 0)
         {
             WorldAliveEnemys++;
         }
     }
 
-    // Enemy    
+    // Enemy 존재 여부 반환
     if (WorldAliveEnemys <= 0)
     {
         return false;
@@ -536,6 +532,120 @@ uint8 ARLCharacterPlayer::CheckEnemy()
     {
         return true;
     }
+}
+
+void ARLCharacterPlayer::UseProjectileSkill()
+{
+    // 투사체 스킬 사용 가능 여부 확인
+    if (!bCanUseProjectileSkill || GetCharacterMovement()->IsFalling())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Player projectile skill is on cooldown"));
+        return;
+    }
+
+    // 살아있는 상태 확인
+    if (CurrentHp <= 0)
+    {
+        return;
+    }
+
+    // 투사체 스킬 사용
+    bCanUseProjectileSkill = false;
+
+    // 투사체 스킬 사용 중 상태로 변경
+    bIsUsingProjectileSkill = true;
+
+    // 애니메이션 몽타주 재생
+    if (ProjectileSkillMontage && AnimInstance)
+    {
+        // 몽타주 종료 콜백 설정
+        MontageEndedDelegate.BindUObject(this, &ARLCharacterPlayer::OnProjectileSkillMontageEnded);
+        
+        // 몽타주 재생 및 델리게이트 설정
+        float MontageLength = AnimInstance->Montage_Play(ProjectileSkillMontage);
+        AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, ProjectileSkillMontage);
+        
+        GetCharacterMovement()->SetMovementMode(MOVE_None);
+        
+        UE_LOG(LogTemp, Warning, TEXT("Player projectile skill montage started - Length: %f"), MontageLength);
+    }
+
+    // 쿨다운 시작 (람다함수 사용)
+    GetWorldTimerManager().SetTimer(
+        ProjectileSkillCooldownHandle,[this]()
+        {
+            bCanUseProjectileSkill = true;
+            UE_LOG(LogTemp, Log, TEXT("Player projectile skill cooldown finished"));
+        }, ProjectileSkillCooldown, false
+    );
+}
+
+void ARLCharacterPlayer::FirePlayerProjectile()
+{
+    if (!PlayerProjectilePool)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Player projectile pool is not initialized"));
+        return;
+    }
+
+    // 투사체 풀에서 투사체 가져오기 (ARLPlayerProjectile로 캐스트)
+    ARLPlayerProjectile* PlayerProjectile = Cast<ARLPlayerProjectile>(PlayerProjectilePool->GetProjectile());
+    if (!PlayerProjectile)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Failed to get player projectile from pool"));
+        return;
+    }
+
+    // 발사 위치 및 방향 설정
+    FVector PlayerLocation = GetActorLocation();
+    FVector FireLocation = PlayerLocation + FVector(0.0f, 0.0f, 220.0f);
+    
+    // 카메라가 바라보는 방향으로 발사 (컨트롤러 회전 기준)
+    FVector FireDirection = PlayerController ? PlayerController->GetControlRotation().Vector() : GetActorForwardVector();
+
+    // 투사체 가시성 및 콜리전 활성화 (풀에서 가져온 경우 숨겨져 있을 수 있음)
+    PlayerProjectile->SetActorHiddenInGame(false);
+    PlayerProjectile->SetActorEnableCollision(true);
+
+    // 플레이어 설정값으로 투사체 설정 (캐릭터에서 설정한 콜리전 값 사용)
+    PlayerProjectile->SetupWithPlayerSettings(
+        ProjectileCollisionRadius,  // 캐릭터에서 설정한 반지름
+        ProjectileCollisionHeight,  // 캐릭터에서 설정한 높이
+        ProjectileDamage,           // 캐릭터에서 설정한 데미지
+        ProjectileSpeed             // 캐릭터에서 설정한 속도
+    );
+
+    // 투사체 초기화 및 발사
+    PlayerProjectile->InitializeProjectile(FireLocation, FireDirection, PlayerProjectile->GetProjectileSettings());
+
+    // 투사체 소유자 설정
+    PlayerProjectile->SetOwner(this);
+
+    UE_LOG(LogTemp, Warning, TEXT("Player projectile fired - Location: %s, Direction: %s, Radius: %f, Height: %f"), 
+           *FireLocation.ToString(), *FireDirection.ToString(), ProjectileCollisionRadius, ProjectileCollisionHeight);
+
+    // 투사체 반환 처리를 위한 타이머 (생존 시간 후 자동 반환)
+    FTimerHandle ReturnTimerHandle;
+    GetWorld()->GetTimerManager().SetTimer(ReturnTimerHandle, [this, PlayerProjectile]()
+    {
+        if (PlayerProjectilePool && PlayerProjectile)
+        {
+            PlayerProjectilePool->ReturnProjectile(PlayerProjectile);
+        }
+    }, 30.0f, false);  // 플레이어 투사체의 생존 시간에 맞춤
+
+    UE_LOG(LogTemp, Log, TEXT("Player projectile fired with custom collision settings"));
+}
+
+void ARLCharacterPlayer::OnProjectileSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+    UE_LOG(LogTemp, Warning, TEXT("OnProjectileSkillMontageEnded called! Interrupted: %s"), bInterrupted ? TEXT("true") : TEXT("false"));
+
+    // 몽타주 종료 시 이동 모드 복원
+    GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+    bIsUsingProjectileSkill = false;
+
+    UE_LOG(LogTemp, Warning, TEXT("Player projectile skill montage ended - Movement restored"));
 }
 
 void ARLCharacterPlayer::HandleJumpOrGlide()
@@ -573,6 +683,12 @@ void ARLCharacterPlayer::Attack()
     {
         return;
     }
+
+    if (GetCharacterMovement()->IsFalling())
+    {
+        return;
+    }
+
     Super::Attack();
 }
 

@@ -25,8 +25,6 @@ ARLCharacterBase::ARLCharacterBase() : WeaponRowName(TEXT("First WeaponRowName T
     Defence = 5;
     Range = 0;
     AttackSpeed = 0.0f;
-    bIsCanAttack = true;
-
 
     // 1) WeaponMeshComponent 생성
     WeaponMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
@@ -46,12 +44,7 @@ void ARLCharacterBase::BeginPlay()
     World = GetWorld();
     GameInstance = Cast<URLGameInstance>(UGameplayStatics::GetGameInstance(World));
     ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
-
-    // 콤보 최대 단계 자동 설정
-    if (CurrentMontage)
-    {
-        ComboMaxStep = CurrentMontage->CompositeSections.Num();
-    }
+    AnimInstance = GetMesh()->GetAnimInstance();
 }
 
 void ARLCharacterBase::TakeCharacterDamage(int32 RecieveDamage)
@@ -95,60 +88,20 @@ void ARLCharacterBase::Die()
         UGameplayStatics::PlaySoundAtLocation(this, DieSound, GetActorLocation());
     }
 
-    GetMesh()->GetAnimInstance()->Montage_Play(DieMontage);
+    if (AnimInstance && DieMontage)
+    {        
+        // DieMontage 재생
+        AnimInstance->StopAllMontages(0.0);
+        AnimInstance->Montage_Play(DieMontage);
+    }
 
     SetActorEnableCollision(false);
 
     CharacterDie.Broadcast();
 }
 
-void ARLCharacterBase::Attack()
+void ARLCharacterBase::CallAttackCollision()
 {
-    UE_LOG(LogTemp, Warning, TEXT("[Attack] bIsAttacking: %s, CurrentComboStep: %d"), bIsAttacking ? TEXT("true") : TEXT("false"), CurrentComboStep);
-    if (bIsRolling) return;
-
-    ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(this);
-    if (Player && Player->GliderComponent && Player->GliderComponent->IsGliderActive())
-        return;
-
-    // 공격 중(콤보 중)일 때
-    if (bIsAttacking)
-    {
-        // 마지막 콤보가 아니고, 버퍼가 비어있을 때만 버퍼 세팅
-        if (CurrentComboStep < ComboMaxStep && !bComboInputBuffered)
-        {
-            bComboInputBuffered = true;
-        }
-        // 공격 중에는 절대 1타로 돌아가지 않음!
-        return;
-    }
-
-    // 공격 중이 아니고, 공격 가능 상태일 때만 1타 시작
-    if (bIsCanAttack && !GetCharacterMovement()->IsFalling())
-    {
-        bIsCanAttack = false;
-        bIsAttacking = true;
-        AnimInstance = GetMesh()->GetAnimInstance();
-        if (CurrentMontage)
-            ComboMaxStep = CurrentMontage->CompositeSections.Num();
-
-        PlayComboMontage(1); // 1타(Combo1) 섹션 재생
-
-        if (AnimInstance && CurrentMontage)
-        {
-            FOnMontageEnded EndDelegate;
-            EndDelegate.BindUObject(this, &ARLCharacterBase::OnMontageEnded);
-            AnimInstance->Montage_SetEndDelegate(EndDelegate, CurrentMontage);
-        }
-    }
-    // 그 외(공격 불가, 공중 등)는 아무 동작 없음
-}
-
-void ARLCharacterBase::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-    UE_LOG(LogTemp, Warning, TEXT("Montage ended. Timer will stop."));
-    bIsCanAttack = true;
-    bIsAttacking = false; // 공격 종료
 }
 
 void ARLCharacterBase::SwordAttackLineTrace()
@@ -158,7 +111,7 @@ void ARLCharacterBase::SwordAttackLineTrace()
     FVector End = Start + GetActorForwardVector() * Range;  // 공격 범위
 
     FHitResult Hit;     // 트레이스, 충돌시 충돌정보를 담는 구조체
-    FCollisionQueryParams Params;   // ���� Ʈ���̽�, ����, �������� ��� ���� �����ϴ� ����ü
+    FCollisionQueryParams Params;   // 충돌 쿼리, 충돌 검사, 충돌 검사 후 처리 함수 설정
     Params.AddIgnoredActor(this);   // 본인은 무시 설정 (자신 제외)
 
     bool bHit = GetWorld()->LineTraceSingleByChannel(
@@ -197,14 +150,14 @@ void ARLCharacterBase::ChangeWeapon(FWeaponTableRow* ChangeWeapon)
     WeaponMeshComponent->SetSkeletalMesh(ChangeWeapon->SkeletalMesh);
 
     // 무기별 회전각도 조정 설정
-    if (ChangeWeapon->WeaponIndex == 4 || ChangeWeapon->WeaponIndex == 5)
+    if (ChangeWeapon->WeaponIndex == 0)
     {
         WeaponMeshComponent->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
     }
-    else if (ChangeWeapon->WeaponIndex == 9 || ChangeWeapon->WeaponIndex == 10)
-    {
-        WeaponMeshComponent->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
-    }
+    //else if (ChangeWeapon->WeaponIndex == 9 || ChangeWeapon->WeaponIndex == 10)
+    //{
+    //    WeaponMeshComponent->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
+    //}
     else
     {
         WeaponMeshComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
@@ -221,30 +174,29 @@ void ARLCharacterBase::ApplyWeaponAbility(FWeaponTableRow* ApplyWeapon)
     Range = ApplyWeapon->Range;
 }
 
-void ARLCharacterBase::PlayComboMontage(int32 ComboStep)
+void ARLCharacterBase::Attack()
 {
-    if (!CurrentMontage || !AnimInstance) return;
-    if (ComboStep > 0 && ComboStep <= CurrentMontage->CompositeSections.Num())
+    ProcessComboCommand();
+}
+
+void ARLCharacterBase::ProcessComboCommand()
+{
+    UE_LOG(LogTemp, Warning, TEXT("CurrentCombo is : %d"), CurrentCombo);
+    if (CurrentCombo == 0)
     {
-        FName SectionName = CurrentMontage->CompositeSections[ComboStep - 1].SectionName;
-        UE_LOG(LogTemp, Warning, TEXT("[PlayComboMontage] Step: %d, SectionName: %s"), ComboStep, *SectionName.ToString());
-        if (AnimInstance->Montage_IsPlaying(CurrentMontage))
-        {
-            AnimInstance->Montage_JumpToSection(SectionName, CurrentMontage);
-            UE_LOG(LogTemp, Warning, TEXT("[PlayComboMontage] Jumped to section: %s"), *SectionName.ToString());
-        }
-        else
-        {
-            AnimInstance->Montage_Play(CurrentMontage, AttackSpeed);
-            AnimInstance->Montage_JumpToSection(SectionName, CurrentMontage);
-            UE_LOG(LogTemp, Warning, TEXT("[PlayComboMontage] Montage played and jumped to section: %s"), *SectionName.ToString());
-        }
+        ComboActionBegin();
+        return;
+    }
+
+    if (!ComboTimerHandle.IsValid())
+    {
+        HasNextComboCommand = false;
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("[PlayComboMontage] Invalid ComboStep: %d (Max: %d)"), ComboStep, CurrentMontage->CompositeSections.Num());
+        HasNextComboCommand = true;
+        
     }
-    CurrentComboStep = ComboStep;
 }
 
 // --- 롤(구르기) Tick 함수 구현 ---
@@ -306,3 +258,57 @@ void ARLCharacterBase::Move(const FInputActionValue& Value)
     Super::Move(Value);
 }
 
+void ARLCharacterBase::ComboActionBegin()
+{
+    // Combo Status
+    CurrentCombo = 1;
+
+    // Movement Setting
+    GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+
+    // Animation Setting
+    AttackSpeedRate = 1.5f;
+    AnimInstance = GetMesh()->GetAnimInstance();
+    AnimInstance->Montage_Play(ComboActionMontage, AttackSpeedRate);
+
+    FOnMontageEnded EndDelegate;
+    EndDelegate.BindUObject(this, &ARLCharacterBase::ComboActionEnd);
+    AnimInstance->Montage_SetEndDelegate(EndDelegate, ComboActionMontage);
+
+    ComboTimerHandle.Invalidate();
+    SetComboCheckTimer();
+}
+
+void ARLCharacterBase::ComboActionEnd(UAnimMontage* Montage, bool bInterrupted)
+{
+    ensure(CurrentCombo != 0);
+    CurrentCombo = 0;
+    GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+}
+
+void ARLCharacterBase::SetComboCheckTimer()
+{
+    int32 ComboIndex = CurrentCombo - 1;
+    ensure(ComboActionData->EffectiveFrameCount.IsValidIndex(ComboIndex));
+
+    float ComboEffectiveTime = (ComboActionData->EffectiveFrameCount[ComboIndex] / ComboActionData->FrameRate) / AttackSpeedRate;
+    if (ComboEffectiveTime > 0.0f)
+    {
+        GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, this, &ARLCharacterBase::ComboCheck, ComboEffectiveTime, false);
+    }
+}
+
+void ARLCharacterBase::ComboCheck()
+{
+     ComboTimerHandle.Invalidate();
+    if (HasNextComboCommand)
+    {
+        AnimInstance = GetMesh()->GetAnimInstance();
+
+        CurrentCombo = FMath::Clamp(CurrentCombo + 1, 1, ComboActionData->MaxComboCount);
+        FName NextSection = *FString::Printf(TEXT("%s%d"), *ComboActionData->MontageSectionNamePrefix, CurrentCombo);
+        AnimInstance->Montage_JumpToSection(NextSection, ComboActionMontage);
+        SetComboCheckTimer();
+        HasNextComboCommand = false;
+    }
+}

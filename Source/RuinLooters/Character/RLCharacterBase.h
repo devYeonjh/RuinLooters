@@ -4,26 +4,28 @@
 
 #include "CoreMinimal.h"
 #include "RuinLootersCharacter.h"
+#include "Character/RLCharacterAttackInterface.h"
 #include "RLEnumRepository.h"
+#include "RLPlayerComboAttackDataAsset.h"
 #include "RLCharacterBase.generated.h"
 
 // 캐릭터 죽음 델리게이트
-DECLARE_MULTICAST_DELEGATE(FOnDie);
+DECLARE_MULTICAST_DELEGATE(FOnCharacterDie);
 
 /**
  * 
  */
 UCLASS()
-class RUINLOOTERS_API ARLCharacterBase : public ARuinLootersCharacter
+class RUINLOOTERS_API ARLCharacterBase : public ARuinLootersCharacter, public IRLCharacterAttackInterface
 {
 	GENERATED_BODY()
 	
 public:
 	ARLCharacterBase();
-	virtual void Attack();
+
 	virtual void StartRoll();
 public:
-	FOnDie CharacterDie;
+	FOnCharacterDie CharacterDie;
 
 protected:
 	// 캐릭터 스탯
@@ -50,7 +52,7 @@ protected:
 
 	// 공격 애니메이션
 	UPROPERTY(EditAnywhere, Category = "Animation")
-	class UAnimMontage* CurrentMontage;
+	class UAnimMontage* ComboActionMontage;
 
 	// 죽음 애니메이션
 	UPROPERTY(EditAnywhere, Category = "Animation")
@@ -59,7 +61,9 @@ protected:
 	UPROPERTY()
 	class UAnimInstance* AnimInstance;
 
-
+	// 콤보 공격 데이터 에셋
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combo")
+	class URLPlayerComboAttackDataAsset* ComboActionData;
 
 	// 손 소켓에 붙일 무기
 	UPROPERTY()
@@ -145,30 +149,14 @@ public:
 	void ChangeWeapon(struct FWeaponTableRow* ChangeWeapon);
 
 	/** Called for looking input */
+	virtual void Attack() override;
+
+	virtual void CallAttackCollision() override;
 
 	void SwordAttackLineTrace();
 
 	void PlayAttackSound();
 
-	// 공격 가능시간인지 확인
-	uint8 bIsCanAttack : 1;
-
-	// 콤보 섹션으로 점프하는 함수
-	void PlayComboMontage(int32 ComboStep);
-
-	// 콤보 시스템 상태 변수
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
-	int32 CurrentComboStep = 0;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
-	int32 ComboMaxStep = 0;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
-	bool bComboInput = false;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
-	bool bCanNextCombo = false;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
-	bool bIsAttacking = false;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combo")
-	bool bComboInputBuffered = false; // 입력 버퍼 플래그
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* RollAction;
 
@@ -184,11 +172,26 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// Attack 몬타주 끝난 후 타이머 콜백
-	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-
 	void ApplyWeaponAbility(struct FWeaponTableRow* ApplyWeapon);
 
+	// 콤보 관련 함수들
+	void ProcessComboCommand();
+
+	void ComboActionBegin();
+
+	void ComboActionEnd(UAnimMontage* Montage, bool bInterrupted);
+
+	void SetComboCheckTimer();
+
+	void ComboCheck();
+
+	int32 CurrentCombo = 0;
+
+	FTimerHandle ComboTimerHandle;
+
+	bool HasNextComboCommand = false;
+
+	float AttackSpeedRate = 1.0f;
 	// Tick 오버라이드
 	virtual void Tick(float DeltaTime) override;
 };
