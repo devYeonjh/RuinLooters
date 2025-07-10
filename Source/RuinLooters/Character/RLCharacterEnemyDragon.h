@@ -108,6 +108,7 @@ protected:
 
 public:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	// Getter 함수들
 	FORCEINLINE int32 GetCurrentHp() const { return CurrentHp; }

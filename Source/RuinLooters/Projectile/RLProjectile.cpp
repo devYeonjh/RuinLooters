@@ -132,7 +132,7 @@ void ARLProjectile::DeactivateProjectile()
     HitActors.Empty();
 
     // 위치 리셋
-    SetActorLocation(FVector::ZeroVector);
+    SetActorLocation(FVector(0.0f, 0.0f, -1000.0f));
     SetActorRotation(FRotator::ZeroRotator);
 }
 

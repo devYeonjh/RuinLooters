@@ -7,8 +7,8 @@
 
 URLProjectilePool::URLProjectilePool()
 {
-    MaxPoolSize = 10;
-    MaxExplosionPoolSize = 5;  // 폭발 파티클은 작은 풀 크기
+    MaxPoolSize = 20;
+    MaxExplosionPoolSize = 15;  // 폭발 파티클은 작은 풀 크기
     WorldRef = nullptr;
     ProjectileClassRef = nullptr;
     ExplosionClassRef = nullptr;
@@ -283,4 +283,31 @@ ARLProjectile* URLProjectilePool::CreateNewExplosionEffect()
     );
 
     return NewExplosionEffect;
+}
+
+void URLProjectilePool::CleanupActiveProjectiles()
+{
+    // 모든 활성 발사체들을 풀로 반환
+    TArray<ARLProjectile*> ActiveProjectilesCopy = ActiveProjectiles;
+    for (ARLProjectile* Projectile : ActiveProjectilesCopy)
+    {
+        if (Projectile && IsValid(Projectile))
+        {
+            ReturnProjectile(Projectile);
+            UE_LOG(LogTemp, Log, TEXT("Auto-returned projectile to pool during cleanup"));
+        }
+    }
+    
+    // 모든 활성 폭발 파티클들을 풀로 반환
+    TArray<ARLProjectile*> ActiveExplosionsCopy = ActiveExplosionEffects;
+    for (ARLProjectile* ExplosionEffect : ActiveExplosionsCopy)
+    {
+        if (ExplosionEffect && IsValid(ExplosionEffect))
+        {
+            ReturnExplosionEffect(ExplosionEffect);
+            UE_LOG(LogTemp, Log, TEXT("Auto-returned explosion effect to pool during cleanup"));
+        }
+    }
+    
+    UE_LOG(LogTemp, Warning, TEXT("ProjectilePool: Cleaned up all active projectiles"));
 } 

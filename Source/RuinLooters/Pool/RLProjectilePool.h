@@ -37,6 +37,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Object Pool")
 	void ClearPool();
 
+	// 활성 발사체 자동 정리 (게임 종료 시)
+	UFUNCTION(BlueprintCallable, Category = "Object Pool")
+	void CleanupActiveProjectiles();
+
 	// 폭발 파티클 전용 풀 초기화
 	UFUNCTION(BlueprintCallable, Category = "Explosion Pool")
 	void InitializeExplosionPool(UWorld* World, TSubclassOf<ARLProjectile> ExplosionClass, int32 PoolSize = 10);

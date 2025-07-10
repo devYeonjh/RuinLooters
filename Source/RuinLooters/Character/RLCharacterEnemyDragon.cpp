@@ -99,6 +99,18 @@ void ARLCharacterEnemyDragon::BeginPlay()
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 }
 
+void ARLCharacterEnemyDragon::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// 투사체 풀 정리
+	if (ProjectilePool)
+	{
+		ProjectilePool->CleanupActiveProjectiles();
+		UE_LOG(LogTemp, Warning, TEXT("Dragon EndPlay: Cleaned up projectile pool"));
+	}
+	
+	Super::EndPlay(EndPlayReason);
+}
+
 void ARLCharacterEnemyDragon::TakeDragonDamage(int32 ReceivedDamage)
 {
 	// 이미 죽었다면 데미지 무시
@@ -379,7 +391,7 @@ void ARLCharacterEnemyDragon::FireBreathProjectile()
 	
 
 	
-	// 투사체 초기화 및 발사
+	// 투사체 초기화 및 발사 (자체 생존 시간으로 자동 반환)
 	DragonProjectile->InitializeProjectile(DragonMouthLocation, FireDirection, DragonProjectile->GetProjectileSettings());
 	
 	// 투사체 소유자 설정
@@ -388,17 +400,10 @@ void ARLCharacterEnemyDragon::FireBreathProjectile()
 	UE_LOG(LogTemp, Warning, TEXT("Dragon breath projectile fired - Location: %s, Direction: %s, Radius: %f, Height: %f"), 
            *DragonMouthLocation.ToString(), *FireDirection.ToString(), BreathProjectileCollisionRadius, BreathProjectileCollisionHeight);
 	
-	// 투사체 반환 처리를 위한 타이머 (생존 시간 후 자동 반환)
-	FTimerHandle ReturnTimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(ReturnTimerHandle, [this, DragonProjectile]()
-	{
-		if (ProjectilePool && DragonProjectile)
-		{
-			ProjectilePool->ReturnProjectile(DragonProjectile);
-		}
-	}, 5.0f, false);  // 드래곤 투사체의 생존 시간에 맞춤
+	// 타이머 제거 - 대신 발사체 자체의 생존 시간(LifeTime)을 이용하여 자동 반환
+	// ARLProjectile::OnLifeTimeExpired()에서 자동으로 풀에 반환됨
 	
-	UE_LOG(LogTemp, Log, TEXT("Dragon breath projectile fired with custom collision settings"));
+	UE_LOG(LogTemp, Log, TEXT("Dragon breath projectile fired with auto-return on lifetime expiration"));
 }
 
 void ARLCharacterEnemyDragon::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
