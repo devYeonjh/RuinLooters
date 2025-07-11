@@ -20,4 +20,14 @@ public:
 protected:
 	// Task가 시작될 때 호출
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+
+	// Task 진행 중 매 틱마다 호출
+	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
+
+private:
+	// 지연 시간 (초)
+	float DelayTime;
+	
+	// 경과 시간 (초)
+	float ElapsedTime;
 }; 

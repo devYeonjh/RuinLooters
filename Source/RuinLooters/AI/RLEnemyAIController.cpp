@@ -18,8 +18,8 @@ ARLEnemyAIController::ARLEnemyAIController()
 {
     Perception = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("Perception"));
     SightCfg = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("Sight"));
-    SightCfg->SightRadius = 3000.f;
-    SightCfg->LoseSightRadius = 3300.f;
+    SightCfg->SightRadius = 10000.f;
+    SightCfg->LoseSightRadius = 10300.f;
     SightCfg->PeripheralVisionAngleDegrees = 180.f;
     Perception->ConfigureSense(*SightCfg);
     Perception->SetDominantSense(SightCfg->GetSenseImplementation());
