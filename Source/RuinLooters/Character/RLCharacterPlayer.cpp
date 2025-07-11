@@ -630,9 +630,14 @@ void ARLCharacterPlayer::FirePlayerProjectile()
     FTimerHandle ReturnTimerHandle;
     GetWorld()->GetTimerManager().SetTimer(ReturnTimerHandle, [this, PlayerProjectile]()
     {
-        if (PlayerProjectilePool && PlayerProjectile)
+        if (PlayerProjectilePool && PlayerProjectile && IsValid(PlayerProjectile))
         {
             PlayerProjectilePool->ReturnProjectile(PlayerProjectile);
+            UE_LOG(LogTemp, Log, TEXT("Player projectile auto-returned after 30 seconds"));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Player projectile timer called but projectile is invalid"));
         }
     }, 30.0f, false);  // 플레이어 투사체의 생존 시간에 맞춤
 
