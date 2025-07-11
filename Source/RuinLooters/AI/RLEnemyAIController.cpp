@@ -14,6 +14,7 @@ const FName ARLEnemyAIController::bInRangeKey(TEXT("bInRangeKey"));
 const FName ARLEnemyAIController::StartSkyPointKey(TEXT("StartSkyPointKey"));
 const FName ARLEnemyAIController::CurrentSkyPointKey(TEXT("CurrentSkyPointKey"));
 const FName ARLEnemyAIController::bIsHpLowKey(TEXT("bIsHpLowKey"));
+const FName ARLEnemyAIController::bRandomKey(TEXT("bRandomKey"));
 
 ARLEnemyAIController::ARLEnemyAIController()
 {

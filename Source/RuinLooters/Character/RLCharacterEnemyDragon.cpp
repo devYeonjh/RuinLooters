@@ -334,7 +334,7 @@ void ARLCharacterEnemyDragon::BreathAttack()
 	UE_LOG(LogTemp, Warning, TEXT("Dragon is breathing fire with damage: %d"), BreathDamage);
 	
 	// 브레스 공격 중 이동 정지
-	//GetCharacterMovement()->SetMovementMode(MOVE_None);
+	GetCharacterMovement()->SetMovementMode(MOVE_None);
 	
 	// 공격 쿨다운 시작
 	bIsCanAttack = false;

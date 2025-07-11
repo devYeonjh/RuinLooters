@@ -6,6 +6,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Character/RLCharacterPlayer.h"
+#include "AI/RLEnemyAIController.h"
 
 void URLBTService_CheckDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
@@ -26,6 +27,14 @@ void URLBTService_CheckDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uin
 
     // 거리에 따른 bInRange를 블랙보드에 반환
     Blackboard->SetValueAsBool(bInRangeKey.SelectedKeyName, bInRange);
+
+    // 랜덤 bool 값 생성 (50% 확률로 true/false)
+    bool bRandomValue = FMath::RandBool();
+    
+    // bRandomKey를 블랙보드에 설정
+    Blackboard->SetValueAsBool(ARLEnemyAIController::bRandomKey, bRandomValue);
+    
+    UE_LOG(LogTemp, Log, TEXT("Random bool value set: %s"), bRandomValue ? TEXT("True") : TEXT("False"));
 }
 
 
