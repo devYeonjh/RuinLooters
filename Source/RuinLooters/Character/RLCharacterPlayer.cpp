@@ -719,5 +719,33 @@ void ARLCharacterPlayer::Tick(float DeltaTime)
     }
 }
 
+// 플레이어 입력 차단 (구르기 중)
+void ARLCharacterPlayer::DisablePlayerInput()
+{
+    if (PlayerController)
+    {
+        // Enhanced Input Mapping Context 제거
+        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+        {
+            Subsystem->RemoveMappingContext(DefaultMappingContext);
+            UE_LOG(LogTemp, Log, TEXT("Player input disabled for rolling"));
+        }
+    }
+}
+
+// 플레이어 입력 복원 (구르기 종료)
+void ARLCharacterPlayer::EnablePlayerInput()
+{
+    if (PlayerController)
+    {
+        // Enhanced Input Mapping Context 재추가
+        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+        {
+            Subsystem->AddMappingContext(DefaultMappingContext, 0);
+            UE_LOG(LogTemp, Log, TEXT("Player input enabled after rolling"));
+        }
+    }
+}
+
 
 

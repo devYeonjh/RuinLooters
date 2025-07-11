@@ -61,6 +61,15 @@ protected:
 public:
     void ShutdownAI();
 
+    // 새로운 BT 실행 함수들
+    UFUNCTION(BlueprintCallable, Category = "AI")
+    void SwitchBehaviorTree(UBehaviorTree* NewBehaviorTree);
+
+    UFUNCTION(BlueprintCallable, Category = "AI")
+    void StopCurrentBehaviorTree();
+
+    UFUNCTION(BlueprintCallable, Category = "AI")
+    void RestartCurrentBehaviorTree();
 };
 
 

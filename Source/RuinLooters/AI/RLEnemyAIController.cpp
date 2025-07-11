@@ -4,6 +4,7 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
 #include "Character/RLCharacterPlayer.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -106,6 +107,73 @@ void ARLEnemyAIController::ShutdownAI()
     // 추적・이동 정지
     StopMovement();
     ClearFocus(EAIFocusPriority::Gameplay);
+}
+
+// 새로운 BT로 교체하는 함수
+void ARLEnemyAIController::SwitchBehaviorTree(UBehaviorTree* NewBehaviorTree)
+{
+    if (!NewBehaviorTree)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("SwitchBehaviorTree: NewBehaviorTree is null"));
+        return;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("SwitchBehaviorTree: Switching to new behavior tree"));
+
+    // 1. 현재 실행 중인 BT 정지
+    StopCurrentBehaviorTree();
+
+    // 2. 잠깐 대기 (프레임 간격을 둠)
+    GetWorld()->GetTimerManager().SetTimerForNextTick([this, NewBehaviorTree]()
+    {
+        // 3. 새로운 BT 실행
+        RunBehaviorTree(NewBehaviorTree);
+        UE_LOG(LogTemp, Log, TEXT("SwitchBehaviorTree: New behavior tree started"));
+    });
+}
+
+// 현재 BT 정지
+void ARLEnemyAIController::StopCurrentBehaviorTree()
+{
+    UE_LOG(LogTemp, Log, TEXT("StopCurrentBehaviorTree: Stopping current behavior tree"));
+
+    // 방법 1: BrainComponent를 통한 정지
+    if (UBrainComponent* Brain = GetBrainComponent())
+    {
+        Brain->StopLogic(TEXT("BT Switch"));
+    }
+
+    // 방법 2: BehaviorTreeComponent 직접 정지
+    if (UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(GetBrainComponent()))
+    {
+        BTComp->StopTree(EBTStopMode::Safe);
+    }
+
+    // 추가 정리
+    StopMovement();
+    ClearFocus(EAIFocusPriority::Gameplay);
+}
+
+// 현재 BT 재시작
+void ARLEnemyAIController::RestartCurrentBehaviorTree()
+{
+    if (!BehaviorTreeAsset)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("RestartCurrentBehaviorTree: BehaviorTreeAsset is null"));
+        return;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("RestartCurrentBehaviorTree: Restarting current behavior tree"));
+
+    // 현재 BT 정지
+    StopCurrentBehaviorTree();
+
+    // 다음 프레임에 재시작
+    GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+    {
+        RunBehaviorTree(BehaviorTreeAsset);
+        UE_LOG(LogTemp, Log, TEXT("RestartCurrentBehaviorTree: Behavior tree restarted"));
+    });
 }
 
 

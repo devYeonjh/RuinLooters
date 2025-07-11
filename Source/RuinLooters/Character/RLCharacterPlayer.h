@@ -218,6 +218,10 @@ public:
 	virtual void StartRoll();
 	virtual void Attack() override;
 
+	// 플레이어 입력 차단/복원 함수 오버라이드
+	virtual void DisablePlayerInput() override;
+	virtual void EnablePlayerInput() override;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;

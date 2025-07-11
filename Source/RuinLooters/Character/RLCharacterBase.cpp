@@ -241,15 +241,39 @@ void ARLCharacterBase::StartRoll()
     OriginalMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
     GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed * 1.5f;
 
-    PlayAnimMontage(RollMontage);
+    // 플레이어 입력 차단
+    DisablePlayerInput();
+
+    // 롤 몽타주 재생 및 종료 델리게이트 설정
+    AnimInstance = GetMesh()->GetAnimInstance();
+    if (AnimInstance)
+    {
+        AnimInstance->Montage_Play(RollMontage);
+        
+        // 몽타주 종료 시 EndRoll() 호출되도록 델리게이트 설정
+        FOnMontageEnded RollEndDelegate;
+        RollEndDelegate.BindUObject(this, &ARLCharacterBase::OnRollMontageEnded);
+        AnimInstance->Montage_SetEndDelegate(RollEndDelegate, RollMontage);
+    }
+    else
+    {
+        PlayAnimMontage(RollMontage);
+    }
 }
 
-// --- 롤(구르기) 종료 ---
-void ARLCharacterBase::EndRoll()
+// --- 롤 몽타주 종료 콜백 ---
+void ARLCharacterBase::OnRollMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-    bIsRolling = false;
-    // 구르기 끝나면 원래 속도로 복귀
-    GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed;
+    // 롤 몽타주인지 확인 후 EndRoll() 호출
+    if (Montage == RollMontage)
+    {
+        bIsRolling = false;
+        // 구르기 끝나면 원래 속도로 복귀
+        GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed;
+        
+        // 플레이어 입력 복원
+        EnablePlayerInput();
+    }
 }
 
 // --- 무적 시작(애님 노티파이용) ---

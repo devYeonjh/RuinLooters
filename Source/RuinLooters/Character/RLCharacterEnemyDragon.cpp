@@ -435,7 +435,10 @@ void ARLCharacterEnemyDragon::OnMontageEnded(UAnimMontage* Montage, bool bInterr
 	{
 		bIsCanAttack = true;
 		
-		UE_LOG(LogTemp, Warning, TEXT("Dragon attack montage ended"));
+		// 일반 공격 종료 후 Walking 모드로 복원
+		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		
+		UE_LOG(LogTemp, Warning, TEXT("Dragon attack montage ended, returning to walking mode"));
 	}
 }
 

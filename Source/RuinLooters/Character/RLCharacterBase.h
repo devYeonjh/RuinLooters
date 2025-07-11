@@ -163,7 +163,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* RollAction;
 
-	void EndRoll();
+	// 롤 몽타주 종료 콜백
+	void OnRollMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	// 플레이어 입력 차단/복원 함수 (가상 함수로 선언, 플레이어에서 오버라이드)
+	virtual void DisablePlayerInput() {}
+	virtual void EnablePlayerInput() {}
 
 	UFUNCTION()
 	void StartInvincible();
