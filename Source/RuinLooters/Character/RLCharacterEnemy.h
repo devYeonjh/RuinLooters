@@ -8,7 +8,7 @@
 #include "RLCharacterEnemy.generated.h"
 
 // 적 체력 변화 델리게이트
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHpChange, int32 /*CurrentHp*/, int32 /*MaxHp*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHpChange, float /*CurrentHp*/, float /*MaxHp*/);
 
 /**
  * 
@@ -60,7 +60,7 @@ public:
 	// 캐릭터 팀 반환
 	virtual FGenericTeamId GetGenericTeamId() const override;
 
-	virtual void TakeCharacterDamage(int32 RecieveDamage) override;
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 	virtual void TakeCharacterHeal(int32 RecieveHealAmount) override;
 

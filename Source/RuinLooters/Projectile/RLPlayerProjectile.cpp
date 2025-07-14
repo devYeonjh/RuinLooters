@@ -1,4 +1,5 @@
 #include "RLPlayerProjectile.h"
+#include "Engine/DamageEvents.h"
 #include "../Character/RLCharacterEnemy.h"
 #include "../Character/RLCharacterEnemyDragon.h"
 #include "../Character/RLCharacterPlayer.h"
@@ -97,16 +98,18 @@ void ARLPlayerProjectile::ApplyDamageToTarget(AActor* Target)
     }
 
     // 일반 적 타겟
-    if (ARLCharacterEnemy* Enemy = Cast<ARLCharacterEnemy>(Target))
-    {
-        Enemy->TakeCharacterDamage(ProjectileSettings.Damage);
+          if (ARLCharacterEnemy* Enemy = Cast<ARLCharacterEnemy>(Target))
+      {
+         				FDamageEvent DamageEvent;
+				Enemy->TakeDamage((float)ProjectileSettings.Damage, DamageEvent, nullptr, this);
         UE_LOG(LogTemp, Log, TEXT("Player Projectile Hit Enemy: %s, Damage: %d, Pierce Count: %d"), 
                *Enemy->GetName(), ProjectileSettings.Damage, CurrentPierceCount);
     }
     // 드래곤 타겟
-    else if (ARLCharacterEnemyDragon* Dragon = Cast<ARLCharacterEnemyDragon>(Target))
-    {
-        Dragon->TakeDragonDamage(ProjectileSettings.Damage);
+          else if (ARLCharacterEnemyDragon* Dragon = Cast<ARLCharacterEnemyDragon>(Target))
+      {
+         				FDamageEvent DamageEvent;
+				Dragon->TakeDamage((float)ProjectileSettings.Damage, DamageEvent, nullptr, this);
         UE_LOG(LogTemp, Log, TEXT("Player Projectile Hit Dragon: %s, Damage: %d, Pierce Count: %d"), 
                *Dragon->GetName(), ProjectileSettings.Damage, CurrentPierceCount);
     }
