@@ -4,12 +4,14 @@
 #include "Animation/RLAnimInstance.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Character/RLCharacterBase.h"
 
 void URLAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 
 	OwningPawn = TryGetPawnOwner();
+
 	// null체크를 확실하게 해야함 애니메이션 블루프린트에서 크래시 방지를 위한 크래시 방지
 	if (OwningPawn)
 	{
@@ -17,6 +19,8 @@ void URLAnimInstance::NativeInitializeAnimation()
 		GroundSpeed = 500.0f;
 		bShouldMove = false;
 		bIsFalling = false;
+		ForwardSpeed = 0.0f;
+		RightSpeed = 0.0f;
 	}
 }
 
@@ -32,6 +36,8 @@ void URLAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 		GroundSpeed = 500.0f;
 		bShouldMove = false;
 		bIsFalling = false;
+		ForwardSpeed = 0.0f;
+		RightSpeed = 0.0f;
 		return;
 	}
 
@@ -63,6 +69,17 @@ void URLAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 	else
 	{
 		bShouldMove = false;
+	}
+
+	// 블렌드 스페이스용 방향 속도 계산
+	if (OwningPawn)
+	{
+		FVector ForwardVector = OwningPawn->GetActorForwardVector();
+		FVector RightVector = OwningPawn->GetActorRightVector();
+		
+		// 속도 벡터를 캐릭터의 로컬 좌표계로 변환
+		ForwardSpeed = FVector::DotProduct(Velocity, ForwardVector);
+		RightSpeed = FVector::DotProduct(Velocity, RightVector);
 	}
 }
 

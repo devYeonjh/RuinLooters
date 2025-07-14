@@ -27,6 +27,12 @@ protected:
     UPROPERTY()
     FVector CurrentAcceleration;
 
+    // 블렌드 스페이스용 방향 속도 변수들
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+    float ForwardSpeed;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+    float RightSpeed;
+
 public:
     FORCEINLINE void SetShouldMove(bool ShouldMove) { bShouldMove = ShouldMove; };
 
