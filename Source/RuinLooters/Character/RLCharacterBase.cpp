@@ -15,13 +15,11 @@
 #include "Blueprint/UserWidget.h"
 #include "GameInstance/RLGameInstance.h"
 #include "RLGliderComponent.h"
-#include "Engine/DamageEvents.h"
-#include "Particles/ParticleSystem.h"
 
 ARLCharacterBase::ARLCharacterBase() : WeaponRowName(TEXT("First WeaponRowName Text"))
 {
     // 기본 스탯 초기화 (블루프린트에서 덮어쓰기 가능)
-    MaxHp = 100.0f;
+    MaxHp = 100;
     CurrentHp = MaxHp;
     AttackDamage = 0;
     Defence = 5;
@@ -49,10 +47,10 @@ void ARLCharacterBase::BeginPlay()
     AnimInstance = GetMesh()->GetAnimInstance();
 }
 
-float ARLCharacterBase::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
+void ARLCharacterBase::TakeCharacterDamage(int32 RecieveDamage)
 {
     // 방어력만큼 데미지 감소
-    float DamageApplied = FMath::Max(1.0f, DamageAmount - Defence);
+    int32 DamageApplied = FMath::Max(1, RecieveDamage - Defence);
     CurrentHp -= DamageApplied;
 
     if (CurrentHp < 0)
@@ -60,14 +58,7 @@ float ARLCharacterBase::TakeDamage(float DamageAmount, struct FDamageEvent const
         CurrentHp = 0;
     }
 
-    // 타격 파티클 이펙트 생성
-    if (HitParticleTemplate)
-    {
-        FVector HitLocation = GetActorLocation() + FVector(0.0f, 0.0f, 50.0f); // 캐릭터 중앙 위치
-        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticleTemplate, HitLocation);
-    }
-
-    if (CurrentHp <= 0)
+    if (CurrentHp == 0)
     {
         Die();
     }
@@ -77,18 +68,17 @@ float ARLCharacterBase::TakeDamage(float DamageAmount, struct FDamageEvent const
         UGameplayStatics::PlaySoundAtLocation(this, HitSound, GetActorLocation());
     }
 
-    return DamageApplied;
 }
 
 void ARLCharacterBase::TakeCharacterHeal(int32 RecieveHealAmount)
 {
-    UE_LOG(LogTemp, Warning, TEXT("PreviousHp: %.1f."), CurrentHp);
+    UE_LOG(LogTemp, Warning, TEXT("PreviousHp: %d."), CurrentHp);
 
-    float TotalHp = RecieveHealAmount + CurrentHp;
+    int32 TotalHp = RecieveHealAmount + CurrentHp;
 
-    CurrentHp = FMath::Clamp(TotalHp, 0.0f, MaxHp);
+    CurrentHp = FMath::Clamp(TotalHp, 0, MaxHp);
 
-    UE_LOG(LogTemp, Warning, TEXT("CurrentHp: %.1f."), CurrentHp);
+    UE_LOG(LogTemp, Warning, TEXT("CurrentHp: %d."), CurrentHp);
 }
 
 void ARLCharacterBase::Die()
@@ -140,8 +130,7 @@ void ARLCharacterBase::SwordAttackLineTrace()
         ARLCharacterBase* HitChar = Cast<ARLCharacterBase>(Hit.GetActor());
         if (HitChar)
         {
-            FDamageEvent DamageEvent;
-            HitChar->TakeDamage((float)AttackDamage, DamageEvent, nullptr, this);
+            HitChar->TakeCharacterDamage(AttackDamage);
         }
     }
 }
@@ -241,39 +230,15 @@ void ARLCharacterBase::StartRoll()
     OriginalMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
     GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed * 1.5f;
 
-    // 플레이어 입력 차단
-    DisablePlayerInput();
-
-    // 롤 몽타주 재생 및 종료 델리게이트 설정
-    AnimInstance = GetMesh()->GetAnimInstance();
-    if (AnimInstance)
-    {
-        AnimInstance->Montage_Play(RollMontage);
-        
-        // 몽타주 종료 시 EndRoll() 호출되도록 델리게이트 설정
-        FOnMontageEnded RollEndDelegate;
-        RollEndDelegate.BindUObject(this, &ARLCharacterBase::OnRollMontageEnded);
-        AnimInstance->Montage_SetEndDelegate(RollEndDelegate, RollMontage);
-    }
-    else
-    {
-        PlayAnimMontage(RollMontage);
-    }
+    PlayAnimMontage(RollMontage);
 }
 
-// --- 롤 몽타주 종료 콜백 ---
-void ARLCharacterBase::OnRollMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+// --- 롤(구르기) 종료 ---
+void ARLCharacterBase::EndRoll()
 {
-    // 롤 몽타주인지 확인 후 EndRoll() 호출
-    if (Montage == RollMontage)
-    {
-        bIsRolling = false;
-        // 구르기 끝나면 원래 속도로 복귀
-        GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed;
-        
-        // 플레이어 입력 복원
-        EnablePlayerInput();
-    }
+    bIsRolling = false;
+    // 구르기 끝나면 원래 속도로 복귀
+    GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed;
 }
 
 // --- 무적 시작(애님 노티파이용) ---

@@ -25,7 +25,6 @@ public:
     static const FName StartSkyPointKey;
     static const FName CurrentSkyPointKey;
     static const FName bIsHpLowKey;
-    static const FName bRandomKey;
 
 protected:
     UPROPERTY(EditDefaultsOnly, Category = "AI")
@@ -62,15 +61,6 @@ protected:
 public:
     void ShutdownAI();
 
-    // 새로운 BT 실행 함수들
-    UFUNCTION(BlueprintCallable, Category = "AI")
-    void SwitchBehaviorTree(UBehaviorTree* NewBehaviorTree);
-
-    UFUNCTION(BlueprintCallable, Category = "AI")
-    void StopCurrentBehaviorTree();
-
-    UFUNCTION(BlueprintCallable, Category = "AI")
-    void RestartCurrentBehaviorTree();
 };
 
 

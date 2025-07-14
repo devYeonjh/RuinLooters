@@ -44,13 +44,13 @@ void ARLSkillBookNPC::HandleStoreBuy()
 	{
 		Player->SetMoney(Player->GetMoney() - SkillBook->Price);
 		
-		UE_LOG(LogTemp, Warning, TEXT("MaxHp: %f ."), Player->GetMaxHp());
+		UE_LOG(LogTemp, Warning, TEXT("MaxHp: %d ."), Player->GetMaxHp());
 		UE_LOG(LogTemp, Warning, TEXT("defence: %d ."), Player->GetDefence());
 
 		if (SkillBook->SkillBookIndex <= 2)
 		{
 			Player->TakeCharacterMaxHealth(SkillBook->UpAmount);
-			UE_LOG(LogTemp, Warning, TEXT("MaxHp: %f ."), Player->GetMaxHp());
+			UE_LOG(LogTemp, Warning, TEXT("MaxHp: %d ."), Player->GetMaxHp());
 		}
 		else
 		{

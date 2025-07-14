@@ -29,10 +29,10 @@ public:
 protected:
 	// 기본 스탯
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dragon Stats")
-	float CurrentHp;
+	int32 CurrentHp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dragon Stats")
-	float MaxHp;
+	int32 MaxHp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dragon Stats")
 	int32 AttackDamage;
@@ -75,10 +75,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Audio")
 	USoundBase* DieSound;
 
-	// 파티클 이펙트
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle Effects")
-	class UParticleSystem* HitParticleTemplate;
-
 	// 캡슐 콜리전 공격 설정
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dragon Attack")
 	float CapsuleAttackRadius;
@@ -115,23 +111,23 @@ public:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	// Getter 함수들
-	FORCEINLINE float GetCurrentHp() const { return CurrentHp; }
-	FORCEINLINE float GetMaxHp() const { return MaxHp; }
+	FORCEINLINE int32 GetCurrentHp() const { return CurrentHp; }
+	FORCEINLINE int32 GetMaxHp() const { return MaxHp; }
 	FORCEINLINE int32 GetAttackDamage() const { return AttackDamage; }
 	FORCEINLINE float GetRange() const { return Range; }
 	FORCEINLINE float GetAttackSpeed() const { return AttackSpeed; }
 	FORCEINLINE int32 GetDefence() const { return Defence; }
 
 	// Setter 함수들
-	FORCEINLINE void SetCurrentHp(float NewCurrentHp) { CurrentHp = NewCurrentHp; }
-	FORCEINLINE void SetMaxHp(float NewMaxHp) { MaxHp = NewMaxHp; }
+	FORCEINLINE void SetCurrentHp(int32 NewCurrentHp) { CurrentHp = NewCurrentHp; }
+	FORCEINLINE void SetMaxHp(int32 NewMaxHp) { MaxHp = NewMaxHp; }
 	FORCEINLINE void SetAttackDamage(int32 NewAttackDamage) { AttackDamage = NewAttackDamage; }
 	FORCEINLINE void SetRange(float NewRange) { Range = NewRange; }
 	FORCEINLINE void SetAttackSpeed(float NewAttackSpeed) { AttackSpeed = NewAttackSpeed; }
 	FORCEINLINE void SetDefence(int32 NewDefence) { Defence = NewDefence; }
 
 	// 전투 관련 함수들
-	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+	virtual void TakeDragonDamage(int32 ReceivedDamage);
 
 	virtual void Heal(int32 HealAmount);
 
