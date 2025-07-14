@@ -33,6 +33,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Engine/DamageEvents.h"
+#include "Camera/CameraComponent.h"
 
 ARLCharacterPlayer::ARLCharacterPlayer()
 {
@@ -59,12 +60,30 @@ ARLCharacterPlayer::ARLCharacterPlayer()
 
     // 에이밍 시스템 초기화
     bIsAiming = false;
-    AimingCameraDistance = 150.0f;  // 에이밍 시 카메라 거리
+    AimingCameraDistance = 0.0f;  // 에이밍 시 카메라 거리
     NormalCameraDistance = 400.0f;  // 일반 상태 카메라 거리
     BowDrawSound = nullptr;
 
     // 폼 체인지 초기화 (기본적으로 검 모드)
     bIsSword = true;
+
+    // 활 메시 컴포넌트 생성 및 초기화
+    BowMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("BowMesh"));
+    BowMeshComponent->SetupAttachment(GetMesh(), TEXT("hand_lBowSocket"));
+    BowMeshComponent->SetSkeletalMesh(nullptr);
+    BowMeshComponent->SetCastShadow(false);
+    BowMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    BowMeshComponent->SetVisibility(false); // 기본적으로 숨김 (검 모드이므로)
+    BowMeshComponent->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.5f)); // 크기를 반으로 줄임
+
+    // 화살 시스템 초기화
+    bIsLoadingArrow = false;
+    bIsArrowLoaded = false;
+    LoadedArrow = nullptr;
+
+    // 카메라 위치 초기화
+    NormalCameraPosition = FVector(0.0f, 0.0f, 0.0f);
+    AimingCameraPosition = FVector(220.0f, 0.0f, 50.0f);
 }
 
 void ARLCharacterPlayer::BeginPlay()
@@ -148,6 +167,16 @@ void ARLCharacterPlayer::BeginPlay()
     {
         UE_LOG(LogTemp, Warning, TEXT("Player PlayerProjectileClass is not set"));
     }
+
+    // 화살 클래스 확인
+    if (ArrowClass)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Arrow class is set"));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("ArrowClass is not set"));
+    }
 }
 
 void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -165,9 +194,11 @@ void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
     // Set up action bindings
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-        // Attacking
-
         EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Attack);
+        // Attacking - 홀딩 지원을 위해 Started/Completed로 변경
+        EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::OnAttackPressed);
+        EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Completed, this, &ARLCharacterPlayer::OnAttackReleased);
+        
         EnhancedInputComponent->BindAction(SkillAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::ApplySpeedBuff);
         EnhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Interaction);
         // ESC
@@ -738,12 +769,7 @@ void ARLCharacterPlayer::StartRoll()
 
 void ARLCharacterPlayer::Attack()
 {
-    if (GliderComponent && GliderComponent->IsGliderActive())
-    {
-        return;
-    }
-
-    if (GetCharacterMovement()->IsFalling())
+    if (!bIsSword || GliderComponent && GliderComponent->IsGliderActive() || GetCharacterMovement()->IsFalling())
     {
         return;
     }
@@ -773,6 +799,18 @@ void ARLCharacterPlayer::Tick(float DeltaTime)
     {
         float InterpSpeed = 2.0f; // 0.5초에 걸쳐 부드러운 전환 (2.0f 사용)
         CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, CameraTargetArmLength, DeltaTime, InterpSpeed);
+    }
+
+    // 활 가시성 업데이트 (폼 상태에 따라)
+    if (BowMeshComponent)
+    {
+        BowMeshComponent->SetVisibility(!bIsSword);
+    }
+
+    // WeaponMeshComponent(검) 가시성 업데이트 (폼 상태에 따라)
+    if (WeaponMeshComponent)
+    {
+        WeaponMeshComponent->SetVisibility(bIsSword);
     }
 }
 
@@ -822,8 +860,11 @@ void ARLCharacterPlayer::StartAiming()
 
     bIsAiming = true;
     
-    // 카메라 거리를 에이밍 모드로 변경 (0.5초에 걸쳐)
-    CameraTargetArmLength = AimingCameraDistance;
+    // 카메라 위치를 에이밍 모드로 변경 (FollowCamera의 상대적 위치)
+    if (FollowCamera)
+    {
+        FollowCamera->SetRelativeLocation(AimingCameraPosition);
+    }
     
     // OrientRotationToMovement를 false로 설정
     GetCharacterMovement()->bOrientRotationToMovement = false;
@@ -850,8 +891,11 @@ void ARLCharacterPlayer::StopAiming()
 
     bIsAiming = false;
     
-    // 카메라 거리를 일반 모드로 복원
-    CameraTargetArmLength = NormalCameraDistance;
+    // 카메라 위치를 일반 모드로 복원 (FollowCamera의 상대적 위치)
+    if (FollowCamera)
+    {
+        FollowCamera->SetRelativeLocation(NormalCameraPosition);
+    }
     
     // OrientRotationToMovement를 true로 복원
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -874,6 +918,18 @@ void ARLCharacterPlayer::ChangeForm()
     // 폼 전환
     bIsSword = !bIsSword;
     
+    // 활 메시 가시성 제어
+    if (BowMeshComponent)
+    {
+        BowMeshComponent->SetVisibility(!bIsSword); // 검 모드이면 숨김, 활 모드이면 표시
+    }
+    
+    // WeaponMeshComponent(검) 가시성 제어
+    if (WeaponMeshComponent)
+    {
+        WeaponMeshComponent->SetVisibility(bIsSword); // 검 모드이면 표시, 활 모드이면 숨김
+    }
+    
     // 에이밍 상태가 활성화되어 있다면 비활성화
     if (bIsAiming && bIsSword)
     {
@@ -881,6 +937,120 @@ void ARLCharacterPlayer::ChangeForm()
     }
     
     UE_LOG(LogTemp, Log, TEXT("Form changed to: %s"), bIsSword ? TEXT("Sword") : TEXT("Bow"));
+}
+
+// 공격 버튼 눌렀을 때
+void ARLCharacterPlayer::OnAttackPressed()
+{
+    if (bIsSword)
+    {
+        // 검 모드: 기존 공격
+        Attack();
+    }
+    else
+    {
+        // 활 모드: 화살 장전 시작
+        StartLoadingArrow();
+    }
+}
+
+// 공격 버튼 뗐을 때
+void ARLCharacterPlayer::OnAttackReleased()
+{
+    if (!bIsSword && bIsArrowLoaded)
+    {
+        // 활 모드이고 화살이 장전된 상태: 화살 발사
+        FireArrow();
+    }
+}
+
+// 화살 장전 시작
+void ARLCharacterPlayer::StartLoadingArrow()
+{
+    if (bIsLoadingArrow || bIsArrowLoaded)
+    {
+        return; // 이미 장전 중이거나 장전된 상태
+    }
+
+    bIsLoadingArrow = true;
+    LoadArrowToSocket();
+    
+    UE_LOG(LogTemp, Log, TEXT("Arrow loading started"));
+}
+
+// 화살을 소켓에 장전
+void ARLCharacterPlayer::LoadArrowToSocket()
+{
+    if (!ArrowClass)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("ArrowClass is not set"));
+        bIsLoadingArrow = false;
+        return;
+    }
+
+    // 새 화살 생성
+    LoadedArrow = GetWorld()->SpawnActor<ARLArrow>(ArrowClass);
+    if (!LoadedArrow)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Failed to spawn arrow"));
+        bIsLoadingArrow = false;
+        return;
+    }
+
+    // 화살을 hand_rArrowSocket에 부착
+    LoadedArrow->SetActorHiddenInGame(false);
+    LoadedArrow->AttachToSocket(GetMesh(), TEXT("hand_rArrowSocket"));
+    
+    bIsLoadingArrow = false;
+    bIsArrowLoaded = true;
+    
+    UE_LOG(LogTemp, Log, TEXT("Arrow loaded to socket"));
+}
+
+// 화살 발사
+void ARLCharacterPlayer::FireArrow()
+{
+    if (!bIsArrowLoaded || !LoadedArrow)
+    {
+        return;
+    }
+
+    // 발사 위치 및 방향 설정
+    FVector PlayerLocation = GetActorLocation();
+    FVector FireLocation = PlayerLocation + FVector(0.0f, 0.0f, 150.0f);
+    
+    // 카메라가 바라보는 방향으로 발사 (컨트롤러 회전 기준)
+    FVector FireDirection = PlayerController ? PlayerController->GetControlRotation().Vector() : GetActorForwardVector();
+
+    // 소켓에서 분리
+    LoadedArrow->DetachFromSocket();
+    
+    // 화살 초기화 및 발사
+    LoadedArrow->InitializeArrow(FireLocation, FireDirection, 30, 2500.0f);
+
+    // 상태 초기화
+    LoadedArrow = nullptr;
+    bIsArrowLoaded = false;
+    
+    UE_LOG(LogTemp, Log, TEXT("Arrow fired"));
+}
+
+// 소켓에서 화살 제거
+void ARLCharacterPlayer::UnloadArrowFromSocket()
+{
+    if (!bIsArrowLoaded || !LoadedArrow)
+    {
+        return;
+    }
+
+    // 화살을 소켓에서 분리하고 제거
+    LoadedArrow->DetachFromSocket();
+    LoadedArrow->Destroy();
+
+    LoadedArrow = nullptr;
+    bIsArrowLoaded = false;
+    
+    UE_LOG(LogTemp, Log, TEXT("Arrow unloaded from socket"));
 }
 
 

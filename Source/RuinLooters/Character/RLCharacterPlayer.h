@@ -268,8 +268,6 @@ protected:
 
 	uint8 CheckEnemy();
 
-	// 투사체 스킬 관련 함수들
-
 	FOnMontageEnded MontageEndedDelegate;
 
 	// 에이밍 시스템 관련 변수
@@ -290,6 +288,30 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aiming")
 	class USoundBase* BowDrawSound;
 
+	// 활 메시 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bow")
+	class USkeletalMeshComponent* BowMeshComponent;
+
+	// 화살 시스템 관련
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
+	bool bIsLoadingArrow;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
+	bool bIsArrowLoaded;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow")
+	TSubclassOf<class ARLArrow> ArrowClass;
+	
+	UPROPERTY()
+	class ARLArrow* LoadedArrow;
+	
+	// 카메라 관련 변수 (에이밍용)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aiming")
+	FVector NormalCameraPosition;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aiming")
+	FVector AimingCameraPosition;
+
 	// 에이밍 시스템 관련 함수
 	UFUNCTION()
 	void StartAiming();
@@ -300,6 +322,26 @@ protected:
 	// 폼 체인지 (검/활 전환)
 	UFUNCTION()
 	void ChangeForm();
+
+	// 화살 시스템 관련 함수
+	UFUNCTION()
+	void StartLoadingArrow();
+	
+	UFUNCTION()
+	void FireArrow();
+	
+	UFUNCTION()
+	void LoadArrowToSocket();
+	
+	UFUNCTION()
+	void UnloadArrowFromSocket();
+
+	// 공격 버튼 홀딩 시스템
+	UFUNCTION()
+	void OnAttackPressed();
+	
+	UFUNCTION()
+	void OnAttackReleased();
 };
 
 
