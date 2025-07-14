@@ -17,7 +17,7 @@ struct FWeaponTableRow : public FTableRowBase
 		, Icon(nullptr)
 		, SkeletalMesh(nullptr)
 		, Damage(0)
-		, AttackSpeed(0.0f)
+		, MontageSpeed(0.0f)
 		, Range(0.0f)
 		, Price(0)
 	{
@@ -36,7 +36,7 @@ struct FWeaponTableRow : public FTableRowBase
 	int32 Damage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float AttackSpeed;
+	float MontageSpeed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float Range;

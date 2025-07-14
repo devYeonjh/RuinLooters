@@ -59,6 +59,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* ProjectileSkillMontage;
 
+	// 스피드 스킬 애니메이션 몽타주
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	class UAnimMontage* SpeedSkillMontage;
+
 	// NPC
 	UPROPERTY()
 	class ARLNPC* InteractiveNPC;
@@ -211,6 +215,13 @@ public:
 	// 투사체 스킬 몽타주 종료 콜백
 	UFUNCTION()
 	void OnProjectileSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	// 스피드 스킬 몽타주 종료 콜백
+	UFUNCTION()
+	void OnSpeedSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	// 스피드 버프 효과 적용 함수
+	void ApplySpeedBuffEffect();
 
 	UFUNCTION(BlueprintCallable, Category = "Player Projectile")
 	void FirePlayerProjectile();

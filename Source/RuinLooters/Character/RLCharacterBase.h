@@ -38,7 +38,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
 	float Range;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
-	float AttackSpeed;
+	float MontageSpeed;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	int32 Defence;
 

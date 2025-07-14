@@ -262,34 +262,27 @@ void ARLCharacterPlayer::ApplySpeedBuff()
     {
         IsCanSkill = false;
 
-        AttackSpeed = 1.5;
-
-        // 1. 현재 속도 저장
-        OriginalMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
-
-        // 2. 스피드 버프속도로 변경
-        GetCharacterMovement()->MaxWalkSpeed = 800;
-
-        // 3. 기존 타이머가 있다면 클리어
-        GetWorldTimerManager().ClearTimer(SpeedBuffTimerHandle);
-
-        // 4. Duration 후 RestoreOriginalSpeed() 호출하기
-        GetWorldTimerManager().SetTimer(
-            SpeedBuffTimerHandle,
-            this,
-            &ARLCharacterPlayer::RestoreOriginalSpeed,
-            5.0f,
-            false  // 반복 
-        );
-
-        GetWorldTimerManager().SetTimer(
-            CoolTimerHandle,
-            this,
-            &ARLCharacterPlayer::OnSkill,
-            8.0f,
-            false  // 반복 
-        );
-        UE_LOG(LogTemp, Warning, TEXT("Skill On!"));
+        // 스피드 스킬 몽타주가 설정되어 있다면 몽타주 실행
+        if (SpeedSkillMontage && AnimInstance)
+        {
+            // 몽타주 종료 콜백 설정
+            FOnMontageEnded SpeedSkillMontageEndedDelegate;
+            SpeedSkillMontageEndedDelegate.BindUObject(this, &ARLCharacterPlayer::OnSpeedSkillMontageEnded);
+            
+            // 몽타주 재생 및 델리게이트 설정
+            float MontageLength = AnimInstance->Montage_Play(SpeedSkillMontage);
+            AnimInstance->Montage_SetEndDelegate(SpeedSkillMontageEndedDelegate, SpeedSkillMontage);
+            
+            // 몽타주 재생 중에는 이동 제한
+            GetCharacterMovement()->SetMovementMode(MOVE_None);
+            
+            UE_LOG(LogTemp, Warning, TEXT("Speed skill montage started - Length: %f"), MontageLength);
+        }
+        else
+        {
+            // 몽타주가 없으면 바로 스피드 버프 적용
+            ApplySpeedBuffEffect();
+        }
 
         SkillCoolChange.Broadcast(IsCanSkill);
     }
@@ -303,7 +296,7 @@ void ARLCharacterPlayer::RestoreOriginalSpeed()
 {
     // 원래 속도 복원
     GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed;
-    AttackSpeed = 1.0;
+    MontageSpeed = 1.0;
 }
 
 void ARLCharacterPlayer::OnSkill()
@@ -653,6 +646,51 @@ void ARLCharacterPlayer::OnProjectileSkillMontageEnded(UAnimMontage* Montage, bo
     bIsUsingProjectileSkill = false;
 
     UE_LOG(LogTemp, Warning, TEXT("Player projectile skill montage ended - Movement restored"));
+}
+
+void ARLCharacterPlayer::OnSpeedSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+    UE_LOG(LogTemp, Warning, TEXT("OnSpeedSkillMontageEnded called! Interrupted: %s"), bInterrupted ? TEXT("true") : TEXT("false"));
+
+    // 몽타주 종료 시 이동 모드 복원
+    GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
+    // 스피드 버프 효과 적용
+    ApplySpeedBuffEffect();
+
+    UE_LOG(LogTemp, Warning, TEXT("Speed skill montage ended - Speed buff applied"));
+}
+
+void ARLCharacterPlayer::ApplySpeedBuffEffect()
+{
+    MontageSpeed = 1.5;
+
+    // 1. 현재 속도 저장
+    OriginalMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+
+    // 2. 스피드 버프속도로 변경
+    GetCharacterMovement()->MaxWalkSpeed = 1000;
+
+    // 3. 기존 타이머가 있다면 클리어
+    GetWorldTimerManager().ClearTimer(SpeedBuffTimerHandle);
+
+    // 4. Duration 후 RestoreOriginalSpeed() 호출하기
+    GetWorldTimerManager().SetTimer(
+        SpeedBuffTimerHandle,
+        this,
+        &ARLCharacterPlayer::RestoreOriginalSpeed,
+        5.0f,
+        false  // 반복 
+    );
+
+    GetWorldTimerManager().SetTimer(
+        CoolTimerHandle,
+        this,
+        &ARLCharacterPlayer::OnSkill,
+        8.0f,
+        false  // 반복 
+    );
+    UE_LOG(LogTemp, Warning, TEXT("Speed Buff Effect Applied!"));
 }
 
 void ARLCharacterPlayer::HandleJumpOrGlide()

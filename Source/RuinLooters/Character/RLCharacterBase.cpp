@@ -26,7 +26,7 @@ ARLCharacterBase::ARLCharacterBase() : WeaponRowName(TEXT("First WeaponRowName T
     AttackDamage = 0;
     Defence = 5;
     Range = 0;
-    AttackSpeed = 0.0f;
+    MontageSpeed = 0.0f;
 
     // 1) WeaponMeshComponent 생성
     WeaponMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
@@ -181,7 +181,7 @@ void ARLCharacterBase::ChangeWeapon(FWeaponTableRow* ChangeWeapon)
 void ARLCharacterBase::ApplyWeaponAbility(FWeaponTableRow* ApplyWeapon)
 {
     AttackDamage = ApplyWeapon->Damage;
-    AttackSpeed = ApplyWeapon->AttackSpeed;
+    MontageSpeed = ApplyWeapon->MontageSpeed;
     Range = ApplyWeapon->Range;
 }
 
