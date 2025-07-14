@@ -55,6 +55,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ProjectileSkillAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* RollAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* AimAction;
+
 	// 투사체 스킬 애니메이션 몽타주
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* ProjectileSkillMontage;

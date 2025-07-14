@@ -165,10 +165,12 @@ void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
         EnhancedInputComponent->BindAction(SettingsAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::ViewSettingWidget);
         // 투사체 스킬
         EnhancedInputComponent->BindAction(ProjectileSkillAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::UseProjectileSkill);
-
         // 롤(구르기) 입력 바인딩 (Shift키)
         EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::StartRoll);
+        // 글라이더 점프
         EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::HandleJumpOrGlide);
+        // 에임
+        EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::HandleJumpOrGlide);
     }
     else
     {

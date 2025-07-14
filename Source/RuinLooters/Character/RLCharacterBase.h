@@ -160,9 +160,6 @@ public:
 
 	void PlayAttackSound();
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* RollAction;
-
 	// 롤 몽타주 종료 콜백
 	void OnRollMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
