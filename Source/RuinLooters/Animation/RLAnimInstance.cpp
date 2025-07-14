@@ -21,6 +21,8 @@ void URLAnimInstance::NativeInitializeAnimation()
 		bIsFalling = false;
 		ForwardSpeed = 0.0f;
 		RightSpeed = 0.0f;
+		InputForwardSpeed = 0.0f;
+		InputRightSpeed = 0.0f;
 	}
 }
 
@@ -38,6 +40,8 @@ void URLAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 		bIsFalling = false;
 		ForwardSpeed = 0.0f;
 		RightSpeed = 0.0f;
+		InputForwardSpeed = 0.0f;
+		InputRightSpeed = 0.0f;
 		return;
 	}
 
@@ -77,9 +81,12 @@ void URLAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 		FVector ForwardVector = OwningPawn->GetActorForwardVector();
 		FVector RightVector = OwningPawn->GetActorRightVector();
 		
-		// 속도 벡터를 캐릭터의 로컬 좌표계로 변환
+		// 속도 벡터를 캐릭터의 로컬 좌표계로 변환 (실제 속도 기반)
 		ForwardSpeed = FVector::DotProduct(Velocity, ForwardVector);
 		RightSpeed = FVector::DotProduct(Velocity, RightVector);
+		
+		// 입력값 기반 블렌드 스페이스용 속도는 이미 Move 함수에서 설정됨
+		// InputForwardSpeed와 InputRightSpeed는 SetInputForwardSpeed/SetInputRightSpeed 함수로 설정
 	}
 }
 
