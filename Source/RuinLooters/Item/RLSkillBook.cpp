@@ -25,14 +25,14 @@ void ARLSkillBook::OnPlayerOverlap(UPrimitiveComponent* OverlappedComponent, AAc
 	{
 		SkillBook = GameInstance->GetSkillBookInformation(DroppedItemName);
 
-		UE_LOG(LogTemp, Warning, TEXT("MaxHp: %.1f ."), Player->GetMaxHp());
+		UE_LOG(LogTemp, Warning, TEXT("MaxHp: %d ."), Player->GetMaxHp());
 		UE_LOG(LogTemp, Warning, TEXT("defence: %d ."), Player->GetDefence());
 
 		if (SkillBook->SkillBookIndex <= 2)
 		{
 			Player->TakeCharacterMaxHealth(SkillBook->UpAmount);
 			Player->PlayerHpChange.Broadcast(Player->GetCurrentHp(), Player->GetMaxHp());
-			UE_LOG(LogTemp, Warning, TEXT("MaxHp: %.1f ."), Player->GetMaxHp());
+			UE_LOG(LogTemp, Warning, TEXT("MaxHp: %d ."), Player->GetMaxHp());
 		}
 		else
 		{

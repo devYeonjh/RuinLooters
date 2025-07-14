@@ -136,10 +136,10 @@ struct FEnemyAbilityTableRow : public FTableRowBase
 	int32 EnemyMoney;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
-	float EnemyCurrentHp;
+	int32 EnemyCurrentHp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
-	float EnemyMaxHp;
+	int32 EnemyMaxHp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
 	int32 EnemyAttackDamage;

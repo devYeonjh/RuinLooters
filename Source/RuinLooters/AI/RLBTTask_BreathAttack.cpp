@@ -5,16 +5,15 @@
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "AIController.h"
 #include "Character/RLCharacterEnemyDragon.h"
-#include "Engine/Engine.h"
 
 URLBTTask_BreathAttack::URLBTTask_BreathAttack()
 {
     // 태스크 이름 설정
     NodeName = TEXT("Dragon Breath Attack");
     
-    // 태스크가 틱을 받을 수 있도록 설정
-    bNotifyTick = true;
-    bNotifyTaskFinished = true;
+    // 태스크가 즉시 완료되도록 설정
+    bNotifyTick = false;
+    bNotifyTaskFinished = false;
 }
 
 EBTNodeResult::Type URLBTTask_BreathAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -41,6 +40,6 @@ EBTNodeResult::Type URLBTTask_BreathAttack::ExecuteTask(UBehaviorTreeComponent& 
     // 성공적으로 실행됨을 로그
     UE_LOG(LogTemp, Log, TEXT("Dragon Breath Attack executed successfully"));
     
-    // InProgress 상태 반환 (3초 후 Succeeded 반환)
+    // 태스크 성공 반환
     return EBTNodeResult::Succeeded;
-}
+} 

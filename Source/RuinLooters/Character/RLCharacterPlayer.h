@@ -14,7 +14,7 @@
  */
 
 // 캐릭터 체력 변화 델리게이트
-DECLARE_MULTICAST_DELEGATE_TwoParams(FPlayerCalculateHp, float /*CurrentHp*/, float /*MaxHp*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FPlayerCalculateHp, int32 /*CurrentHp*/, int32 /*MaxHp*/);
 
 // 캐릭터 스킬 쿨타임 델리게이트
 DECLARE_MULTICAST_DELEGATE_OneParam(FSkillCoolTime, uint8 /*CoolCheck*/);
@@ -195,7 +195,7 @@ public:
 	// 인터페이스의 메서드 오버라이드
 	virtual FGenericTeamId GetGenericTeamId() const override;
 
-	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+	virtual void TakeCharacterDamage(int32 RecieveDamage) override;
 
 	virtual void TakeCharacterHeal(int32 RecieveHealAmount) override;
 
@@ -234,10 +234,6 @@ public:
 	void HandleJumpOrGlide();
 	virtual void StartRoll();
 	virtual void Attack() override;
-
-	// 플레이어 입력 차단/복원 함수 오버라이드
-	virtual void DisablePlayerInput() override;
-	virtual void EnablePlayerInput() override;
 
 protected:
 	virtual void BeginPlay() override;

@@ -36,11 +36,11 @@ void URLPlayerUI::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	}
 }
 
-void URLPlayerUI::PlayerCalculateHp(float NewCurrentHp, float NewMaxHp)
+void URLPlayerUI::PlayerCalculateHp(int32 NewCurrentHp, int32 NewMaxHp)
 {
 
 	if (!PlayerHpBar) return;
-	float Ratio = NewCurrentHp / NewMaxHp;
+	float Ratio = (float)NewCurrentHp / NewMaxHp;
 	PlayerHpBar->SetPercent(Ratio);
 }
 

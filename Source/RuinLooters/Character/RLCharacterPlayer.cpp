@@ -32,7 +32,6 @@
 #include "Animation/AnimMontage.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Engine/DamageEvents.h"
 
 ARLCharacterPlayer::ARLCharacterPlayer()
 {
@@ -314,16 +313,15 @@ FGenericTeamId ARLCharacterPlayer::GetGenericTeamId() const
     return FGenericTeamId(TeamID);
 }
 
-float ARLCharacterPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
+void ARLCharacterPlayer::TakeCharacterDamage(int32 RecieveDamage)
 {
     if (bIsInvincible)
     {
         // 무적 중이면 데미지 무시
-        return 0.0f;
+        return;
     }
-    float ActualDamage = ARLCharacterBase::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+    ARLCharacterBase::TakeCharacterDamage(RecieveDamage);
     PlayerHpChange.Broadcast(CurrentHp, MaxHp);
-    return ActualDamage;
 }
 
 void ARLCharacterPlayer::TakeCharacterHeal(int32 RecieveHealAmount)
@@ -335,7 +333,7 @@ void ARLCharacterPlayer::TakeCharacterHeal(int32 RecieveHealAmount)
 
 void ARLCharacterPlayer::TakeCharacterMaxHealth(int32 UpScale)
 {
-    float TotalMaxHp = GetMaxHp() + UpScale;
+    int32 TotalMaxHp = GetMaxHp() + UpScale;
     SetCurrentHp(GetCurrentHp() + UpScale);
     SetMaxHp(TotalMaxHp);
 }
@@ -625,14 +623,9 @@ void ARLCharacterPlayer::FirePlayerProjectile()
     FTimerHandle ReturnTimerHandle;
     GetWorld()->GetTimerManager().SetTimer(ReturnTimerHandle, [this, PlayerProjectile]()
     {
-        if (PlayerProjectilePool && PlayerProjectile && IsValid(PlayerProjectile))
+        if (PlayerProjectilePool && PlayerProjectile)
         {
             PlayerProjectilePool->ReturnProjectile(PlayerProjectile);
-            UE_LOG(LogTemp, Log, TEXT("Player projectile auto-returned after 30 seconds"));
-        }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT("Player projectile timer called but projectile is invalid"));
         }
     }, 30.0f, false);  // 플레이어 투사체의 생존 시간에 맞춤
 
@@ -761,34 +754,6 @@ void ARLCharacterPlayer::Tick(float DeltaTime)
     {
         float InterpSpeed = 3.0f; // 부드러운 속도
         CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, CameraTargetArmLength, DeltaTime, InterpSpeed);
-    }
-}
-
-// 플레이어 입력 차단 (구르기 중)
-void ARLCharacterPlayer::DisablePlayerInput()
-{
-    if (PlayerController)
-    {
-        // Enhanced Input Mapping Context 제거
-        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-        {
-            Subsystem->RemoveMappingContext(DefaultMappingContext);
-            UE_LOG(LogTemp, Log, TEXT("Player input disabled for rolling"));
-        }
-    }
-}
-
-// 플레이어 입력 복원 (구르기 종료)
-void ARLCharacterPlayer::EnablePlayerInput()
-{
-    if (PlayerController)
-    {
-        // Enhanced Input Mapping Context 재추가
-        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-        {
-            Subsystem->AddMappingContext(DefaultMappingContext, 0);
-            UE_LOG(LogTemp, Log, TEXT("Player input enabled after rolling"));
-        }
     }
 }
 
