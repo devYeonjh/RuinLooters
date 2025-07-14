@@ -56,6 +56,15 @@ ARLCharacterPlayer::ARLCharacterPlayer()
     ProjectileCollisionRadius = 15.0f;   // 플레이어 투사체 반지름
     ProjectileCollisionHeight = 200.0f;  // 플레이어 투사체 높이 (사용자가 200.0f로 수정함)
     GliderComponent = CreateDefaultSubobject<URLGliderComponent>(TEXT("GliderComponent"));
+
+    // 에이밍 시스템 초기화
+    bIsAiming = false;
+    AimingCameraDistance = 150.0f;  // 에이밍 시 카메라 거리
+    NormalCameraDistance = 400.0f;  // 일반 상태 카메라 거리
+    BowDrawSound = nullptr;
+
+    // 폼 체인지 초기화 (기본적으로 검 모드)
+    bIsSword = true;
 }
 
 void ARLCharacterPlayer::BeginPlay()
@@ -169,8 +178,11 @@ void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
         EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::StartRoll);
         // 글라이더 점프
         EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::HandleJumpOrGlide);
-        // 에임
-        EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::HandleJumpOrGlide);
+        // 에이밍 시작/종료
+        EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::StartAiming);
+        EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ARLCharacterPlayer::StopAiming);
+        // 검, 활 폼 체인지
+        EnhancedInputComponent->BindAction(FormChangeAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::ChangeForm);
     }
     else
     {
@@ -759,7 +771,7 @@ void ARLCharacterPlayer::Tick(float DeltaTime)
     }
     if (CameraBoom)
     {
-        float InterpSpeed = 3.0f; // 부드러운 속도
+        float InterpSpeed = 2.0f; // 0.5초에 걸쳐 부드러운 전환 (2.0f 사용)
         CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, CameraTargetArmLength, DeltaTime, InterpSpeed);
     }
 }
@@ -790,6 +802,85 @@ void ARLCharacterPlayer::EnablePlayerInput()
             UE_LOG(LogTemp, Log, TEXT("Player input enabled after rolling"));
         }
     }
+}
+
+// 에이밍 시작
+void ARLCharacterPlayer::StartAiming()
+{
+    // 활 모드일 때만 에이밍 가능
+    if (bIsSword)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Cannot aim in sword mode"));
+        return;
+    }
+
+    // 공중에 있거나 구르기 중일 때는 에이밍 불가
+    if (GetCharacterMovement()->IsFalling() || bIsRolling)
+    {
+        return;
+    }
+
+    bIsAiming = true;
+    
+    // 카메라 거리를 에이밍 모드로 변경 (0.5초에 걸쳐)
+    CameraTargetArmLength = AimingCameraDistance;
+    
+    // OrientRotationToMovement를 false로 설정
+    GetCharacterMovement()->bOrientRotationToMovement = false;
+    
+    // UseControllerDesiredRotation을 true로 설정
+    GetCharacterMovement()->bUseControllerDesiredRotation = true;
+    
+    // 활 당기는 소리 재생
+    if (BowDrawSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, BowDrawSound, GetActorLocation());
+    }
+    
+    UE_LOG(LogTemp, Log, TEXT("Aiming started"));
+}
+
+// 에이밍 종료
+void ARLCharacterPlayer::StopAiming()
+{
+    if (!bIsAiming)
+    {
+        return;
+    }
+
+    bIsAiming = false;
+    
+    // 카메라 거리를 일반 모드로 복원
+    CameraTargetArmLength = NormalCameraDistance;
+    
+    // OrientRotationToMovement를 true로 복원
+    GetCharacterMovement()->bOrientRotationToMovement = true;
+    
+    // UseControllerDesiredRotation을 false로 복원
+    GetCharacterMovement()->bUseControllerDesiredRotation = false;
+    
+    UE_LOG(LogTemp, Log, TEXT("Aiming stopped"));
+}
+
+// 폼 체인지 (검/활 전환)
+void ARLCharacterPlayer::ChangeForm()
+{
+    // 에이밍 중이거나 구르기 중일 때는 폼 체인지 불가
+    if (bIsAiming || bIsRolling)
+    {
+        return;
+    }
+
+    // 폼 전환
+    bIsSword = !bIsSword;
+    
+    // 에이밍 상태가 활성화되어 있다면 비활성화
+    if (bIsAiming && bIsSword)
+    {
+        StopAiming();
+    }
+    
+    UE_LOG(LogTemp, Log, TEXT("Form changed to: %s"), bIsSword ? TEXT("Sword") : TEXT("Bow"));
 }
 
 

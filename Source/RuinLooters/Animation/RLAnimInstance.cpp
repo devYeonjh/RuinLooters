@@ -5,6 +5,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Character/RLCharacterBase.h"
+#include "Character/RLCharacterPlayer.h"
 
 void URLAnimInstance::NativeInitializeAnimation()
 {
@@ -23,6 +24,7 @@ void URLAnimInstance::NativeInitializeAnimation()
 		RightSpeed = 0.0f;
 		InputForwardSpeed = 0.0f;
 		InputRightSpeed = 0.0f;
+		IsSword = true;
 	}
 }
 
@@ -42,6 +44,7 @@ void URLAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 		RightSpeed = 0.0f;
 		InputForwardSpeed = 0.0f;
 		InputRightSpeed = 0.0f;
+		IsSword = true;
 		return;
 	}
 
@@ -87,6 +90,12 @@ void URLAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 		
 		// 입력값 기반 블렌드 스페이스용 속도는 이미 Move 함수에서 설정됨
 		// InputForwardSpeed와 InputRightSpeed는 SetInputForwardSpeed/SetInputRightSpeed 함수로 설정
+		
+		// 플레이어 캐릭터인 경우 IsSword 값 업데이트
+		if (ARLCharacterPlayer* PlayerCharacter = Cast<ARLCharacterPlayer>(OwningPawn))
+		{
+			IsSword = PlayerCharacter->GetbIsSword();
+		}
 	}
 }
 

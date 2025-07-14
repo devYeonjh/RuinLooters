@@ -61,6 +61,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* AimAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* FormChangeAction;
+
 	// 투사체 스킬 애니메이션 몽타주
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* ProjectileSkillMontage;
@@ -191,6 +194,7 @@ public:
 	FORCEINLINE void SetbStageExit(bool UpdatebStageExit) { bStageExit = UpdatebStageExit; };
 	FORCEINLINE const FTimerHandle& GetCoolTimerHandle() const { return CoolTimerHandle; }
 	FORCEINLINE void StageIndexUp() { StageIndex++; };
+	FORCEINLINE bool GetbIsSword() { return bIsSword; };
 
 	// 인터페이스의 메서드 오버라이드
 	virtual FGenericTeamId GetGenericTeamId() const override;
@@ -267,6 +271,35 @@ protected:
 	// 투사체 스킬 관련 함수들
 
 	FOnMontageEnded MontageEndedDelegate;
+
+	// 에이밍 시스템 관련 변수
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Aiming")
+	bool bIsAiming;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aiming") 
+	float AimingCameraDistance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aiming")
+	float NormalCameraDistance;
+
+	// 폼 체인지 관련 변수 (검/활 전환)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Form")
+	bool bIsSword;
+
+	// 에이밍 사운드
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aiming")
+	class USoundBase* BowDrawSound;
+
+	// 에이밍 시스템 관련 함수
+	UFUNCTION()
+	void StartAiming();
+	
+	UFUNCTION()
+	void StopAiming();
+
+	// 폼 체인지 (검/활 전환)
+	UFUNCTION()
+	void ChangeForm();
 };
 
 

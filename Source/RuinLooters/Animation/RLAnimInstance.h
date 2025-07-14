@@ -39,6 +39,10 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
     float InputRightSpeed;
 
+    // 폼 체인지 (검/활 모드)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+    bool IsSword;
+
 public:
     FORCEINLINE void SetShouldMove(bool ShouldMove) { bShouldMove = ShouldMove; };
     
