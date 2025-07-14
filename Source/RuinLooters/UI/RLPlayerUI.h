@@ -36,7 +36,7 @@ protected:
 
 
 public:
-	void PlayerCalculateHp(int32 NewCurrentHp, int32 NewMaxHp);
+	void PlayerCalculateHp(float NewCurrentHp, float NewMaxHp);
 	void SkillCoolTime(uint8 CoolCheck);
 	void UpdatePlayerMoney();
 };

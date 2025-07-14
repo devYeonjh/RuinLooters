@@ -1,4 +1,5 @@
 #include "RLDragonProjectile.h"
+#include "Engine/DamageEvents.h"
 #include "../Character/RLCharacterPlayer.h"
 #include "../Character/RLCharacterEnemyDragon.h"
 #include "../Pool/RLProjectilePool.h"
@@ -107,9 +108,10 @@ void ARLDragonProjectile::ApplyDamageToTarget(AActor* Target)
     }
 
     // 플레이어 타겟
-    if (ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(Target))
-    {
-        Player->TakeCharacterDamage(ProjectileSettings.Damage);
+          if (ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(Target))
+      {
+         				FDamageEvent DamageEvent;
+				Player->TakeDamage((float)ProjectileSettings.Damage, DamageEvent, nullptr, this);
         UE_LOG(LogTemp, Log, TEXT("Dragon Projectile Hit Player: %s, Damage: %d"), 
                *Player->GetName(), ProjectileSettings.Damage);
     }

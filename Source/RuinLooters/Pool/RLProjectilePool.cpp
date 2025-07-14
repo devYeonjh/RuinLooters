@@ -83,21 +83,40 @@ ARLProjectile* URLProjectilePool::GetProjectile()
 
 void URLProjectilePool::ReturnProjectile(ARLProjectile* Projectile)
 {
-    if (!Projectile || !Projectile->IsPooled())
+    if (!Projectile || !IsValid(Projectile) || !Projectile->IsPooled())
     {
+        UE_LOG(LogTemp, Warning, TEXT("URLProjectilePool::ReturnProjectile - Invalid projectile"));
         return;
     }
 
-    // 활성 목록에서 제거
-    ActiveProjectiles.RemoveSingle(Projectile);
+    // 중복 반환 방지: 이미 Available에 있는지 확인
+    if (AvailableProjectiles.Contains(Projectile))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("URLProjectilePool::ReturnProjectile - Projectile already in available list"));
+        return;
+    }
 
-    // 투사체 비활성화
-    Projectile->DeactivateProjectile();
-    Projectile->SetActorHiddenInGame(true);
-    Projectile->SetActorEnableCollision(false);
+    // Active 목록에 있는지 확인 후 제거
+    if (ActiveProjectiles.Contains(Projectile))
+    {
+        ActiveProjectiles.RemoveSingle(Projectile);
+        UE_LOG(LogTemp, Log, TEXT("URLProjectilePool::ReturnProjectile - Projectile returned to pool"));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("URLProjectilePool::ReturnProjectile - Projectile not found in active list"));
+    }
 
-    // 사용 가능한 목록에 다시 추가
-    AvailableProjectiles.Add(Projectile);
+    // 투사체 비활성화 (안전 검사 추가)
+    if (IsValid(Projectile))
+    {
+        Projectile->DeactivateProjectile();
+        Projectile->SetActorHiddenInGame(true);
+        Projectile->SetActorEnableCollision(false);
+
+        // 사용 가능한 목록에 다시 추가
+        AvailableProjectiles.Add(Projectile);
+    }
 }
 
 void URLProjectilePool::ClearPool()
@@ -248,21 +267,40 @@ ARLProjectile* URLProjectilePool::GetExplosionEffect()
 
 void URLProjectilePool::ReturnExplosionEffect(ARLProjectile* ExplosionEffect)
 {
-    if (!ExplosionEffect || !ExplosionEffect->IsPooled())
+    if (!ExplosionEffect || !IsValid(ExplosionEffect) || !ExplosionEffect->IsPooled())
     {
+        UE_LOG(LogTemp, Warning, TEXT("URLProjectilePool::ReturnExplosionEffect - Invalid explosion effect"));
         return;
     }
 
-    // 활성 목록에서 제거
-    ActiveExplosionEffects.RemoveSingle(ExplosionEffect);
+    // 중복 반환 방지: 이미 Available에 있는지 확인
+    if (AvailableExplosionEffects.Contains(ExplosionEffect))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("URLProjectilePool::ReturnExplosionEffect - Effect already in available list"));
+        return;
+    }
 
-    // 폭발 파티클 비활성화
-    ExplosionEffect->DeactivateProjectile();
-    ExplosionEffect->SetActorHiddenInGame(true);
-    ExplosionEffect->SetActorEnableCollision(false);
+    // Active 목록에 있는지 확인 후 제거
+    if (ActiveExplosionEffects.Contains(ExplosionEffect))
+    {
+        ActiveExplosionEffects.RemoveSingle(ExplosionEffect);
+        UE_LOG(LogTemp, Log, TEXT("URLProjectilePool::ReturnExplosionEffect - Effect returned to pool"));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("URLProjectilePool::ReturnExplosionEffect - Effect not found in active list"));
+    }
 
-    // 사용 가능한 목록에 다시 추가
-    AvailableExplosionEffects.Add(ExplosionEffect);
+    // 폭발 파티클 비활성화 (안전 검사 추가)
+    if (IsValid(ExplosionEffect))
+    {
+        ExplosionEffect->DeactivateProjectile();
+        ExplosionEffect->SetActorHiddenInGame(true);
+        ExplosionEffect->SetActorEnableCollision(false);
+
+        // 사용 가능한 목록에 다시 추가
+        AvailableExplosionEffects.Add(ExplosionEffect);
+    }
 }
 
 ARLProjectile* URLProjectilePool::CreateNewExplosionEffect()

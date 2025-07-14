@@ -39,10 +39,10 @@ public:
 	int32 PlayerMoney;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
-	int32 CurrentHp;
+	float CurrentHp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
-	int32 MaxHp;
+	float MaxHp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
 	int32 AttackDamage;

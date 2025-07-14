@@ -30,9 +30,9 @@ public:
 protected:
 	// 캐릭터 스탯
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
-	int32 CurrentHp;
+	float CurrentHp;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
-	int32 MaxHp;
+	float MaxHp;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
 	int32 AttackDamage;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
@@ -95,7 +95,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Audio")
 	USoundBase* DieSound;
 	
-	
+	// 파티클 이펙트
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle Effects")
+	class UParticleSystem* HitParticleTemplate;
+
 
 	// --- Roll(구르기) 시스템 추가 ---
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
@@ -114,13 +117,13 @@ public:
 
 	FORCEINLINE void SetAttackDamage(int32 NewAttackDamage) { AttackDamage = NewAttackDamage; };
 
-	FORCEINLINE int32 GetCurrentHp() { return CurrentHp; };
+	FORCEINLINE float GetCurrentHp() { return CurrentHp; };
 
-	FORCEINLINE void SetCurrentHp(int32 NewCurrentHp) { CurrentHp = NewCurrentHp; };
+	FORCEINLINE void SetCurrentHp(float NewCurrentHp) { CurrentHp = NewCurrentHp; };
 
-	FORCEINLINE int32 GetMaxHp() { return MaxHp; };
+	FORCEINLINE float GetMaxHp() { return MaxHp; };
 
-	FORCEINLINE void SetMaxHp(int32 NewMaxHp) { MaxHp = NewMaxHp; };
+	FORCEINLINE void SetMaxHp(float NewMaxHp) { MaxHp = NewMaxHp; };
 
 	FORCEINLINE int32 GetMoney() const { return Money; };
 
@@ -140,7 +143,7 @@ public:
 
 	FORCEINLINE FName GetCharacterWeaponName() { return CharacterWeaponName; };
 
-	virtual void TakeCharacterDamage(int32 RecieveDamage);
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 	virtual void TakeCharacterHeal(int32 RecieveHealAmount);
 
@@ -160,7 +163,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* RollAction;
 
-	void EndRoll();
+	// 롤 몽타주 종료 콜백
+	void OnRollMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	// 플레이어 입력 차단/복원 함수 (가상 함수로 선언, 플레이어에서 오버라이드)
+	virtual void DisablePlayerInput() {}
+	virtual void EnablePlayerInput() {}
 
 	UFUNCTION()
 	void StartInvincible();

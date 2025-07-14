@@ -5,6 +5,6 @@ void UEndRollAnimNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceB
 {
     if (ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(MeshComp->GetOwner()))
     {
-        //Player->EndRoll();
+        
     }
 } 

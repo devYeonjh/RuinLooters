@@ -22,15 +22,14 @@ EBTNodeResult::Type URLBTTask_SetRandomSkyPoint::ExecuteTask(UBehaviorTreeCompon
     FVector StartSkyPoint = BlackboardComp->GetValueAsVector(ARLEnemyAIController::StartSkyPointKey);
     
     // -1000 ~ 1000 범위에서 랜덤한 X, Y 오프셋 생성
-    float RandomX = FMath::RandRange(-1000.0f, 1000.0f);
-    float RandomY = FMath::RandRange(-1000.0f, 1000.0f);
-    float RandomZ = FMath::RandRange(-100.0f, 100.0f);
+    float RandomX = FMath::RandRange(-1500.0f, 1500.0f);
+    float RandomY = FMath::RandRange(-1500.0f, 1500.0f);
     
     // 새로운 CurrentSkyPoint 계산 (Z값은 그대로 유지)
     FVector CurrentSkyPoint = FVector(
         StartSkyPoint.X + RandomX,
         StartSkyPoint.Y + RandomY,
-        StartSkyPoint.Z + RandomZ
+        StartSkyPoint.Z
     );
     
     // CurrentSkyPointKey에 새로운 위치 설정

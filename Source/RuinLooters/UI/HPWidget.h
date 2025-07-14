@@ -16,16 +16,16 @@ class RUINLOOTERS_API UHPWidget : public UUserWidget
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
-	int32 StatCurrentHp;
+	float StatCurrentHp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
-	int32 StatMaxHp;
+	float StatMaxHp;
 
 	UPROPERTY(meta = (BindWidget))
 	class UProgressBar* HpBar;
 
 public:
-	void CalculateHp(int32 NewCurrentHp, int32 NewMaxHp);
+	void CalculateHp(float NewCurrentHp, float NewMaxHp);
 	void DestroyWidget();
 };
 
