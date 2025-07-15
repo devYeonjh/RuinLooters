@@ -29,7 +29,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* ArrowMesh;
 
-	// 투사체 이동 컴포넌트
+	// 투사체 이동 컴포넌트 (발사될 때만 활성화)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UProjectileMovementComponent* ProjectileMovement;
 

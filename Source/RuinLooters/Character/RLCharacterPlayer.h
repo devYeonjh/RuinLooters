@@ -72,6 +72,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* SpeedSkillMontage;
 
+	// 활 시위를 당기는 애니메이션 몽타주
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	class UAnimMontage* BowDrawMontage;
+
 	// NPC
 	UPROPERTY()
 	class ARLNPC* InteractiveNPC;
@@ -195,6 +199,7 @@ public:
 	FORCEINLINE const FTimerHandle& GetCoolTimerHandle() const { return CoolTimerHandle; }
 	FORCEINLINE void StageIndexUp() { StageIndex++; };
 	FORCEINLINE bool GetbIsSword() { return bIsSword; };
+	FORCEINLINE bool GetbIsAiming() { return bIsAiming; };
 
 	// 인터페이스의 메서드 오버라이드
 	virtual FGenericTeamId GetGenericTeamId() const override;
@@ -302,6 +307,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow")
 	TSubclassOf<class ARLArrow> ArrowClass;
 	
+	// 화살 풀링을 위한 변수
+	UPROPERTY()
+	TArray<class ARLArrow*> ArrowPool;
+	
+	UPROPERTY()
+	TArray<class ARLArrow*> ActiveArrows;
+	
 	UPROPERTY()
 	class ARLArrow* LoadedArrow;
 	
@@ -335,6 +347,16 @@ protected:
 	
 	UFUNCTION()
 	void UnloadArrowFromSocket();
+	
+	// 화살 풀 관련 함수
+	UFUNCTION()
+	void InitializeArrowPool();
+	
+	UFUNCTION()
+	ARLArrow* GetArrowFromPool();
+	
+	UFUNCTION()
+	void ReturnArrowToPool(ARLArrow* Arrow);
 
 	// 공격 버튼 홀딩 시스템
 	UFUNCTION()

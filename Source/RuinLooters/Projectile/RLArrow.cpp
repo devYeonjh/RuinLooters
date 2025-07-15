@@ -22,7 +22,7 @@ ARLArrow::ARLArrow()
 	ArrowMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	ArrowMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	
-	// 투사체 이동 컴포넌트 생성
+	// 투사체 이동 컴포넌트 생성 (초기에는 비활성화)
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->UpdatedComponent = ArrowMesh;
 	ProjectileMovement->InitialSpeed = 2500.0f;
@@ -30,7 +30,8 @@ ARLArrow::ARLArrow()
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
 	ProjectileMovement->ProjectileGravityScale = 0.3f;
-
+	ProjectileMovement->SetActive(false); // 초기에는 비활성화 상태
+	
 	// 기본 설정
 	Damage = 30;
 	Speed = 2500.0f;
@@ -58,13 +59,13 @@ void ARLArrow::InitializeArrow(FVector StartLocation, FVector Direction, int32 A
 	SetActorLocation(StartLocation);
 	SetActorRotation(Direction.Rotation());
 	
-	// 투사체 이동 설정
+	// 투사체 이동 설정 (발사 시에만 활성화)
 	if (ProjectileMovement)
 	{
 		ProjectileMovement->InitialSpeed = ArrowSpeed;
 		ProjectileMovement->MaxSpeed = ArrowSpeed;
 		ProjectileMovement->Velocity = Direction * ArrowSpeed;
-		ProjectileMovement->SetActive(true);
+		ProjectileMovement->SetActive(true); // 발사 시에만 활성화
 	}
 	
 	// 라이프타임 타이머 시작
@@ -111,11 +112,8 @@ void ARLArrow::DetachFromSocket()
 	// 소켓에서 분리
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	
-	// 투사체 이동 활성화
-	if (ProjectileMovement)
-	{
-		ProjectileMovement->SetActive(true);
-	}
+	// 투사체 이동은 InitializeArrow()에서 활성화됨
+	// DetachFromSocket()에서는 활성화하지 않음
 	
 	// 콜리전 활성화
 	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -134,6 +132,7 @@ void ARLArrow::DeactivateArrow()
 	SetActorHiddenInGame(true);
 	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
+	// 투사체 이동 비활성화
 	if (ProjectileMovement)
 	{
 		ProjectileMovement->SetActive(false);
@@ -154,6 +153,9 @@ void ARLArrow::ActivateArrow()
 	// 화살 활성화 (풀링용)
 	SetActorHiddenInGame(false);
 	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	
+	// ProjectileMovement는 InitializeArrow()에서 발사할 때만 활성화
+	// 여기서는 활성화하지 않음
 }
 
 void ARLArrow::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)

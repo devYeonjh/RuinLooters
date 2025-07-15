@@ -43,6 +43,10 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
     bool IsSword;
 
+    // 에이밍 상태 (활 모드 전용)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+    bool bIsAiming;
+
 public:
     FORCEINLINE void SetShouldMove(bool ShouldMove) { bShouldMove = ShouldMove; };
     

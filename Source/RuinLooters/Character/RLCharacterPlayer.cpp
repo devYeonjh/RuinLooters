@@ -34,6 +34,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Engine/DamageEvents.h"
 #include "Camera/CameraComponent.h"
+#include "Projectile/RLArrow.h"
 
 ARLCharacterPlayer::ARLCharacterPlayer()
 {
@@ -83,7 +84,7 @@ ARLCharacterPlayer::ARLCharacterPlayer()
 
     // 카메라 위치 초기화
     NormalCameraPosition = FVector(0.0f, 0.0f, 0.0f);
-    AimingCameraPosition = FVector(220.0f, 0.0f, 50.0f);
+    AimingCameraPosition = FVector(380.0f, 50.0f, 70.0f);
 }
 
 void ARLCharacterPlayer::BeginPlay()
@@ -172,6 +173,8 @@ void ARLCharacterPlayer::BeginPlay()
     if (ArrowClass)
     {
         UE_LOG(LogTemp, Log, TEXT("Arrow class is set"));
+        // 화살 풀 초기화
+        InitializeArrowPool();
     }
     else
     {
@@ -194,7 +197,7 @@ void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
     // Set up action bindings
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-        EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Attack);
+        //EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Attack);
         // Attacking - 홀딩 지원을 위해 Started/Completed로 변경
         EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::OnAttackPressed);
         EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Completed, this, &ARLCharacterPlayer::OnAttackReleased);
@@ -878,6 +881,13 @@ void ARLCharacterPlayer::StartAiming()
         UGameplayStatics::PlaySoundAtLocation(this, BowDrawSound, GetActorLocation());
     }
     
+    // 활 시위를 당기는 몽타주 실행
+    if (BowDrawMontage && AnimInstance)
+    {
+        AnimInstance->Montage_Play(BowDrawMontage);
+        UE_LOG(LogTemp, Log, TEXT("Bow draw montage started"));
+    }
+    
     UE_LOG(LogTemp, Log, TEXT("Aiming started"));
 }
 
@@ -988,11 +998,11 @@ void ARLCharacterPlayer::LoadArrowToSocket()
         return;
     }
 
-    // 새 화살 생성
-    LoadedArrow = GetWorld()->SpawnActor<ARLArrow>(ArrowClass);
+    // 풀에서 화살 가져오기
+    LoadedArrow = GetArrowFromPool();
     if (!LoadedArrow)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Failed to spawn arrow"));
+        UE_LOG(LogTemp, Warning, TEXT("Failed to get arrow from pool"));
         bIsLoadingArrow = false;
         return;
     }
@@ -1017,7 +1027,7 @@ void ARLCharacterPlayer::FireArrow()
 
     // 발사 위치 및 방향 설정
     FVector PlayerLocation = GetActorLocation();
-    FVector FireLocation = PlayerLocation + FVector(0.0f, 0.0f, 150.0f);
+    FVector FireLocation = PlayerLocation + FVector(0.0f, 0.0f, 20.0f);
     
     // 카메라가 바라보는 방향으로 발사 (컨트롤러 회전 기준)
     FVector FireDirection = PlayerController ? PlayerController->GetControlRotation().Vector() : GetActorForwardVector();
@@ -1027,6 +1037,17 @@ void ARLCharacterPlayer::FireArrow()
     
     // 화살 초기화 및 발사
     LoadedArrow->InitializeArrow(FireLocation, FireDirection, 30, 2500.0f);
+
+    // 화살 자동 반환을 위한 타이머 설정 (10초 후 풀에 반환)
+    ARLArrow* FiredArrow = LoadedArrow;
+    FTimerHandle ArrowReturnHandle;
+    GetWorld()->GetTimerManager().SetTimer(ArrowReturnHandle, [this, FiredArrow]()
+    {
+        if (FiredArrow && IsValid(FiredArrow))
+        {
+            ReturnArrowToPool(FiredArrow);
+        }
+    }, 10.0f, false);
 
     // 상태 초기화
     LoadedArrow = nullptr;
@@ -1043,14 +1064,81 @@ void ARLCharacterPlayer::UnloadArrowFromSocket()
         return;
     }
 
-    // 화살을 소켓에서 분리하고 제거
+    // 화살을 소켓에서 분리
     LoadedArrow->DetachFromSocket();
-    LoadedArrow->Destroy();
+    
+    // 화살을 풀에 반환
+    ReturnArrowToPool(LoadedArrow);
 
     LoadedArrow = nullptr;
     bIsArrowLoaded = false;
     
     UE_LOG(LogTemp, Log, TEXT("Arrow unloaded from socket"));
+}
+
+// 화살 풀 초기화
+void ARLCharacterPlayer::InitializeArrowPool()
+{
+    // 화살 풀 초기화 (10개 미리 생성)
+    for (int32 i = 0; i < 10; ++i)
+    {
+        ARLArrow* Arrow = GetWorld()->SpawnActor<ARLArrow>(ArrowClass);
+        if (Arrow)
+        {
+            Arrow->DeactivateArrow();
+            ArrowPool.Add(Arrow);
+        }
+    }
+    
+    UE_LOG(LogTemp, Log, TEXT("Arrow pool initialized with %d arrows"), ArrowPool.Num());
+}
+
+// 풀에서 화살 가져오기
+ARLArrow* ARLCharacterPlayer::GetArrowFromPool()
+{
+    if (ArrowPool.Num() > 0)
+    {
+        // 풀에서 화살 가져오기
+        ARLArrow* Arrow = ArrowPool.Pop();
+        Arrow->ActivateArrow();
+        ActiveArrows.Add(Arrow);
+        UE_LOG(LogTemp, Log, TEXT("Arrow retrieved from pool. Pool size: %d"), ArrowPool.Num());
+        return Arrow;
+    }
+    else
+    {
+        // 풀이 비어있으면 새로 생성
+        ARLArrow* Arrow = GetWorld()->SpawnActor<ARLArrow>(ArrowClass);
+        if (Arrow)
+        {
+            Arrow->ActivateArrow();
+            ActiveArrows.Add(Arrow);
+            UE_LOG(LogTemp, Warning, TEXT("Pool empty, created new arrow"));
+            return Arrow;
+        }
+    }
+    
+    return nullptr;
+}
+
+// 화살을 풀에 반환
+void ARLCharacterPlayer::ReturnArrowToPool(ARLArrow* Arrow)
+{
+    if (!Arrow)
+    {
+        return;
+    }
+    
+    // 활성 화살 목록에서 제거
+    ActiveArrows.Remove(Arrow);
+    
+    // 화살 비활성화
+    Arrow->DeactivateArrow();
+    
+    // 풀에 반환
+    ArrowPool.Add(Arrow);
+    
+    UE_LOG(LogTemp, Log, TEXT("Arrow returned to pool. Pool size: %d"), ArrowPool.Num());
 }
 
 

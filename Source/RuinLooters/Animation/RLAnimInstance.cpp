@@ -25,6 +25,7 @@ void URLAnimInstance::NativeInitializeAnimation()
 		InputForwardSpeed = 0.0f;
 		InputRightSpeed = 0.0f;
 		IsSword = true;
+		bIsAiming = false;
 	}
 }
 
@@ -45,6 +46,7 @@ void URLAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 		InputForwardSpeed = 0.0f;
 		InputRightSpeed = 0.0f;
 		IsSword = true;
+		bIsAiming = false;
 		return;
 	}
 
@@ -95,6 +97,7 @@ void URLAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 		if (ARLCharacterPlayer* PlayerCharacter = Cast<ARLCharacterPlayer>(OwningPawn))
 		{
 			IsSword = PlayerCharacter->GetbIsSword();
+			bIsAiming = PlayerCharacter->GetbIsAiming();
 		}
 	}
 }
