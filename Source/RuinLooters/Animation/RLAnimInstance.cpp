@@ -58,6 +58,15 @@ void URLAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 	FVector Direction = FVector(Velocity.X, Velocity.Y, 0.0f);
 	Direction.Normalize();
 	FVector NewLocation =  Direction * GroundSpeed * DeltaTimeX;
+	
+	if (bIsAiming)
+	{
+		FRotator BaseAimRotation = OwningPawn->GetBaseAimRotation();
+		FRotator ActorRotation = OwningPawn->GetActorRotation();
+		FRotator DeltaRotation = (ActorRotation - BaseAimRotation).GetNormalized();
+		AimOffset = FMath::Clamp(DeltaRotation.Pitch, -55.0f, 55.0f);
+	}
+
 
 	// 낙하 상태 판별
 	UCharacterMovementComponent* MoveComp = Cast<UCharacterMovementComponent>(OwningPawn->GetMovementComponent());

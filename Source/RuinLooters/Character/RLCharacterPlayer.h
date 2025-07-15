@@ -309,10 +309,7 @@ protected:
 	
 	// 화살 풀링을 위한 변수
 	UPROPERTY()
-	TArray<class ARLArrow*> ArrowPool;
-	
-	UPROPERTY()
-	TArray<class ARLArrow*> ActiveArrows;
+	class URLArrowPool* ArrowPool;
 	
 	UPROPERTY()
 	class ARLArrow* LoadedArrow;
@@ -345,18 +342,7 @@ protected:
 	UFUNCTION()
 	void LoadArrowToSocket();
 	
-	UFUNCTION()
-	void UnloadArrowFromSocket();
-	
-	// 화살 풀 관련 함수
-	UFUNCTION()
-	void InitializeArrowPool();
-	
-	UFUNCTION()
-	ARLArrow* GetArrowFromPool();
-	
-	UFUNCTION()
-	void ReturnArrowToPool(ARLArrow* Arrow);
+
 
 	// 공격 버튼 홀딩 시스템
 	UFUNCTION()

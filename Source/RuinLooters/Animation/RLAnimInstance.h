@@ -47,6 +47,9 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
     bool bIsAiming;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+    float AimOffset;
+
 public:
     FORCEINLINE void SetShouldMove(bool ShouldMove) { bShouldMove = ShouldMove; };
     

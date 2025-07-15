@@ -17,10 +17,10 @@ ARLArrow::ARLArrow()
 	ArrowMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArrowMesh"));
 	RootComponent = ArrowMesh;
 	
-	// 기본 콜리전 설정
-	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	ArrowMesh->SetCollisionResponseToAllChannels(ECR_Block);
-	ArrowMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	// 기본 콜리전 설정 (오버랩용)
+	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	ArrowMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+	ArrowMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	
 	// 투사체 이동 컴포넌트 생성 (초기에는 비활성화)
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
@@ -36,12 +36,13 @@ ARLArrow::ARLArrow()
 	Damage = 30;
 	Speed = 2500.0f;
 	LifeTime = 10.0f;
+	ArrowDirectionOffset = FRotator(0.0f, 0.0f, 0.0f);
 	bIsAttachedToSocket = false;
 	AttachedMeshComponent = nullptr;
 	AttachedSocketName = NAME_None;
 
-	// 충돌 이벤트 바인딩
-	ArrowMesh->OnComponentHit.AddDynamic(this, &ARLArrow::OnHit);
+	// 오버랩 이벤트 바인딩
+	ArrowMesh->OnComponentBeginOverlap.AddDynamic(this, &ARLArrow::OnComponentBeginOverlap);
 }
 
 void ARLArrow::BeginPlay()
@@ -49,7 +50,7 @@ void ARLArrow::BeginPlay()
 	Super::BeginPlay();
 }
 
-void ARLArrow::InitializeArrow(FVector StartLocation, FVector Direction, int32 ArrowDamage, float ArrowSpeed)
+void ARLArrow::InitializeArrow(FVector StartLocation, FRotator Direction, int32 ArrowDamage, float ArrowSpeed)
 {
 	// 설정 적용
 	Damage = ArrowDamage;
@@ -57,14 +58,15 @@ void ARLArrow::InitializeArrow(FVector StartLocation, FVector Direction, int32 A
 	
 	// 위치와 회전 설정
 	SetActorLocation(StartLocation);
-	SetActorRotation(Direction.Rotation());
-	
+	SetActorRotation(Direction);
+	// + FRotator(0.0f, 5.0f, 5.0f)
+
 	// 투사체 이동 설정 (발사 시에만 활성화)
 	if (ProjectileMovement)
 	{
 		ProjectileMovement->InitialSpeed = ArrowSpeed;
 		ProjectileMovement->MaxSpeed = ArrowSpeed;
-		ProjectileMovement->Velocity = Direction * ArrowSpeed;
+		ProjectileMovement->Velocity = (Direction + ArrowDirectionOffset).Vector() * ArrowSpeed;
 		ProjectileMovement->SetActive(true); // 발사 시에만 활성화
 	}
 	
@@ -152,15 +154,15 @@ void ARLArrow::ActivateArrow()
 {
 	// 화살 활성화 (풀링용)
 	SetActorHiddenInGame(false);
-	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	
 	// ProjectileMovement는 InitializeArrow()에서 발사할 때만 활성화
 	// 여기서는 활성화하지 않음
 }
 
-void ARLArrow::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
+void ARLArrow::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// 소켓에 부착된 상태에서는 충돌 무시
+	// 소켓에 부착된 상태에서는 오버랩 무시
 	if (bIsAttachedToSocket)
 	{
 		return;
@@ -174,10 +176,10 @@ void ARLArrow::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPri
 		{
 			FPointDamageEvent DamageEvent;
 			DamageEvent.Damage = Damage;
-			DamageEvent.HitInfo = Hit;
+			DamageEvent.HitInfo = SweepResult;
 			
 			OtherActor->TakeDamage(Damage, DamageEvent, nullptr, this);
-			UE_LOG(LogTemp, Log, TEXT("Arrow hit enemy for %d damage"), Damage);
+			UE_LOG(LogTemp, Log, TEXT("Arrow overlapped with enemy for %d damage"), Damage);
 		}
 		
 		// 화살 비활성화

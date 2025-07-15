@@ -43,10 +43,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow Settings")
 	float LifeTime;
 
+	// 화살 발사 방향 조정 오프셋
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow Settings")
+	FRotator ArrowDirectionOffset;
+
 public:
 	// 화살 초기화
 	UFUNCTION(BlueprintCallable, Category = "Arrow")
-	void InitializeArrow(FVector StartLocation, FVector Direction, int32 ArrowDamage = 30, float ArrowSpeed = 2500.0f);
+	void InitializeArrow(FVector StartLocation, FRotator Direction, int32 ArrowDamage = 30, float ArrowSpeed = 2500.0f);
 	
 	// 소켓에 부착용 함수
 	UFUNCTION(BlueprintCallable, Category = "Arrow")
@@ -63,9 +67,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Arrow")
 	void ActivateArrow();
 
-	// 충돌 처리
+	// 오버랩 처리
 	UFUNCTION()
-	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
+	void OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 private:
 	// 소켓 부착 상태

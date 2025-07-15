@@ -35,6 +35,7 @@
 #include "Engine/DamageEvents.h"
 #include "Camera/CameraComponent.h"
 #include "Projectile/RLArrow.h"
+#include "Pool/RLArrowPool.h"
 
 ARLCharacterPlayer::ARLCharacterPlayer()
 {
@@ -61,7 +62,7 @@ ARLCharacterPlayer::ARLCharacterPlayer()
 
     // 에이밍 시스템 초기화
     bIsAiming = false;
-    AimingCameraDistance = 0.0f;  // 에이밍 시 카메라 거리
+    AimingCameraDistance = 10.0f;  // 에이밍 시 카메라 거리
     NormalCameraDistance = 400.0f;  // 일반 상태 카메라 거리
     BowDrawSound = nullptr;
 
@@ -84,7 +85,7 @@ ARLCharacterPlayer::ARLCharacterPlayer()
 
     // 카메라 위치 초기화
     NormalCameraPosition = FVector(0.0f, 0.0f, 0.0f);
-    AimingCameraPosition = FVector(380.0f, 50.0f, 70.0f);
+    AimingCameraPosition = FVector(0.0f, 50.0f, 70.0f);
 }
 
 void ARLCharacterPlayer::BeginPlay()
@@ -174,7 +175,8 @@ void ARLCharacterPlayer::BeginPlay()
     {
         UE_LOG(LogTemp, Log, TEXT("Arrow class is set"));
         // 화살 풀 초기화
-        InitializeArrowPool();
+        ArrowPool = NewObject<URLArrowPool>(this);
+        ArrowPool->InitializeArrowPool(GetWorld(), ArrowClass, 10);
     }
     else
     {
@@ -800,7 +802,7 @@ void ARLCharacterPlayer::Tick(float DeltaTime)
     }
     if (CameraBoom)
     {
-        float InterpSpeed = 2.0f; // 0.5초에 걸쳐 부드러운 전환 (2.0f 사용)
+        float InterpSpeed = 4.0f; // 0.5초에 걸쳐 부드러운 전환 (2.0f 사용)
         CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, CameraTargetArmLength, DeltaTime, InterpSpeed);
     }
 
@@ -869,6 +871,9 @@ void ARLCharacterPlayer::StartAiming()
         FollowCamera->SetRelativeLocation(AimingCameraPosition);
     }
     
+    // 에이밍 상태에서 SpringArm 길이 조정
+    CameraTargetArmLength = AimingCameraDistance;
+    
     // OrientRotationToMovement를 false로 설정
     GetCharacterMovement()->bOrientRotationToMovement = false;
     
@@ -887,6 +892,9 @@ void ARLCharacterPlayer::StartAiming()
         AnimInstance->Montage_Play(BowDrawMontage);
         UE_LOG(LogTemp, Log, TEXT("Bow draw montage started"));
     }
+
+    // 활 모드: 화살 장전 시작
+    StartLoadingArrow();
     
     UE_LOG(LogTemp, Log, TEXT("Aiming started"));
 }
@@ -906,6 +914,9 @@ void ARLCharacterPlayer::StopAiming()
     {
         FollowCamera->SetRelativeLocation(NormalCameraPosition);
     }
+    
+    // 일반 상태로 SpringArm 길이 복원
+    CameraTargetArmLength = NormalCameraDistance;
     
     // OrientRotationToMovement를 true로 복원
     GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -959,8 +970,12 @@ void ARLCharacterPlayer::OnAttackPressed()
     }
     else
     {
-        // 활 모드: 화살 장전 시작
-        StartLoadingArrow();
+        UE_LOG(LogTemp, Log, TEXT("BowActionPressed"));
+        if (!bIsLoadingArrow)
+        {
+            // 활 모드: 화살 장전 시작
+            StartLoadingArrow();
+        }
     }
 }
 
@@ -999,7 +1014,7 @@ void ARLCharacterPlayer::LoadArrowToSocket()
     }
 
     // 풀에서 화살 가져오기
-    LoadedArrow = GetArrowFromPool();
+    LoadedArrow = ArrowPool->GetArrowFromPool();
     if (!LoadedArrow)
     {
         UE_LOG(LogTemp, Warning, TEXT("Failed to get arrow from pool"));
@@ -1027,7 +1042,7 @@ void ARLCharacterPlayer::FireArrow()
 
     // 발사 위치 및 방향 설정
     FVector PlayerLocation = GetActorLocation();
-    FVector FireLocation = PlayerLocation + FVector(0.0f, 0.0f, 20.0f);
+    FVector FireLocation = PlayerLocation + FVector(0.0f, 0.0f, 40.0f);
     
     // 카메라가 바라보는 방향으로 발사 (컨트롤러 회전 기준)
     FVector FireDirection = PlayerController ? PlayerController->GetControlRotation().Vector() : GetActorForwardVector();
@@ -1036,7 +1051,7 @@ void ARLCharacterPlayer::FireArrow()
     LoadedArrow->DetachFromSocket();
     
     // 화살 초기화 및 발사
-    LoadedArrow->InitializeArrow(FireLocation, FireDirection, 30, 2500.0f);
+    LoadedArrow->InitializeArrow(FireLocation, GetControlRotation(), 30, 2000.0f);
 
     // 화살 자동 반환을 위한 타이머 설정 (10초 후 풀에 반환)
     ARLArrow* FiredArrow = LoadedArrow;
@@ -1045,7 +1060,7 @@ void ARLCharacterPlayer::FireArrow()
     {
         if (FiredArrow && IsValid(FiredArrow))
         {
-            ReturnArrowToPool(FiredArrow);
+            ArrowPool->ReturnArrowToPool(FiredArrow);
         }
     }, 10.0f, false);
 
@@ -1056,90 +1071,11 @@ void ARLCharacterPlayer::FireArrow()
     UE_LOG(LogTemp, Log, TEXT("Arrow fired"));
 }
 
-// 소켓에서 화살 제거
-void ARLCharacterPlayer::UnloadArrowFromSocket()
-{
-    if (!bIsArrowLoaded || !LoadedArrow)
-    {
-        return;
-    }
 
-    // 화살을 소켓에서 분리
-    LoadedArrow->DetachFromSocket();
-    
-    // 화살을 풀에 반환
-    ReturnArrowToPool(LoadedArrow);
 
-    LoadedArrow = nullptr;
-    bIsArrowLoaded = false;
-    
-    UE_LOG(LogTemp, Log, TEXT("Arrow unloaded from socket"));
-}
 
-// 화살 풀 초기화
-void ARLCharacterPlayer::InitializeArrowPool()
-{
-    // 화살 풀 초기화 (10개 미리 생성)
-    for (int32 i = 0; i < 10; ++i)
-    {
-        ARLArrow* Arrow = GetWorld()->SpawnActor<ARLArrow>(ArrowClass);
-        if (Arrow)
-        {
-            Arrow->DeactivateArrow();
-            ArrowPool.Add(Arrow);
-        }
-    }
-    
-    UE_LOG(LogTemp, Log, TEXT("Arrow pool initialized with %d arrows"), ArrowPool.Num());
-}
 
-// 풀에서 화살 가져오기
-ARLArrow* ARLCharacterPlayer::GetArrowFromPool()
-{
-    if (ArrowPool.Num() > 0)
-    {
-        // 풀에서 화살 가져오기
-        ARLArrow* Arrow = ArrowPool.Pop();
-        Arrow->ActivateArrow();
-        ActiveArrows.Add(Arrow);
-        UE_LOG(LogTemp, Log, TEXT("Arrow retrieved from pool. Pool size: %d"), ArrowPool.Num());
-        return Arrow;
-    }
-    else
-    {
-        // 풀이 비어있으면 새로 생성
-        ARLArrow* Arrow = GetWorld()->SpawnActor<ARLArrow>(ArrowClass);
-        if (Arrow)
-        {
-            Arrow->ActivateArrow();
-            ActiveArrows.Add(Arrow);
-            UE_LOG(LogTemp, Warning, TEXT("Pool empty, created new arrow"));
-            return Arrow;
-        }
-    }
-    
-    return nullptr;
-}
 
-// 화살을 풀에 반환
-void ARLCharacterPlayer::ReturnArrowToPool(ARLArrow* Arrow)
-{
-    if (!Arrow)
-    {
-        return;
-    }
-    
-    // 활성 화살 목록에서 제거
-    ActiveArrows.Remove(Arrow);
-    
-    // 화살 비활성화
-    Arrow->DeactivateArrow();
-    
-    // 풀에 반환
-    ArrowPool.Add(Arrow);
-    
-    UE_LOG(LogTemp, Log, TEXT("Arrow returned to pool. Pool size: %d"), ArrowPool.Num());
-}
 
 
 
