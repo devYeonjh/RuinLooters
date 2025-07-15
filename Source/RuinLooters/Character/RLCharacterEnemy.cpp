@@ -7,6 +7,7 @@
 #include "GameInstance/RLGameInstance.h"
 #include "Components/WidgetComponent.h"
 #include "UI/HPWidget.h"
+#include "Engine/DamageEvents.h"
 
 ARLCharacterEnemy::ARLCharacterEnemy()
 {
@@ -33,10 +34,11 @@ FGenericTeamId ARLCharacterEnemy::GetGenericTeamId() const
     return FGenericTeamId(TeamID);
 }
 
-void ARLCharacterEnemy::TakeCharacterDamage(int32 RecieveDamage)
+float ARLCharacterEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
-    Super::TakeCharacterDamage(RecieveDamage);
+    float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
     EnemyHpChange.Broadcast(CurrentHp, MaxHp);
+    return ActualDamage;
 }
 
 void ARLCharacterEnemy::TakeCharacterHeal(int32 RecieveHealAmount)

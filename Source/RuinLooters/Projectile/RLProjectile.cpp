@@ -10,6 +10,7 @@
 #include "../Character/RLCharacterEnemy.h"
 #include "../Character/RLCharacterEnemyDragon.h"
 #include "../Character/RLCharacterPlayer.h"
+#include "Engine/DamageEvents.h"
 
 ARLProjectile::ARLProjectile()
 {
@@ -194,7 +195,8 @@ void ARLProjectile::ApplyDamageToTarget(AActor* Target)
     // 플레이어 타겟
     if (ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(Target))
     {
-        Player->TakeCharacterDamage(ProjectileSettings.Damage);
+        				FDamageEvent DamageEvent;
+				Player->TakeDamage((float)ProjectileSettings.Damage, DamageEvent, nullptr, this);
         UE_LOG(LogTemp, Log, TEXT("%s Projectile Hit Player: %s, Damage: %d"), 
                ProjectileSettings.ProjectileType == EProjectileType::DragonBreath ? TEXT("Dragon") : TEXT("Player"),
                *Player->GetName(), ProjectileSettings.Damage);
@@ -202,21 +204,24 @@ void ARLProjectile::ApplyDamageToTarget(AActor* Target)
     // 일반 적 타겟
     else if (ARLCharacterEnemy* Enemy = Cast<ARLCharacterEnemy>(Target))
     {
-        Enemy->TakeCharacterDamage(ProjectileSettings.Damage);
+        				FDamageEvent DamageEvent;
+				Enemy->TakeDamage((float)ProjectileSettings.Damage, DamageEvent, nullptr, this);
         UE_LOG(LogTemp, Log, TEXT("Player Projectile Hit Enemy: %s, Damage: %d, Pierce Count: %d"), 
                *Enemy->GetName(), ProjectileSettings.Damage, CurrentPierceCount);
     }
     // 드래곤 타겟
     else if (ARLCharacterEnemyDragon* Dragon = Cast<ARLCharacterEnemyDragon>(Target))
     {
-        Dragon->TakeDragonDamage(ProjectileSettings.Damage);
+        				FDamageEvent DamageEvent;
+				Dragon->TakeDamage((float)ProjectileSettings.Damage, DamageEvent, nullptr, this);
         UE_LOG(LogTemp, Log, TEXT("Player Projectile Hit Dragon: %s, Damage: %d, Pierce Count: %d"), 
                *Dragon->GetName(), ProjectileSettings.Damage, CurrentPierceCount);
     }
     // 기본 캐릭터 타겟
     else if (ARLCharacterBase* Character = Cast<ARLCharacterBase>(Target))
     {
-        Character->TakeCharacterDamage(ProjectileSettings.Damage);
+        				FDamageEvent DamageEvent;
+				Character->TakeDamage((float)ProjectileSettings.Damage, DamageEvent, nullptr, this);
         UE_LOG(LogTemp, Log, TEXT("Projectile Hit Character: %s, Damage: %d"), 
                *Character->GetName(), ProjectileSettings.Damage);
     }

@@ -7,7 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "DrawDebugHelpers.h" // for debug line drawing
+#include "DrawDebugHelpers.h"
 
 URLDragonAnimInstance::URLDragonAnimInstance()
 {
@@ -22,6 +22,14 @@ void URLDragonAnimInstance::NativeInitializeAnimation()
 	// null체크를 확실하게 해야함 애니메이션 블루프린트에서 크래시 방지를 위한 크래시 방지
 	if (OwningPawn)
 	{
+		// 기본 애니메이션 속성 초기화 (URLAnimInstance에서 가져옴)
+		Velocity = FVector::ZeroVector;
+		GroundSpeed = 500.0f;
+		bShouldMove = false;
+		bIsFalling = false;
+		ForwardSpeed = 0.0f;
+		RightSpeed = 0.0f;
+
 		// 드래곤 비행 상태 초기화
 		bIsFlying = false;
 		bIsFlyingAndMoving = false;
@@ -44,6 +52,61 @@ void URLDragonAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 {
 	// 부모 클래스의 업데이트 먼저 호출
 	Super::NativeUpdateAnimation(DeltaTimeX);
+
+	OwningPawn = TryGetPawnOwner();
+	// null체크를 확실하게 해야함 애니메이션 블루프린트에서 크래시 방지를 위한 크래시 방지
+	if (!OwningPawn)
+	{
+		Velocity = FVector::ZeroVector;
+		GroundSpeed = 500.0f;
+		bShouldMove = false;
+		bIsFalling = false;
+		ForwardSpeed = 0.0f;
+		RightSpeed = 0.0f;
+		return;
+	}
+
+	// 기본 애니메이션 로직 (URLAnimInstance에서 가져옴)
+	// 캐릭터의 속도 구하기
+	Velocity = OwningPawn->GetVelocity();
+	GroundSpeed = Velocity.Size2D();
+
+	// 캐릭터 이동
+	FVector Direction = FVector(Velocity.X, Velocity.Y, 0.0f);
+	Direction.Normalize();
+	FVector NewLocation = Direction * GroundSpeed * DeltaTimeX;
+
+	// 낙하 상태 판별
+	UCharacterMovementComponent* MoveComp = Cast<UCharacterMovementComponent>(OwningPawn->GetMovementComponent());
+	if (MoveComp)
+	{
+		CurrentAcceleration = MoveComp->GetCurrentAcceleration();
+		bIsFalling = MoveComp->IsFalling();
+	}
+	else
+	{
+		CurrentAcceleration = FVector::ZeroVector;
+	}
+
+	if (GroundSpeed > 3 || CurrentAcceleration != FVector::ZeroVector)
+	{
+		bShouldMove = true;
+	}
+	else
+	{
+		bShouldMove = false;
+	}
+
+	// 블렌드 스페이스용 방향 속도 계산
+	if (OwningPawn)
+	{
+		FVector ForwardVector = OwningPawn->GetActorForwardVector();
+		FVector RightVector = OwningPawn->GetActorRightVector();
+		
+		// 속도 벡터를 캐릭터의 로컬 좌표계로 변환
+		ForwardSpeed = FVector::DotProduct(Velocity, ForwardVector);
+		RightSpeed = FVector::DotProduct(Velocity, RightVector);
+	}
 
 	// MovementComponent 참조 초기화 (한 번만)
 	if (!MovementComponent && OwningPawn)
@@ -131,8 +194,9 @@ void URLDragonAnimInstance::CalculateFlightHeight()
 		QueryParams
 	);
 
-	// 디버그: 레이저(라인) 그리기
+	// 디버그: 레이저(라인) 그리기 (에디터에서만 실행)
 	// 충돌했다면 충돌 지점까지, 아니면 EndLocation까지 라인을 그립니다.
+#if WITH_EDITOR
 	DrawDebugLine(
 		OwningPawn->GetWorld(),
 		StartLocation,
@@ -154,6 +218,7 @@ void URLDragonAnimInstance::CalculateFlightHeight()
 			0
 		);
 	}
+#endif
 
 	if (bHit)
 	{

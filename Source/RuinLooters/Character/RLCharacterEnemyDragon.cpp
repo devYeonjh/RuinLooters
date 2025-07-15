@@ -18,12 +18,14 @@
 #include "../Projectile/RLProjectile.h"
 #include "../Projectile/RLDragonProjectile.h"
 #include "AIController.h"
+#include "Engine/DamageEvents.h"
+#include "Particles/ParticleSystem.h"
 
 ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 {
 	// 기본 스탯 설정
-	CurrentHp = 2000;
-	MaxHp = 2000;
+	    CurrentHp = 2000.0f;
+    MaxHp = 2000.0f;
 	AttackDamage = 50;
 	Range = 300.0f;
 	AttackSpeed = 1.5f;
@@ -111,17 +113,24 @@ void ARLCharacterEnemyDragon::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void ARLCharacterEnemyDragon::TakeDragonDamage(int32 ReceivedDamage)
+float ARLCharacterEnemyDragon::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
 	// 이미 죽었다면 데미지 무시
 	if (CurrentHp <= 0)
 	{
-		return;
+		return 0.0f;
 	}
 	
 	// 방어력 적용
-	int32 ActualDamage = FMath::Max(1, ReceivedDamage - Defence);
-	CurrentHp = FMath::Max(0, CurrentHp - ActualDamage);
+	float ActualDamage = FMath::Max(1.0f, DamageAmount - Defence);
+	CurrentHp = FMath::Max(0.0f, CurrentHp - ActualDamage);
+	
+	// 타격 파티클 이펙트 생성
+	if (HitParticleTemplate)
+	{
+		FVector HitLocation = GetActorLocation() + FVector(0.0f, 0.0f, 100.0f); // 드래곤 중앙 위치 (높게)
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticleTemplate, HitLocation);
+	}
 	
 	// 피격 사운드 재생
 	if (HitSound)
@@ -130,13 +139,15 @@ void ARLCharacterEnemyDragon::TakeDragonDamage(int32 ReceivedDamage)
 	}
 	
 	// 데미지 로그 출력
-	UE_LOG(LogTemp, Warning, TEXT("Dragon received %d damage (actual: %d), HP: %d/%d"), ReceivedDamage, ActualDamage, CurrentHp, MaxHp);
+	UE_LOG(LogTemp, Warning, TEXT("Dragon received %.1f damage (actual: %.1f), HP: %.1f/%.1f"), DamageAmount, ActualDamage, CurrentHp, MaxHp);
 	
 	// HP가 0 이하가 되면 죽음 처리
 	if (CurrentHp <= 0)
 	{
 		Die();
 	}
+	
+	return ActualDamage;
 }
 
 void ARLCharacterEnemyDragon::Heal(int32 HealAmount)
@@ -146,10 +157,10 @@ void ARLCharacterEnemyDragon::Heal(int32 HealAmount)
 		return;
 	}
 	
-	int32 OldHp = CurrentHp;
+	float OldHp = CurrentHp;
 	CurrentHp = FMath::Min(MaxHp, CurrentHp + HealAmount);
 	
-	UE_LOG(LogTemp, Warning, TEXT("Dragon healed %d HP: %d/%d"), CurrentHp - OldHp, CurrentHp, MaxHp);
+	UE_LOG(LogTemp, Warning, TEXT("Dragon healed %.1f HP: %.1f/%.1f"), CurrentHp - OldHp, CurrentHp, MaxHp);
 }
 
 void ARLCharacterEnemyDragon::Die()
@@ -213,7 +224,7 @@ void ARLCharacterEnemyDragon::Attack()
 	// 공격 로그
 	UE_LOG(LogTemp, Warning, TEXT("Dragon is attacking with damage: %d"), AttackDamage);
 	
-	// 공격 중 움직임 비활성화
+	// 공격 중 이동 정지
 	GetCharacterMovement()->SetMovementMode(MOVE_None);
 	
 	// 공격 쿨다운 시작 (애니메이션 종료 시 OnMontageEnded에서 재설정)
@@ -274,9 +285,10 @@ void ARLCharacterEnemyDragon::CallAttackCollision()
 				ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(HitActor);
 				if (Player)
 				{
-					// 플레이어에게 데미지 적용
-					Player->TakeCharacterDamage(AttackDamage);
-					UE_LOG(LogTemp, Warning, TEXT("Dragon hit player for %d damage"), AttackDamage);
+									// 플레이어에게 데미지 적용
+				FDamageEvent DamageEvent;
+				Player->TakeDamage((float)AttackDamage, DamageEvent, nullptr, this);
+				UE_LOG(LogTemp, Warning, TEXT("Dragon hit player for %d damage"), AttackDamage);
 				}
 			}
 		}
@@ -321,7 +333,7 @@ void ARLCharacterEnemyDragon::BreathAttack()
 	// 브레스 공격 로그
 	UE_LOG(LogTemp, Warning, TEXT("Dragon is breathing fire with damage: %d"), BreathDamage);
 	
-	// 브레스 공격 중 움직임 비활성화
+	// 브레스 공격 중 이동 정지
 	GetCharacterMovement()->SetMovementMode(MOVE_None);
 	
 	// 공격 쿨다운 시작
@@ -408,27 +420,25 @@ void ARLCharacterEnemyDragon::FireBreathProjectile()
 
 void ARLCharacterEnemyDragon::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	// 공격 몽타주가 끝나면 다시 공격 가능 상태로 설정
-	if (AttackMontage == Montage || GroundBreathMontage == Montage || SkyBreathMontage == Montage)
+	// 브레스 몽타주가 끝날 때만 처리
+	if (GroundBreathMontage == Montage || SkyBreathMontage == Montage)
 	{
 		bIsCanAttack = true;
 		
-		// 움직임 다시 활성화 (원래 상태로 복원)
-		if (GroundBreathMontage == Montage)
-		{
-			GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-			UE_LOG(LogTemp, Warning, TEXT("Dragon ground breath montage ended, returning to walking"));
-		}
-		else if (SkyBreathMontage == Montage)
-		{
-			GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-			UE_LOG(LogTemp, Warning, TEXT("Dragon sky breath montage ended, returning to flying"));
-		}
-		else
-		{
-			GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-			UE_LOG(LogTemp, Warning, TEXT("Dragon attack montage ended, can attack and move again"));
-		}
+		// 브레스 종료 후 Flying 모드로 복원
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+		
+		UE_LOG(LogTemp, Warning, TEXT("Dragon breath montage ended, returning to flying mode"));
+	}
+	// 일반 공격 몽타주는 별도 처리
+	else if (AttackMontage == Montage)
+	{
+		bIsCanAttack = true;
+		
+		// 일반 공격 종료 후 Walking 모드로 복원
+		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		
+		UE_LOG(LogTemp, Warning, TEXT("Dragon attack montage ended, returning to walking mode"));
 	}
 }
 

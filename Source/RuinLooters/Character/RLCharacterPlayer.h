@@ -14,7 +14,7 @@
  */
 
 // 캐릭터 체력 변화 델리게이트
-DECLARE_MULTICAST_DELEGATE_TwoParams(FPlayerCalculateHp, int32 /*CurrentHp*/, int32 /*MaxHp*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FPlayerCalculateHp, float /*CurrentHp*/, float /*MaxHp*/);
 
 // 캐릭터 스킬 쿨타임 델리게이트
 DECLARE_MULTICAST_DELEGATE_OneParam(FSkillCoolTime, uint8 /*CoolCheck*/);
@@ -55,9 +55,26 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ProjectileSkillAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* RollAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* AimAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* FormChangeAction;
+
 	// 투사체 스킬 애니메이션 몽타주
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* ProjectileSkillMontage;
+
+	// 스피드 스킬 애니메이션 몽타주
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	class UAnimMontage* SpeedSkillMontage;
+
+	// 활 시위를 당기는 애니메이션 몽타주
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	class UAnimMontage* BowDrawMontage;
 
 	// NPC
 	UPROPERTY()
@@ -181,11 +198,13 @@ public:
 	FORCEINLINE void SetbStageExit(bool UpdatebStageExit) { bStageExit = UpdatebStageExit; };
 	FORCEINLINE const FTimerHandle& GetCoolTimerHandle() const { return CoolTimerHandle; }
 	FORCEINLINE void StageIndexUp() { StageIndex++; };
+	FORCEINLINE bool GetbIsSword() { return bIsSword; };
+	FORCEINLINE bool GetbIsAiming() { return bIsAiming; };
 
 	// 인터페이스의 메서드 오버라이드
 	virtual FGenericTeamId GetGenericTeamId() const override;
 
-	virtual void TakeCharacterDamage(int32 RecieveDamage) override;
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 	virtual void TakeCharacterHeal(int32 RecieveHealAmount) override;
 
@@ -212,11 +231,22 @@ public:
 	UFUNCTION()
 	void OnProjectileSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
+	// 스피드 스킬 몽타주 종료 콜백
+	UFUNCTION()
+	void OnSpeedSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	// 스피드 버프 효과 적용 함수
+	void ApplySpeedBuffEffect();
+
 	UFUNCTION(BlueprintCallable, Category = "Player Projectile")
 	void FirePlayerProjectile();
 	void HandleJumpOrGlide();
 	virtual void StartRoll();
 	virtual void Attack() override;
+
+	// 플레이어 입력 차단/복원 함수 오버라이드
+	virtual void DisablePlayerInput() override;
+	virtual void EnablePlayerInput() override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -243,9 +273,83 @@ protected:
 
 	uint8 CheckEnemy();
 
-	// 투사체 스킬 관련 함수들
-
 	FOnMontageEnded MontageEndedDelegate;
+
+	// 에이밍 시스템 관련 변수
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Aiming")
+	bool bIsAiming;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aiming") 
+	float AimingCameraDistance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aiming")
+	float NormalCameraDistance;
+
+	// 폼 체인지 관련 변수 (검/활 전환)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Form")
+	bool bIsSword;
+
+	// 에이밍 사운드
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aiming")
+	class USoundBase* BowDrawSound;
+
+	// 활 메시 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bow")
+	class USkeletalMeshComponent* BowMeshComponent;
+
+	// 화살 시스템 관련
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
+	bool bIsLoadingArrow;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
+	bool bIsArrowLoaded;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow")
+	TSubclassOf<class ARLArrow> ArrowClass;
+	
+	// 화살 풀링을 위한 변수
+	UPROPERTY()
+	class URLArrowPool* ArrowPool;
+	
+	UPROPERTY()
+	class ARLArrow* LoadedArrow;
+	
+	// 카메라 관련 변수 (에이밍용)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aiming")
+	FVector NormalCameraPosition;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aiming")
+	FVector AimingCameraPosition;
+
+	// 에이밍 시스템 관련 함수
+	UFUNCTION()
+	void StartAiming();
+	
+	UFUNCTION()
+	void StopAiming();
+
+	// 폼 체인지 (검/활 전환)
+	UFUNCTION()
+	void ChangeForm();
+
+	// 화살 시스템 관련 함수
+	UFUNCTION()
+	void StartLoadingArrow();
+	
+	UFUNCTION()
+	void FireArrow();
+	
+	UFUNCTION()
+	void LoadArrowToSocket();
+	
+
+
+	// 공격 버튼 홀딩 시스템
+	UFUNCTION()
+	void OnAttackPressed();
+	
+	UFUNCTION()
+	void OnAttackReleased();
 };
 
 

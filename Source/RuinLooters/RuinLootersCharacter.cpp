@@ -10,6 +10,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "Animation/RLAnimInstance.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -112,6 +113,17 @@ void ARuinLootersCharacter::Move(const FInputActionValue& Value)
 		// add movement 
 		AddMovementInput(ForwardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
+		
+		// 애니메이션 인스턴스에 입력값 전달
+		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		{
+			if (URLAnimInstance* RLAnimInstance = Cast<URLAnimInstance>(AnimInstance))
+			{
+				// 입력값을 그대로 전달 (Y는 앞/뒤, X는 좌/우)
+				RLAnimInstance->SetInputForwardSpeed(MovementVector.X);
+				RLAnimInstance->SetInputRightSpeed(MovementVector.Y);
+			}
+		}
 	}
 }
 

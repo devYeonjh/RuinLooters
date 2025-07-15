@@ -32,6 +32,10 @@
 #include "Animation/AnimMontage.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Engine/DamageEvents.h"
+#include "Camera/CameraComponent.h"
+#include "Projectile/RLArrow.h"
+#include "Pool/RLArrowPool.h"
 
 ARLCharacterPlayer::ARLCharacterPlayer()
 {
@@ -55,6 +59,33 @@ ARLCharacterPlayer::ARLCharacterPlayer()
     ProjectileCollisionRadius = 15.0f;   // 플레이어 투사체 반지름
     ProjectileCollisionHeight = 200.0f;  // 플레이어 투사체 높이 (사용자가 200.0f로 수정함)
     GliderComponent = CreateDefaultSubobject<URLGliderComponent>(TEXT("GliderComponent"));
+
+    // 에이밍 시스템 초기화
+    bIsAiming = false;
+    AimingCameraDistance = 10.0f;  // 에이밍 시 카메라 거리
+    NormalCameraDistance = 400.0f;  // 일반 상태 카메라 거리
+    BowDrawSound = nullptr;
+
+    // 폼 체인지 초기화 (기본적으로 검 모드)
+    bIsSword = true;
+
+    // 활 메시 컴포넌트 생성 및 초기화
+    BowMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("BowMesh"));
+    BowMeshComponent->SetupAttachment(GetMesh(), TEXT("hand_lBowSocket"));
+    BowMeshComponent->SetSkeletalMesh(nullptr);
+    BowMeshComponent->SetCastShadow(false);
+    BowMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    BowMeshComponent->SetVisibility(false); // 기본적으로 숨김 (검 모드이므로)
+    BowMeshComponent->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.5f)); // 크기를 반으로 줄임
+
+    // 화살 시스템 초기화
+    bIsLoadingArrow = false;
+    bIsArrowLoaded = false;
+    LoadedArrow = nullptr;
+
+    // 카메라 위치 초기화
+    NormalCameraPosition = FVector(0.0f, 0.0f, 0.0f);
+    AimingCameraPosition = FVector(0.0f, 50.0f, 70.0f);
 }
 
 void ARLCharacterPlayer::BeginPlay()
@@ -138,6 +169,19 @@ void ARLCharacterPlayer::BeginPlay()
     {
         UE_LOG(LogTemp, Warning, TEXT("Player PlayerProjectileClass is not set"));
     }
+
+    // 화살 클래스 확인
+    if (ArrowClass)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Arrow class is set"));
+        // 화살 풀 초기화
+        ArrowPool = NewObject<URLArrowPool>(this);
+        ArrowPool->InitializeArrowPool(GetWorld(), ArrowClass, 10);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("ArrowClass is not set"));
+    }
 }
 
 void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -155,19 +199,26 @@ void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
     // Set up action bindings
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-        // Attacking
-
-        EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Attack);
+        //EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Attack);
+        // Attacking - 홀딩 지원을 위해 Started/Completed로 변경
+        EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::OnAttackPressed);
+        EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Completed, this, &ARLCharacterPlayer::OnAttackReleased);
+        
         EnhancedInputComponent->BindAction(SkillAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::ApplySpeedBuff);
         EnhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::Interaction);
         // ESC
         EnhancedInputComponent->BindAction(SettingsAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::ViewSettingWidget);
         // 투사체 스킬
         EnhancedInputComponent->BindAction(ProjectileSkillAction, ETriggerEvent::Triggered, this, &ARLCharacterPlayer::UseProjectileSkill);
-
         // 롤(구르기) 입력 바인딩 (Shift키)
         EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::StartRoll);
+        // 글라이더 점프
         EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::HandleJumpOrGlide);
+        // 에이밍 시작/종료
+        EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::StartAiming);
+        EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ARLCharacterPlayer::StopAiming);
+        // 검, 활 폼 체인지
+        EnhancedInputComponent->BindAction(FormChangeAction, ETriggerEvent::Started, this, &ARLCharacterPlayer::ChangeForm);
     }
     else
     {
@@ -261,34 +312,27 @@ void ARLCharacterPlayer::ApplySpeedBuff()
     {
         IsCanSkill = false;
 
-        AttackSpeed = 1.5;
-
-        // 1. 현재 속도 저장
-        OriginalMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
-
-        // 2. 스피드 버프속도로 변경
-        GetCharacterMovement()->MaxWalkSpeed = 800;
-
-        // 3. 기존 타이머가 있다면 클리어
-        GetWorldTimerManager().ClearTimer(SpeedBuffTimerHandle);
-
-        // 4. Duration 후 RestoreOriginalSpeed() 호출하기
-        GetWorldTimerManager().SetTimer(
-            SpeedBuffTimerHandle,
-            this,
-            &ARLCharacterPlayer::RestoreOriginalSpeed,
-            5.0f,
-            false  // 반복 
-        );
-
-        GetWorldTimerManager().SetTimer(
-            CoolTimerHandle,
-            this,
-            &ARLCharacterPlayer::OnSkill,
-            8.0f,
-            false  // 반복 
-        );
-        UE_LOG(LogTemp, Warning, TEXT("Skill On!"));
+        // 스피드 스킬 몽타주가 설정되어 있다면 몽타주 실행
+        if (SpeedSkillMontage && AnimInstance)
+        {
+            // 몽타주 종료 콜백 설정
+            FOnMontageEnded SpeedSkillMontageEndedDelegate;
+            SpeedSkillMontageEndedDelegate.BindUObject(this, &ARLCharacterPlayer::OnSpeedSkillMontageEnded);
+            
+            // 몽타주 재생 및 델리게이트 설정
+            float MontageLength = AnimInstance->Montage_Play(SpeedSkillMontage);
+            AnimInstance->Montage_SetEndDelegate(SpeedSkillMontageEndedDelegate, SpeedSkillMontage);
+            
+            // 몽타주 재생 중에는 이동 제한
+            GetCharacterMovement()->SetMovementMode(MOVE_None);
+            
+            UE_LOG(LogTemp, Warning, TEXT("Speed skill montage started - Length: %f"), MontageLength);
+        }
+        else
+        {
+            // 몽타주가 없으면 바로 스피드 버프 적용
+            ApplySpeedBuffEffect();
+        }
 
         SkillCoolChange.Broadcast(IsCanSkill);
     }
@@ -302,7 +346,7 @@ void ARLCharacterPlayer::RestoreOriginalSpeed()
 {
     // 원래 속도 복원
     GetCharacterMovement()->MaxWalkSpeed = OriginalMaxWalkSpeed;
-    AttackSpeed = 1.0;
+    MontageSpeed = 1.0;
 }
 
 void ARLCharacterPlayer::OnSkill()
@@ -318,15 +362,16 @@ FGenericTeamId ARLCharacterPlayer::GetGenericTeamId() const
     return FGenericTeamId(TeamID);
 }
 
-void ARLCharacterPlayer::TakeCharacterDamage(int32 RecieveDamage)
+float ARLCharacterPlayer::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
     if (bIsInvincible)
     {
         // 무적 중이면 데미지 무시
-        return;
+        return 0.0f;
     }
-    ARLCharacterBase::TakeCharacterDamage(RecieveDamage);
+    float ActualDamage = ARLCharacterBase::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
     PlayerHpChange.Broadcast(CurrentHp, MaxHp);
+    return ActualDamage;
 }
 
 void ARLCharacterPlayer::TakeCharacterHeal(int32 RecieveHealAmount)
@@ -338,7 +383,7 @@ void ARLCharacterPlayer::TakeCharacterHeal(int32 RecieveHealAmount)
 
 void ARLCharacterPlayer::TakeCharacterMaxHealth(int32 UpScale)
 {
-    int32 TotalMaxHp = GetMaxHp() + UpScale;
+    float TotalMaxHp = GetMaxHp() + UpScale;
     SetCurrentHp(GetCurrentHp() + UpScale);
     SetMaxHp(TotalMaxHp);
 }
@@ -628,9 +673,14 @@ void ARLCharacterPlayer::FirePlayerProjectile()
     FTimerHandle ReturnTimerHandle;
     GetWorld()->GetTimerManager().SetTimer(ReturnTimerHandle, [this, PlayerProjectile]()
     {
-        if (PlayerProjectilePool && PlayerProjectile)
+        if (PlayerProjectilePool && PlayerProjectile && IsValid(PlayerProjectile))
         {
             PlayerProjectilePool->ReturnProjectile(PlayerProjectile);
+            UE_LOG(LogTemp, Log, TEXT("Player projectile auto-returned after 30 seconds"));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Player projectile timer called but projectile is invalid"));
         }
     }, 30.0f, false);  // 플레이어 투사체의 생존 시간에 맞춤
 
@@ -646,6 +696,51 @@ void ARLCharacterPlayer::OnProjectileSkillMontageEnded(UAnimMontage* Montage, bo
     bIsUsingProjectileSkill = false;
 
     UE_LOG(LogTemp, Warning, TEXT("Player projectile skill montage ended - Movement restored"));
+}
+
+void ARLCharacterPlayer::OnSpeedSkillMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+    UE_LOG(LogTemp, Warning, TEXT("OnSpeedSkillMontageEnded called! Interrupted: %s"), bInterrupted ? TEXT("true") : TEXT("false"));
+
+    // 몽타주 종료 시 이동 모드 복원
+    GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
+    // 스피드 버프 효과 적용
+    ApplySpeedBuffEffect();
+
+    UE_LOG(LogTemp, Warning, TEXT("Speed skill montage ended - Speed buff applied"));
+}
+
+void ARLCharacterPlayer::ApplySpeedBuffEffect()
+{
+    MontageSpeed = 1.5;
+
+    // 1. 현재 속도 저장
+    OriginalMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+
+    // 2. 스피드 버프속도로 변경
+    GetCharacterMovement()->MaxWalkSpeed = 1000;
+
+    // 3. 기존 타이머가 있다면 클리어
+    GetWorldTimerManager().ClearTimer(SpeedBuffTimerHandle);
+
+    // 4. Duration 후 RestoreOriginalSpeed() 호출하기
+    GetWorldTimerManager().SetTimer(
+        SpeedBuffTimerHandle,
+        this,
+        &ARLCharacterPlayer::RestoreOriginalSpeed,
+        5.0f,
+        false  // 반복 
+    );
+
+    GetWorldTimerManager().SetTimer(
+        CoolTimerHandle,
+        this,
+        &ARLCharacterPlayer::OnSkill,
+        8.0f,
+        false  // 반복 
+    );
+    UE_LOG(LogTemp, Warning, TEXT("Speed Buff Effect Applied!"));
 }
 
 void ARLCharacterPlayer::HandleJumpOrGlide()
@@ -679,12 +774,7 @@ void ARLCharacterPlayer::StartRoll()
 
 void ARLCharacterPlayer::Attack()
 {
-    if (GliderComponent && GliderComponent->IsGliderActive())
-    {
-        return;
-    }
-
-    if (GetCharacterMovement()->IsFalling())
+    if (!bIsSword || GliderComponent && GliderComponent->IsGliderActive() || GetCharacterMovement()->IsFalling())
     {
         return;
     }
@@ -712,10 +802,280 @@ void ARLCharacterPlayer::Tick(float DeltaTime)
     }
     if (CameraBoom)
     {
-        float InterpSpeed = 3.0f; // 부드러운 속도
+        float InterpSpeed = 4.0f; // 0.5초에 걸쳐 부드러운 전환 (2.0f 사용)
         CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, CameraTargetArmLength, DeltaTime, InterpSpeed);
     }
+
+    // 활 가시성 업데이트 (폼 상태에 따라)
+    if (BowMeshComponent)
+    {
+        BowMeshComponent->SetVisibility(!bIsSword);
+    }
+
+    // WeaponMeshComponent(검) 가시성 업데이트 (폼 상태에 따라)
+    if (WeaponMeshComponent)
+    {
+        WeaponMeshComponent->SetVisibility(bIsSword);
+    }
 }
+
+// 플레이어 입력 차단 (구르기 중)
+void ARLCharacterPlayer::DisablePlayerInput()
+{
+    if (PlayerController)
+    {
+        // Enhanced Input Mapping Context 제거
+        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+        {
+            Subsystem->RemoveMappingContext(DefaultMappingContext);
+            UE_LOG(LogTemp, Log, TEXT("Player input disabled for rolling"));
+        }
+    }
+}
+
+// 플레이어 입력 복원 (구르기 종료)
+void ARLCharacterPlayer::EnablePlayerInput()
+{
+    if (PlayerController)
+    {
+        // Enhanced Input Mapping Context 재추가
+        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+        {
+            Subsystem->AddMappingContext(DefaultMappingContext, 0);
+            UE_LOG(LogTemp, Log, TEXT("Player input enabled after rolling"));
+        }
+    }
+}
+
+// 에이밍 시작
+void ARLCharacterPlayer::StartAiming()
+{
+    // 활 모드일 때만 에이밍 가능
+    if (bIsSword)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Cannot aim in sword mode"));
+        return;
+    }
+
+    // 공중에 있거나 구르기 중일 때는 에이밍 불가
+    if (GetCharacterMovement()->IsFalling() || bIsRolling)
+    {
+        return;
+    }
+
+    bIsAiming = true;
+    
+    // 카메라 위치를 에이밍 모드로 변경 (FollowCamera의 상대적 위치)
+    if (FollowCamera)
+    {
+        FollowCamera->SetRelativeLocation(AimingCameraPosition);
+    }
+    
+    // 에이밍 상태에서 SpringArm 길이 조정
+    CameraTargetArmLength = AimingCameraDistance;
+    
+    // OrientRotationToMovement를 false로 설정
+    GetCharacterMovement()->bOrientRotationToMovement = false;
+    
+    // UseControllerDesiredRotation을 true로 설정
+    GetCharacterMovement()->bUseControllerDesiredRotation = true;
+    
+    // 활 당기는 소리 재생
+    if (BowDrawSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, BowDrawSound, GetActorLocation());
+    }
+    
+    // 활 시위를 당기는 몽타주 실행
+    if (BowDrawMontage && AnimInstance)
+    {
+        AnimInstance->Montage_Play(BowDrawMontage);
+        UE_LOG(LogTemp, Log, TEXT("Bow draw montage started"));
+    }
+
+    // 활 모드: 화살 장전 시작
+    StartLoadingArrow();
+    
+    UE_LOG(LogTemp, Log, TEXT("Aiming started"));
+}
+
+// 에이밍 종료
+void ARLCharacterPlayer::StopAiming()
+{
+    if (!bIsAiming)
+    {
+        return;
+    }
+
+    bIsAiming = false;
+    
+    // 카메라 위치를 일반 모드로 복원 (FollowCamera의 상대적 위치)
+    if (FollowCamera)
+    {
+        FollowCamera->SetRelativeLocation(NormalCameraPosition);
+    }
+    
+    // 일반 상태로 SpringArm 길이 복원
+    CameraTargetArmLength = NormalCameraDistance;
+    
+    // OrientRotationToMovement를 true로 복원
+    GetCharacterMovement()->bOrientRotationToMovement = true;
+    
+    // UseControllerDesiredRotation을 false로 복원
+    GetCharacterMovement()->bUseControllerDesiredRotation = false;
+    
+    UE_LOG(LogTemp, Log, TEXT("Aiming stopped"));
+}
+
+// 폼 체인지 (검/활 전환)
+void ARLCharacterPlayer::ChangeForm()
+{
+    // 에이밍 중이거나 구르기 중일 때는 폼 체인지 불가
+    if (bIsAiming || bIsRolling)
+    {
+        return;
+    }
+
+    // 폼 전환
+    bIsSword = !bIsSword;
+    
+    // 활 메시 가시성 제어
+    if (BowMeshComponent)
+    {
+        BowMeshComponent->SetVisibility(!bIsSword); // 검 모드이면 숨김, 활 모드이면 표시
+    }
+    
+    // WeaponMeshComponent(검) 가시성 제어
+    if (WeaponMeshComponent)
+    {
+        WeaponMeshComponent->SetVisibility(bIsSword); // 검 모드이면 표시, 활 모드이면 숨김
+    }
+    
+    // 에이밍 상태가 활성화되어 있다면 비활성화
+    if (bIsAiming && bIsSword)
+    {
+        StopAiming();
+    }
+    
+    UE_LOG(LogTemp, Log, TEXT("Form changed to: %s"), bIsSword ? TEXT("Sword") : TEXT("Bow"));
+}
+
+// 공격 버튼 눌렀을 때
+void ARLCharacterPlayer::OnAttackPressed()
+{
+    if (bIsSword)
+    {
+        // 검 모드: 기존 공격
+        Attack();
+    }
+    else
+    {
+        UE_LOG(LogTemp, Log, TEXT("BowActionPressed"));
+        if (!bIsLoadingArrow)
+        {
+            // 활 모드: 화살 장전 시작
+            StartLoadingArrow();
+        }
+    }
+}
+
+// 공격 버튼 뗐을 때
+void ARLCharacterPlayer::OnAttackReleased()
+{
+    if (!bIsSword && bIsArrowLoaded)
+    {
+        // 활 모드이고 화살이 장전된 상태: 화살 발사
+        FireArrow();
+    }
+}
+
+// 화살 장전 시작
+void ARLCharacterPlayer::StartLoadingArrow()
+{
+    if (bIsLoadingArrow || bIsArrowLoaded)
+    {
+        return; // 이미 장전 중이거나 장전된 상태
+    }
+
+    bIsLoadingArrow = true;
+    LoadArrowToSocket();
+    
+    UE_LOG(LogTemp, Log, TEXT("Arrow loading started"));
+}
+
+// 화살을 소켓에 장전
+void ARLCharacterPlayer::LoadArrowToSocket()
+{
+    if (!ArrowClass)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("ArrowClass is not set"));
+        bIsLoadingArrow = false;
+        return;
+    }
+
+    // 풀에서 화살 가져오기
+    LoadedArrow = ArrowPool->GetArrowFromPool();
+    if (!LoadedArrow)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Failed to get arrow from pool"));
+        bIsLoadingArrow = false;
+        return;
+    }
+
+    // 화살을 hand_rArrowSocket에 부착
+    LoadedArrow->SetActorHiddenInGame(false);
+    LoadedArrow->AttachToSocket(GetMesh(), TEXT("hand_rArrowSocket"));
+    
+    bIsLoadingArrow = false;
+    bIsArrowLoaded = true;
+    
+    UE_LOG(LogTemp, Log, TEXT("Arrow loaded to socket"));
+}
+
+// 화살 발사
+void ARLCharacterPlayer::FireArrow()
+{
+    if (!bIsArrowLoaded || !LoadedArrow)
+    {
+        return;
+    }
+
+    // 발사 위치 및 방향 설정
+    FVector PlayerLocation = GetActorLocation();
+    FVector FireLocation = PlayerLocation + FVector(0.0f, 0.0f, 40.0f);
+    
+    // 카메라가 바라보는 방향으로 발사 (컨트롤러 회전 기준)
+    FVector FireDirection = PlayerController ? PlayerController->GetControlRotation().Vector() : GetActorForwardVector();
+
+    // 소켓에서 분리
+    LoadedArrow->DetachFromSocket();
+    
+    // 화살 초기화 및 발사
+    LoadedArrow->InitializeArrow(FireLocation, GetControlRotation(), 30, 2000.0f);
+
+    // 화살 자동 반환을 위한 타이머 설정 (10초 후 풀에 반환)
+    ARLArrow* FiredArrow = LoadedArrow;
+    FTimerHandle ArrowReturnHandle;
+    GetWorld()->GetTimerManager().SetTimer(ArrowReturnHandle, [this, FiredArrow]()
+    {
+        if (FiredArrow && IsValid(FiredArrow))
+        {
+            ArrowPool->ReturnArrowToPool(FiredArrow);
+        }
+    }, 10.0f, false);
+
+    // 상태 초기화
+    LoadedArrow = nullptr;
+    bIsArrowLoaded = false;
+    
+    UE_LOG(LogTemp, Log, TEXT("Arrow fired"));
+}
+
+
+
+
+
+
 
 
 
