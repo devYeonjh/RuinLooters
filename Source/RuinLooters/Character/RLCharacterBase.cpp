@@ -161,7 +161,7 @@ void ARLCharacterBase::ChangeWeapon(FWeaponTableRow* ChangeWeapon)
     WeaponMeshComponent->SetSkeletalMesh(ChangeWeapon->SkeletalMesh);
 
     // 무기별 회전각도 조정 설정
-    if (ChangeWeapon->WeaponIndex == 0)
+    if (ChangeWeapon->WeaponIndex == 1 || ChangeWeapon->WeaponIndex == 3)
     {
         WeaponMeshComponent->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
     }
@@ -169,10 +169,7 @@ void ARLCharacterBase::ChangeWeapon(FWeaponTableRow* ChangeWeapon)
     //{
     //    WeaponMeshComponent->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
     //}
-    else
-    {
-        WeaponMeshComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-    }
+
 
     // 데이터 테이블의 무기 정보 저장
     RowWeapon = ChangeWeapon;
