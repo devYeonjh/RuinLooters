@@ -3,6 +3,7 @@
 #include "RLArrow.h"
 #include "Character/RLCharacterEnemy.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Engine/DamageEvents.h"
 #include "Kismet/GameplayStatics.h"
@@ -13,18 +14,27 @@ ARLArrow::ARLArrow()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	// 스피어 콜리전 컴포넌트 생성 (루트 컴포넌트)
+	SphereCollision = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollision"));
+	RootComponent = SphereCollision;
+	
+	// 스피어 콜리전 설정 (오버랩용)
+	SphereCollision->SetSphereRadius(10.0f);
+	SphereCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	SphereCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+	SphereCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	
 	// 스태틱 메시 컴포넌트 생성
 	ArrowMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArrowMesh"));
-	RootComponent = ArrowMesh;
+	ArrowMesh->SetupAttachment(SphereCollision);
 	
-	// 기본 콜리전 설정 (오버랩용)
-	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	// 스태틱 메시 콜리전 설정 (비주얼용)
+	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ArrowMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
-	ArrowMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	
 	// 투사체 이동 컴포넌트 생성 (초기에는 비활성화)
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
-	ProjectileMovement->UpdatedComponent = ArrowMesh;
+	ProjectileMovement->UpdatedComponent = SphereCollision;
 	ProjectileMovement->InitialSpeed = 2500.0f;
 	ProjectileMovement->MaxSpeed = 2500.0f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
@@ -40,14 +50,14 @@ ARLArrow::ARLArrow()
 	bIsAttachedToSocket = false;
 	AttachedMeshComponent = nullptr;
 	AttachedSocketName = NAME_None;
-
-	// 오버랩 이벤트 바인딩
-	ArrowMesh->OnComponentBeginOverlap.AddDynamic(this, &ARLArrow::OnComponentBeginOverlap);
 }
 
 void ARLArrow::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 오버랩 이벤트 바인딩 (스피어 콜리전에 바인딩)
+	SphereCollision->OnComponentBeginOverlap.AddDynamic(this, &ARLArrow::OnComponentBeginOverlap);
 }
 
 void ARLArrow::InitializeArrow(FVector StartLocation, FVector Direction, int32 ArrowDamage, float ArrowSpeed)
@@ -102,7 +112,7 @@ void ARLArrow::AttachToSocket(USkeletalMeshComponent* TargetMesh, FName SocketNa
 	AttachedSocketName = SocketName;
 	
 	// 콜리전 비활성화
-	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SphereCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
 	UE_LOG(LogTemp, Log, TEXT("Arrow attached to socket: %s"), *SocketName.ToString());
 }
@@ -121,7 +131,7 @@ void ARLArrow::DetachFromSocket()
 	// DetachFromSocket()에서는 활성화하지 않음
 	
 	// 콜리전 활성화
-	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	SphereCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	
 	// 상태 초기화
 	bIsAttachedToSocket = false;
@@ -135,7 +145,7 @@ void ARLArrow::DeactivateArrow()
 {
 	// 화살 비활성화 (풀링용)
 	SetActorHiddenInGame(true);
-	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SphereCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
 	// 투사체 이동 비활성화
 	if (ProjectileMovement)
@@ -157,7 +167,7 @@ void ARLArrow::ActivateArrow()
 {
 	// 화살 활성화 (풀링용)
 	SetActorHiddenInGame(false);
-	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	SphereCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	
 	// ProjectileMovement는 InitializeArrow()에서 발사할 때만 활성화
 	// 여기서는 활성화하지 않음

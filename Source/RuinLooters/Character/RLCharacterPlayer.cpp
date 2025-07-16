@@ -885,13 +885,6 @@ void ARLCharacterPlayer::StartAiming()
     {
         UGameplayStatics::PlaySoundAtLocation(this, BowDrawSound, GetActorLocation());
     }
-    
-    // 활 시위를 당기는 몽타주 실행
-    if (BowDrawMontage && AnimInstance)
-    {
-        AnimInstance->Montage_Play(BowDrawMontage);
-        UE_LOG(LogTemp, Log, TEXT("Bow draw montage started"));
-    }
 
     // 활 모드: 화살 장전 시작
     StartLoadingArrow();
@@ -1000,6 +993,13 @@ void ARLCharacterPlayer::StartLoadingArrow()
     if (bIsLoadingArrow || bIsArrowLoaded)
     {
         return; // 이미 장전 중이거나 장전된 상태
+    }
+
+    // 활 시위를 당기는 몽타주 실행
+    if (BowDrawMontage && AnimInstance)
+    {
+        AnimInstance->Montage_Play(BowDrawMontage);
+        UE_LOG(LogTemp, Log, TEXT("Bow draw montage started"));
     }
 
     bIsLoadingArrow = true;

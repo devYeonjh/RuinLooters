@@ -7,6 +7,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/SphereComponent.h"
 #include "Engine/Engine.h"
 #include "RLArrow.generated.h"
 
@@ -24,6 +25,10 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
+	// 스피어 콜리전 컴포넌트 (오버랩 감지용)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	USphereComponent* SphereCollision;
 
 	// 스태틱 메시 컴포넌트 (화살 모델)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
