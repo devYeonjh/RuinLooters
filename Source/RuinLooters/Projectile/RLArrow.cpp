@@ -2,6 +2,7 @@
 
 #include "RLArrow.h"
 #include "Character/RLCharacterEnemy.h"
+#include "Character/RLCharacterPlayer.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -177,6 +178,13 @@ void ARLArrow::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 {
 	// 소켓에 부착된 상태에서는 오버랩 무시
 	if (bIsAttachedToSocket)
+	{
+		return;
+	}
+
+	ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(OtherActor);
+
+	if (Player)
 	{
 		return;
 	}

@@ -16,16 +16,18 @@ ARLCharacterEnemy::ARLCharacterEnemy()
 
 	Money = 50;
 
+	// HP 위젯 위치 기본값 설정
+	HealthBarLocation = FVector(0, 0, 0);
+
 	// HP 체력바 UI
 	// 컴포넌트 생성 및 위치 설정
 	HealthBarComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBar"));
 	HealthBarComponent->SetupAttachment(GetMesh());
 	HealthBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	HealthBarComponent->SetDrawSize(FVector2D(200, 20));
-	HealthBarComponent->SetRelativeLocation(FVector(0, 0, 200));
 
-	// 컴포넌트에 위젯을 설정 지정
-	HealthBarComponent->SetWidgetClass(HpWidgetClass);
+	// 위젯 클래스는 BeginPlay에서 설정 (HpWidgetClass가 nullptr일 수 있음)
+	// HealthBarComponent->SetWidgetClass(HpWidgetClass);
 
 }
 
@@ -54,23 +56,69 @@ void ARLCharacterEnemy::BeginPlay()
     // 필요한 플레이어 찾기
     Player = Cast<ARLCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(World, 0));
 
-    if (UUserWidget* UserWidget = HealthBarComponent->GetUserWidgetObject())
+    // HP 위젯 설정
+    SetupHealthBarWidget();
+}
+
+void ARLCharacterEnemy::SetupHealthBarWidget()
+{
+    if (!HealthBarComponent)
     {
-        UE_LOG(LogTemp, Warning, TEXT("make UUserWidget"));
+        UE_LOG(LogTemp, Warning, TEXT("HealthBarComponent is null"));
+        return;
+    }
+
+    // HpWidgetClass가 설정되어 있는지 확인
+    if (!HpWidgetClass)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("HpWidgetClass is not set for %s"), *GetName());
+        return;
+    }
+
+    HealthBarComponent->SetRelativeLocation(HealthBarLocation);
+
+    // 위젯 클래스 설정
+    HealthBarComponent->SetWidgetClass(HpWidgetClass);
+
+    // 위젯 객체 생성 및 가져오기
+    UUserWidget* UserWidget = HealthBarComponent->GetUserWidgetObject();
+    if (!UserWidget)
+    {
+        // 위젯이 생성되지 않았다면 강제로 생성
+        HealthBarComponent->InitWidget();
+        UserWidget = HealthBarComponent->GetUserWidgetObject();
+    }
+
+    if (UserWidget)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Successfully created UUserWidget for %s"), *GetName());
+        
+        // UHPWidget으로 캐스팅
         if (UHPWidget* HealthBarWidget = Cast<UHPWidget>(UserWidget))
         {
+            // HpWidget 참조 저장
+            HpWidget = HealthBarWidget;
+            
             // 델리게이트에 체력 변화 바인딩
             EnemyHpChange.AddUObject(HealthBarWidget, &UHPWidget::CalculateHp);
             CharacterDie.AddUObject(HealthBarWidget, &UHPWidget::DestroyWidget);
 
-            // ... 기타 바인딩 코드 ...
+            // 초기 체력 값 설정
             GetWorldTimerManager().SetTimerForNextTick([this]()
-                {
-                    EnemyHpChange.Broadcast(CurrentHp, MaxHp);
-                });
+            {
+                EnemyHpChange.Broadcast(CurrentHp, MaxHp);
+            });
 
-            UE_LOG(LogTemp, Warning, TEXT("make UHPWidget"));
+            UE_LOG(LogTemp, Warning, TEXT("Successfully setup UHPWidget for %s"), *GetName());
         }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("Failed to cast UserWidget to UHPWidget for %s"), *GetName());
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to create or get UserWidget for %s"), *GetName());
     }
 }
 

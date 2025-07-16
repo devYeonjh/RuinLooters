@@ -49,9 +49,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	FName EnemyName;
 
+	// HP 위젯 위치 설정
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	FVector HealthBarLocation;
+
 
 protected:
 	virtual void BeginPlay() override;
+
+	// HP 위젯 설정 함수
+	void SetupHealthBarWidget();
 
 public:
 	FORCEINLINE FName GetEnemyName() { return EnemyName; };
