@@ -50,7 +50,7 @@ protected:
 public:
 	// 화살 초기화
 	UFUNCTION(BlueprintCallable, Category = "Arrow")
-	void InitializeArrow(FVector StartLocation, FRotator Direction, int32 ArrowDamage = 30, float ArrowSpeed = 2500.0f);
+	void InitializeArrow(FVector StartLocation, FVector Direction, int32 ArrowDamage = 30, float ArrowSpeed = 2500.0f);
 	
 	// 소켓에 부착용 함수
 	UFUNCTION(BlueprintCallable, Category = "Arrow")

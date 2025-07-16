@@ -50,7 +50,7 @@ void ARLArrow::BeginPlay()
 	Super::BeginPlay();
 }
 
-void ARLArrow::InitializeArrow(FVector StartLocation, FRotator Direction, int32 ArrowDamage, float ArrowSpeed)
+void ARLArrow::InitializeArrow(FVector StartLocation, FVector Direction, int32 ArrowDamage, float ArrowSpeed)
 {
 	// 설정 적용
 	Damage = ArrowDamage;
@@ -58,7 +58,10 @@ void ARLArrow::InitializeArrow(FVector StartLocation, FRotator Direction, int32 
 	
 	// 위치와 회전 설정
 	SetActorLocation(StartLocation);
-	SetActorRotation(Direction);
+	
+	// Direction이 FVector이므로 Rotation으로 변환
+	FRotator TargetRotation = Direction.Rotation();
+	SetActorRotation(TargetRotation);
 	// + FRotator(0.0f, 5.0f, 5.0f)
 
 	// 투사체 이동 설정 (발사 시에만 활성화)
@@ -66,7 +69,7 @@ void ARLArrow::InitializeArrow(FVector StartLocation, FRotator Direction, int32 
 	{
 		ProjectileMovement->InitialSpeed = ArrowSpeed;
 		ProjectileMovement->MaxSpeed = ArrowSpeed;
-		ProjectileMovement->Velocity = (Direction + ArrowDirectionOffset).Vector() * ArrowSpeed;
+		ProjectileMovement->Velocity = Direction.GetSafeNormal() * ArrowSpeed;
 		ProjectileMovement->SetActive(true); // 발사 시에만 활성화
 	}
 	

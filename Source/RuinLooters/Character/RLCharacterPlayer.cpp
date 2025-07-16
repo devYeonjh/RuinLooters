@@ -1041,17 +1041,16 @@ void ARLCharacterPlayer::FireArrow()
     }
 
     // 발사 위치 및 방향 설정
-    FVector PlayerLocation = GetActorLocation();
-    FVector FireLocation = PlayerLocation + FVector(0.0f, 0.0f, 40.0f);
+    FVector FireLocation = BowMeshComponent ? BowMeshComponent->GetComponentLocation() : GetActorLocation();
     
-    // 카메라가 바라보는 방향으로 발사 (컨트롤러 회전 기준)
-    FVector FireDirection = PlayerController ? PlayerController->GetControlRotation().Vector() : GetActorForwardVector();
+    // BowMeshComponent의 ForwardVector로 발사 방향 설정
+    FVector FireDirection = BowMeshComponent ? BowMeshComponent->GetForwardVector() : GetActorForwardVector();
 
     // 소켓에서 분리
     LoadedArrow->DetachFromSocket();
     
     // 화살 초기화 및 발사
-    LoadedArrow->InitializeArrow(FireLocation, GetControlRotation(), 30, 2000.0f);
+    LoadedArrow->InitializeArrow(FireLocation, FireDirection, 30, 2000.0f);
 
     // 화살 자동 반환을 위한 타이머 설정 (10초 후 풀에 반환)
     ARLArrow* FiredArrow = LoadedArrow;
