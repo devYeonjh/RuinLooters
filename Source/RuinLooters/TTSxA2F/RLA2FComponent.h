@@ -17,6 +17,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "RLA2F")
@@ -41,8 +42,15 @@ private:
 	UPROPERTY()
 	UAsyncActionAnimateCharacter* CurrentAsyncAction;
 
+	// Lazy loading support
+	bool bIsInitialized = false;
+	mutable FCriticalSection InitializationCS;
+
 	UFUNCTION()
 	void OnAnimationCompleted(bool bSuccess);
 
 	void InitializeDefaultParameters();
+	
+	// Lazy initialization function
+	void EnsureInitialized();
 };

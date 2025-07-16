@@ -37,6 +37,7 @@ node_modules/
 *.sw?
 # OS specific
 .DS_Store
+.claude
 
 Plugins/
 
