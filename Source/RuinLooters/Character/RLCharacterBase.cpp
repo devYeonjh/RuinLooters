@@ -4,6 +4,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Character/RLCharacterPlayer.h"
 #include "Character/RLCharacterEnemy.h"
+#include "Character/RLCharacterEnemyDragon.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "EnhancedInputComponent.h"
@@ -17,6 +18,8 @@
 #include "RLGliderComponent.h"
 #include "Engine/DamageEvents.h"
 #include "Particles/ParticleSystem.h"
+#include "Components/CapsuleComponent.h"
+#include "DrawDebugHelpers.h"
 
 ARLCharacterBase::ARLCharacterBase() : WeaponRowName(TEXT("First WeaponRowName Text"))
 {
@@ -112,36 +115,82 @@ void ARLCharacterBase::Die()
 
 void ARLCharacterBase::CallAttackCollision()
 {
-}
-
-void ARLCharacterBase::SwordAttackLineTrace()
-{
-    // 전방에 대한 트레이스를 걸어서 적이 캐릭터에 닿으면 데미지 적용
-    FVector Start = GetActorLocation();
-    FVector End = Start + GetActorForwardVector() * Range;  // 공격 범위
-
-    FHitResult Hit;     // 트레이스, 충돌시 충돌정보를 담는 구조체
-    FCollisionQueryParams Params;   // 충돌 쿼리, 충돌 검사, 충돌 검사 후 처리 함수 설정
-    Params.AddIgnoredActor(this);   // 본인은 무시 설정 (자신 제외)
-
-    bool bHit = GetWorld()->LineTraceSingleByChannel(
-        Hit,
-        Start,
-        End,
+    // 캐릭터 앞에 캡슐 콜리전 생성하여 범위 내 적들에게 데미지 적용
+    FVector ForwardVector = GetActorForwardVector();
+    FVector StartLocation = GetActorLocation() + ForwardVector * 100.0f;
+    FVector CapsuleCenter = StartLocation + ForwardVector * (Range * 0.5f);
+    
+    // 캡슐 콜리전 파라미터 설정 (둘레는 고정, 길이는 Range 값 사용)
+    float CapsuleRadius = 50.0f; // 고정된 둘레
+    float CapsuleHalfHeight = Range * 0.5f; // Range 값을 길이로 사용
+    
+    // 콜리전 쿼리 파라미터 설정
+    FCollisionQueryParams QueryParams;
+    QueryParams.AddIgnoredActor(this); // 자신은 제외
+    
+    // 캡슐 모양으로 충돌 검사
+    TArray<FHitResult> HitResults;
+    bool bHit = GetWorld()->SweepMultiByChannel(
+        HitResults,
+        StartLocation,
+        CapsuleCenter + ForwardVector * CapsuleHalfHeight,
+        FQuat::Identity,
         ECC_Pawn,
-        Params
+        FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight),
+        QueryParams
     );
-
-    UE_LOG(LogTemp, Warning, TEXT("Attack Executed"));
-
+    
+    // 에디터에서만 디버그 캡슐 표시
+#if WITH_EDITOR
+        FColor DebugColor = bHit ? FColor::Red : FColor::Green;
+        DrawDebugCapsule(
+            GetWorld(),
+            CapsuleCenter,
+            CapsuleHalfHeight,
+            CapsuleRadius,
+            FQuat::Identity,
+            DebugColor,
+            false,
+            2.0f, // 2초간 표시
+            0,
+            2.0f // 선 두께
+        );
+        
+        // 공격 범위 정보 로그 출력
+        UE_LOG(LogTemp, Warning, TEXT("Attack Collision - Range: %.1f, Radius: %.1f, Hit: %s"), 
+            Range, CapsuleRadius, bHit ? TEXT("True") : TEXT("False"));
+    
+#endif
+    
     if (bHit)
     {
-        // 히트시 처리
-        ARLCharacterBase* HitChar = Cast<ARLCharacterBase>(Hit.GetActor());
-        if (HitChar)
+        // 중복 데미지 방지를 위한 액터 추적
+        TArray<AActor*> DamagedActors;
+        
+        for (const FHitResult& Hit : HitResults)
         {
-            FDamageEvent DamageEvent;
-            HitChar->TakeDamage((float)AttackDamage, DamageEvent, nullptr, this);
+            AActor* HitActor = Hit.GetActor();
+            if (!HitActor || DamagedActors.Contains(HitActor))
+                continue;
+                
+            // ARLCharacterBase 타입 체크
+            ARLCharacterBase* HitCharacter = Cast<ARLCharacterBase>(HitActor);
+            if (HitCharacter && HitCharacter != this)
+            {
+                FDamageEvent DamageEvent;
+                HitCharacter->TakeDamage((float)AttackDamage, DamageEvent, nullptr, this);
+                DamagedActors.Add(HitActor);
+                continue;
+            }
+            
+            // ARLCharacterEnemyDragon 타입 체크
+            ARLCharacterEnemyDragon* HitDragon = Cast<ARLCharacterEnemyDragon>(HitActor);
+            if (HitDragon)
+            {
+                FDamageEvent DamageEvent;
+                HitDragon->TakeDamage((float)AttackDamage, DamageEvent, nullptr, this);
+                DamagedActors.Add(HitActor);
+            }
         }
     }
 }

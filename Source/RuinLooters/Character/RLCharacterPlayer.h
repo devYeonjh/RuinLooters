@@ -350,6 +350,8 @@ protected:
 	
 	UFUNCTION()
 	void OnAttackReleased();
+
+	virtual void CallAttackCollision() override;
 };
 
 

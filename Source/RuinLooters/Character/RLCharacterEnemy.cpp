@@ -102,5 +102,10 @@ void ARLCharacterEnemy::DestoryCharacter()
     Destroy();
 }
 
+void ARLCharacterEnemy::CallAttackCollision()
+{
+    ARLCharacterBase::CallAttackCollision();
+}
+
 
 

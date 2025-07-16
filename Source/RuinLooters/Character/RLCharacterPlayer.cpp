@@ -989,6 +989,11 @@ void ARLCharacterPlayer::OnAttackReleased()
     }
 }
 
+void ARLCharacterPlayer::CallAttackCollision()
+{
+    ARLCharacterBase::CallAttackCollision();
+}
+
 // 화살 장전 시작
 void ARLCharacterPlayer::StartLoadingArrow()
 {

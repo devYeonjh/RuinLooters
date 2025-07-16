@@ -70,6 +70,8 @@ protected:
 	void DestoryCharacter();
 
 	FTimerHandle DieTimerHandle;
+
+	virtual void CallAttackCollision() override;
 };
 
 

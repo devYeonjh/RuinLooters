@@ -156,8 +156,6 @@ public:
 
 	virtual void CallAttackCollision() override;
 
-	void SwordAttackLineTrace();
-
 	void PlayAttackSound();
 
 	// 롤 몽타주 종료 콜백
