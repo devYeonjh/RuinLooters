@@ -38,6 +38,8 @@ node_modules/
 # OS specific
 .DS_Store
 
+Plugins/
+
 # Task files
 # tasks.json
 # tasks/ 
