@@ -7,7 +7,10 @@
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/SphereComponent.h"
 #include "Engine/Engine.h"
+#include "NiagaraSystem.h"
+#include "NiagaraFunctionLibrary.h"
 #include "RLArrow.generated.h"
 
 /**
@@ -24,6 +27,10 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
+	// 스피어 콜리전 컴포넌트 (오버랩 감지용)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	USphereComponent* SphereCollision;
 
 	// 스태틱 메시 컴포넌트 (화살 모델)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -47,10 +54,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow Settings")
 	FRotator ArrowDirectionOffset;
 
+	// 나이아가라 이펙트 설정
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Niagara Effects")
+	class UNiagaraSystem* TrailNiagaraEffect;
+
+	// 파티클 위치 오프셋 (블루프린트에서 수정 가능)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle Effects")
+	FVector TrailParticleOffset;
+
 public:
-	// 화살 초기화
+	// 화살 초기화 (카메라 기준 목표 위치 사용)
 	UFUNCTION(BlueprintCallable, Category = "Arrow")
-	void InitializeArrow(FVector StartLocation, FRotator Direction, int32 ArrowDamage = 30, float ArrowSpeed = 2500.0f);
+	void InitializeArrow(FVector StartLocation, class APlayerController* PlayerController, int32 ArrowDamage = 30, float ArrowSpeed = 2500.0f);
 	
 	// 소켓에 부착용 함수
 	UFUNCTION(BlueprintCallable, Category = "Arrow")
@@ -84,6 +99,13 @@ private:
 	// 라이프타임 타이머
 	FTimerHandle LifeTimeHandle;
 
+	// 나이아가라 컴포넌트들
+	UPROPERTY()
+	class UNiagaraComponent* TrailNiagaraComponent;
+
 	// 라이프타임 만료 처리
 	void OnLifeTimeExpired();
+
+	// 나이아가라 이펙트 생성 (x축 90도 회전)
+	void CreateTrailNiagaraEffect();
 }; 

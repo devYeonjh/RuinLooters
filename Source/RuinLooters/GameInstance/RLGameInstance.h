@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
 #include "Engine/DataTable.h" 
+#include "Weapon/RLSword.h"
 #include "RLGameInstance.generated.h"
 
 USTRUCT(BlueprintType)
@@ -20,6 +21,7 @@ struct FWeaponTableRow : public FTableRowBase
 		, MontageSpeed(0.0f)
 		, Range(0.0f)
 		, Price(0)
+		, WeaponBP(nullptr)
 	{
 	}
 
@@ -43,6 +45,9 @@ struct FWeaponTableRow : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 Price;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<ARLSword> WeaponBP;
 };
 
 USTRUCT(BlueprintType)

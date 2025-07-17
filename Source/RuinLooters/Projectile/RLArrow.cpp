@@ -2,29 +2,48 @@
 
 #include "RLArrow.h"
 #include "Character/RLCharacterEnemy.h"
+#include "Character/RLCharacterPlayer.h"
+#include "Character/RLCharacterEnemyDragon.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Engine/DamageEvents.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "Engine/Engine.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "Engine/World.h"
+#include "Camera/CameraComponent.h"
+#include "NiagaraSystem.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 
 ARLArrow::ARLArrow()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	// 스피어 콜리전 컴포넌트 생성 (루트 컴포넌트)
+	SphereCollision = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollision"));
+	RootComponent = SphereCollision;
+	
+	// 스피어 콜리전 설정 (오버랩용)
+	SphereCollision->SetSphereRadius(60.0f);
+	SphereCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	SphereCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+	SphereCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	
 	// 스태틱 메시 컴포넌트 생성
 	ArrowMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArrowMesh"));
-	RootComponent = ArrowMesh;
+	ArrowMesh->SetupAttachment(SphereCollision);
 	
-	// 기본 콜리전 설정 (오버랩용)
-	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	// 스태틱 메시 콜리전 설정 (비주얼용)
+	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ArrowMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
-	ArrowMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	
 	// 투사체 이동 컴포넌트 생성 (초기에는 비활성화)
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
-	ProjectileMovement->UpdatedComponent = ArrowMesh;
+	ProjectileMovement->UpdatedComponent = SphereCollision;
 	ProjectileMovement->InitialSpeed = 2500.0f;
 	ProjectileMovement->MaxSpeed = 2500.0f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
@@ -33,42 +52,84 @@ ARLArrow::ARLArrow()
 	ProjectileMovement->SetActive(false); // 초기에는 비활성화 상태
 	
 	// 기본 설정
-	Damage = 30;
+	Damage = 50;
 	Speed = 2500.0f;
 	LifeTime = 10.0f;
 	ArrowDirectionOffset = FRotator(0.0f, 0.0f, 0.0f);
 	bIsAttachedToSocket = false;
 	AttachedMeshComponent = nullptr;
 	AttachedSocketName = NAME_None;
-
-	// 오버랩 이벤트 바인딩
-	ArrowMesh->OnComponentBeginOverlap.AddDynamic(this, &ARLArrow::OnComponentBeginOverlap);
+	
+	// 파티클 설정 초기화
+	TrailParticleOffset = FVector(0.0f, 0.0f, 0.0f);
+	
+	// 나이아가라 설정 초기화
+	TrailNiagaraEffect = nullptr;
+	TrailNiagaraComponent = nullptr;
 }
 
 void ARLArrow::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 오버랩 이벤트 바인딩 (스피어 콜리전에 바인딩)
+	SphereCollision->OnComponentBeginOverlap.AddDynamic(this, &ARLArrow::OnComponentBeginOverlap);
 }
 
-void ARLArrow::InitializeArrow(FVector StartLocation, FRotator Direction, int32 ArrowDamage, float ArrowSpeed)
+void ARLArrow::InitializeArrow(FVector StartLocation, APlayerController* PlayerController, int32 ArrowDamage, float ArrowSpeed)
 {
 	// 설정 적용
 	Damage = ArrowDamage;
 	Speed = ArrowSpeed;
 	
+	// 카메라의 Forward Vector로 목표 위치 계산
+	FVector TargetLocation;
+	FVector Direction;
+	
+	if (PlayerController && PlayerController->GetPawn())
+	{
+		// 카메라 컴포넌트 가져오기
+		UCameraComponent* CameraComponent = PlayerController->GetPawn()->FindComponentByClass<UCameraComponent>();
+		if (CameraComponent)
+		{
+			FVector CameraLocation = CameraComponent->GetComponentLocation();
+			FVector CameraForward = CameraComponent->GetForwardVector();
+			
+			// 카메라 앞쪽으로 10000 거리만큼 떨어진 위치를 목표로 설정
+			TargetLocation = CameraLocation + (CameraForward * 10000.0f);
+			Direction = (TargetLocation - StartLocation).GetSafeNormal();
+		}
+		else
+		{
+			// 카메라 컴포넌트가 없으면 플레이어의 Forward Vector 사용
+			FVector PlayerForward = PlayerController->GetPawn()->GetActorForwardVector();
+			TargetLocation = StartLocation + (PlayerForward * 10000.0f);
+			Direction = PlayerForward;
+		}
+	}
+	else
+	{
+		// PlayerController가 없으면 앞쪽으로 발사
+		Direction = FVector::ForwardVector;
+		TargetLocation = StartLocation + (Direction * 10000.0f);
+	}
+	
 	// 위치와 회전 설정
 	SetActorLocation(StartLocation);
-	SetActorRotation(Direction);
-	// + FRotator(0.0f, 5.0f, 5.0f)
+	FRotator TargetRotation = Direction.Rotation();
+	SetActorRotation(TargetRotation);
 
 	// 투사체 이동 설정 (발사 시에만 활성화)
 	if (ProjectileMovement)
 	{
 		ProjectileMovement->InitialSpeed = ArrowSpeed;
 		ProjectileMovement->MaxSpeed = ArrowSpeed;
-		ProjectileMovement->Velocity = (Direction + ArrowDirectionOffset).Vector() * ArrowSpeed;
+		ProjectileMovement->Velocity = Direction * ArrowSpeed;
 		ProjectileMovement->SetActive(true); // 발사 시에만 활성화
 	}
+	
+	// 트레일 나이아가라 이펙트 생성
+	CreateTrailNiagaraEffect();
 	
 	// 라이프타임 타이머 시작
 	GetWorldTimerManager().SetTimer(LifeTimeHandle, this, &ARLArrow::OnLifeTimeExpired, LifeTime, false);
@@ -99,7 +160,7 @@ void ARLArrow::AttachToSocket(USkeletalMeshComponent* TargetMesh, FName SocketNa
 	AttachedSocketName = SocketName;
 	
 	// 콜리전 비활성화
-	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SphereCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
 	UE_LOG(LogTemp, Log, TEXT("Arrow attached to socket: %s"), *SocketName.ToString());
 }
@@ -118,7 +179,7 @@ void ARLArrow::DetachFromSocket()
 	// DetachFromSocket()에서는 활성화하지 않음
 	
 	// 콜리전 활성화
-	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	SphereCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	
 	// 상태 초기화
 	bIsAttachedToSocket = false;
@@ -132,7 +193,7 @@ void ARLArrow::DeactivateArrow()
 {
 	// 화살 비활성화 (풀링용)
 	SetActorHiddenInGame(true);
-	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SphereCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
 	// 투사체 이동 비활성화
 	if (ProjectileMovement)
@@ -142,6 +203,13 @@ void ARLArrow::DeactivateArrow()
 	
 	// 타이머 정리
 	GetWorldTimerManager().ClearTimer(LifeTimeHandle);
+	
+	// 트레일 나이아가라 컴포넌트 제거
+	if (TrailNiagaraComponent)
+	{
+		TrailNiagaraComponent->DestroyComponent();
+		TrailNiagaraComponent = nullptr;
+	}
 	
 	// 소켓 분리
 	if (bIsAttachedToSocket)
@@ -154,7 +222,7 @@ void ARLArrow::ActivateArrow()
 {
 	// 화살 활성화 (풀링용)
 	SetActorHiddenInGame(false);
-	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	SphereCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	
 	// ProjectileMovement는 InitializeArrow()에서 발사할 때만 활성화
 	// 여기서는 활성화하지 않음
@@ -164,6 +232,13 @@ void ARLArrow::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 {
 	// 소켓에 부착된 상태에서는 오버랩 무시
 	if (bIsAttachedToSocket)
+	{
+		return;
+	}
+
+	ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(OtherActor);
+
+	if (Player)
 	{
 		return;
 	}
@@ -181,6 +256,17 @@ void ARLArrow::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 			OtherActor->TakeDamage(Damage, DamageEvent, nullptr, this);
 			UE_LOG(LogTemp, Log, TEXT("Arrow overlapped with enemy for %d damage"), Damage);
 		}
+
+		// 적에게 데미지 적용
+		if (ARLCharacterEnemyDragon* Enemy = Cast<ARLCharacterEnemyDragon>(OtherActor))
+		{
+			FPointDamageEvent DamageEvent;
+			DamageEvent.Damage = Damage;
+			DamageEvent.HitInfo = SweepResult;
+
+			OtherActor->TakeDamage(Damage, DamageEvent, nullptr, this);
+			UE_LOG(LogTemp, Log, TEXT("Arrow overlapped with enemy for %d damage"), Damage);
+		}
 		
 		// 화살 비활성화
 		DeactivateArrow();
@@ -192,4 +278,32 @@ void ARLArrow::OnLifeTimeExpired()
 	// 라이프타임 만료 시 화살 비활성화
 	DeactivateArrow();
 	UE_LOG(LogTemp, Log, TEXT("Arrow lifetime expired"));
-} 
+}
+
+
+void ARLArrow::CreateTrailNiagaraEffect()
+{
+	if (TrailNiagaraEffect)
+	{
+		// 기존 트레일 나이아가라 컴포넌트가 있다면 제거
+		if (TrailNiagaraComponent)
+		{
+			TrailNiagaraComponent->DestroyComponent();
+		}
+		
+		// 트레일 나이아가라 컴포넌트 생성 (x축 90도 회전)
+		TrailNiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			TrailNiagaraEffect,
+			ArrowMesh,
+			NAME_None,
+			TrailParticleOffset,
+			FRotator(90.0f, 0.0f, 0.0f), // x축으로 90도 회전
+			EAttachLocation::KeepRelativeOffset,
+			true // Auto destroy
+		);
+		
+		UE_LOG(LogTemp, Log, TEXT("Arrow trail Niagara effect created with 90-degree X rotation"));
+	}
+}
+
+ 

@@ -82,6 +82,13 @@ ARLCharacterPlayer::ARLCharacterPlayer()
     bIsLoadingArrow = false;
     bIsArrowLoaded = false;
     LoadedArrow = nullptr;
+    
+    // 차징 시스템 초기화
+    bIsChargingArrow = false;
+    CurrentChargeTime = 0.0f;
+    MaxChargeTime = 1.0f;  // 최대 1초 차징
+    MinArrowSpeed = 300.0f;  // 최소 속도
+    MaxArrowSpeed = 4000.0f; // 최대 속도
 
     // 카메라 위치 초기화
     NormalCameraPosition = FVector(0.0f, 0.0f, 0.0f);
@@ -136,6 +143,22 @@ void ARLCharacterPlayer::BeginPlay()
 
     SkillCoolChange.AddUObject(PlayerUI, &URLPlayerUI::SkillCoolTime);
     PlayerHpChange.AddUObject(PlayerUI, &URLPlayerUI::PlayerCalculateHp);
+    
+    // 에이밍 상태 변화 델리게이트 바인딩
+    AimingStateChanged.AddLambda([this](bool bIsAiming)
+    {
+        if (PlayerUI)
+        {
+            if (bIsAiming)
+            {
+                PlayerUI->ShowArrowPoint();
+            }
+            else
+            {
+                PlayerUI->HideArrowPoint();
+            }
+        }
+    });
 
     PlayerHpChange.Broadcast(CurrentHp, MaxHp);
 
@@ -785,6 +808,9 @@ void ARLCharacterPlayer::Attack()
 void ARLCharacterPlayer::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+    
+    // 차징 시스템 업데이트
+    UpdateCharging(DeltaTime);
     if (GliderComponent && GliderComponent->IsGliderActive())
     {
         FVector Start = GetActorLocation();
@@ -865,6 +891,9 @@ void ARLCharacterPlayer::StartAiming()
 
     bIsAiming = true;
     
+    // 에이밍 상태 변화 델리게이트 브로드캐스트
+    AimingStateChanged.Broadcast(true);
+    
     // 카메라 위치를 에이밍 모드로 변경 (FollowCamera의 상대적 위치)
     if (FollowCamera)
     {
@@ -885,13 +914,6 @@ void ARLCharacterPlayer::StartAiming()
     {
         UGameplayStatics::PlaySoundAtLocation(this, BowDrawSound, GetActorLocation());
     }
-    
-    // 활 시위를 당기는 몽타주 실행
-    if (BowDrawMontage && AnimInstance)
-    {
-        AnimInstance->Montage_Play(BowDrawMontage);
-        UE_LOG(LogTemp, Log, TEXT("Bow draw montage started"));
-    }
 
     // 활 모드: 화살 장전 시작
     StartLoadingArrow();
@@ -908,6 +930,9 @@ void ARLCharacterPlayer::StopAiming()
     }
 
     bIsAiming = false;
+    
+    // 에이밍 상태 변화 델리게이트 브로드캐스트
+    AimingStateChanged.Broadcast(false);
     
     // 카메라 위치를 일반 모드로 복원 (FollowCamera의 상대적 위치)
     if (FollowCamera)
@@ -987,20 +1012,49 @@ void ARLCharacterPlayer::OnAttackReleased()
         // 활 모드이고 화살이 장전된 상태: 화살 발사
         FireArrow();
     }
+    else if (!bIsSword && bIsChargingArrow)
+    {
+        // 차징 중이었다면 차징 중지
+        StopChargingArrow();
+    }
+}
+
+void ARLCharacterPlayer::CallAttackCollision()
+{
+    ARLCharacterBase::CallAttackCollision();
 }
 
 // 화살 장전 시작
 void ARLCharacterPlayer::StartLoadingArrow()
 {
-    if (bIsLoadingArrow || bIsArrowLoaded)
+    if (bIsLoadingArrow || bIsArrowLoaded || !bIsAiming)
     {
         return; // 이미 장전 중이거나 장전된 상태
     }
 
+    // 활 시위를 당기는 몽타주 실행
+    if (BowDrawMontage && AnimInstance)
+    {
+        AnimInstance->Montage_Play(BowDrawMontage);
+        UE_LOG(LogTemp, Log, TEXT("Bow draw montage started"));
+    }
+
     bIsLoadingArrow = true;
+    bIsChargingArrow = true;
+    CurrentChargeTime = 0.0f;
+    
     LoadArrowToSocket();
     
-    UE_LOG(LogTemp, Log, TEXT("Arrow loading started"));
+    UE_LOG(LogTemp, Log, TEXT("Arrow loading and charging started"));
+}
+
+void ARLCharacterPlayer::StopChargingArrow()
+{
+    if (bIsChargingArrow)
+    {
+        bIsChargingArrow = false;
+        UE_LOG(LogTemp, Log, TEXT("Arrow charging stopped. Final charge time: %f"), CurrentChargeTime);
+    }
 }
 
 // 화살을 소켓에 장전
@@ -1041,17 +1095,22 @@ void ARLCharacterPlayer::FireArrow()
     }
 
     // 발사 위치 및 방향 설정
-    FVector PlayerLocation = GetActorLocation();
-    FVector FireLocation = PlayerLocation + FVector(0.0f, 0.0f, 40.0f);
+    FVector FireLocation = BowMeshComponent ? BowMeshComponent->GetComponentLocation() : GetActorLocation();
     
-    // 카메라가 바라보는 방향으로 발사 (컨트롤러 회전 기준)
-    FVector FireDirection = PlayerController ? PlayerController->GetControlRotation().Vector() : GetActorForwardVector();
+    // BowMeshComponent의 ForwardVector로 발사 방향 설정
+    FVector FireDirection = BowMeshComponent ? BowMeshComponent->GetForwardVector() : GetActorForwardVector();
 
     // 소켓에서 분리
     LoadedArrow->DetachFromSocket();
     
-    // 화살 초기화 및 발사
-    LoadedArrow->InitializeArrow(FireLocation, GetControlRotation(), 30, 2000.0f);
+    // 차징된 속도 계산
+    float ArrowSpeed = CalculateArrowSpeed();
+    
+    // 차징 종료
+    StopChargingArrow();
+    
+    // 화살 초기화 및 발사 (카메라 기준으로 수정)
+    LoadedArrow->InitializeArrow(FireLocation, PlayerController, 50, ArrowSpeed);
 
     // 화살 자동 반환을 위한 타이머 설정 (10초 후 풀에 반환)
     ARLArrow* FiredArrow = LoadedArrow;
@@ -1068,7 +1127,42 @@ void ARLCharacterPlayer::FireArrow()
     LoadedArrow = nullptr;
     bIsArrowLoaded = false;
     
-    UE_LOG(LogTemp, Log, TEXT("Arrow fired"));
+    UE_LOG(LogTemp, Log, TEXT("Arrow fired with speed: %f"), ArrowSpeed);
+}
+
+// 차징 시스템 업데이트
+void ARLCharacterPlayer::UpdateCharging(float DeltaTime)
+{
+    if (bIsChargingArrow)
+    {
+        CurrentChargeTime += DeltaTime;
+        
+        // 최대 차징 시간 제한
+        if (CurrentChargeTime >= MaxChargeTime)
+        {
+            CurrentChargeTime = MaxChargeTime;
+            UE_LOG(LogTemp, Log, TEXT("Arrow fully charged!"));
+        }
+    }
+}
+
+// 차징 시간에 따른 화살 속도 계산
+float ARLCharacterPlayer::CalculateArrowSpeed() const
+{
+    if (!bIsChargingArrow && CurrentChargeTime <= 0.0f)
+    {
+        return MinArrowSpeed; // 차징하지 않았으면 최소 속도
+    }
+    
+    // 차징 비율 계산 (0.0 ~ 1.0)
+    float ChargeRatio = FMath::Clamp(CurrentChargeTime / MaxChargeTime, 0.0f, 1.0f);
+    
+    // 선형 보간으로 속도 계산
+    float CalculatedSpeed = FMath::Lerp(MinArrowSpeed, MaxArrowSpeed, ChargeRatio);
+    
+    UE_LOG(LogTemp, Log, TEXT("Charge ratio: %f, Arrow speed: %f"), ChargeRatio, CalculatedSpeed);
+    
+    return CalculatedSpeed;
 }
 
 

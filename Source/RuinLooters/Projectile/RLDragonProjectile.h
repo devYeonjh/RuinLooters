@@ -4,6 +4,8 @@
 #include "RLProjectile.h"
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "NiagaraSystem.h"
+#include "NiagaraFunctionLibrary.h"
 #include "RLDragonProjectile.generated.h"
 
 /**
@@ -31,6 +33,10 @@ protected:
 	// 폭발 파티클 시스템 (발사체 파티클과 별개)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Explosion Effects")
 	UParticleSystem* ExplosionParticleTemplate;
+	
+	// 나이아가라 폭발 이펙트 (풀로 돌아가기 전 생성)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Explosion Effects")
+	UNiagaraSystem* ExplosionNiagaraEffect;
 	// 충돌 이벤트 오버라이드
 	virtual void OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
 
@@ -47,4 +53,8 @@ protected:
 	// 폭발 파티클 생성
 	UFUNCTION(BlueprintCallable, Category = "Dragon Projectile")
 	void CreateExplosionEffect(FVector Location);
+	
+	// 나이아가라 폭발 이펙트 생성 (풀로 돌아가기 전)
+	UFUNCTION(BlueprintCallable, Category = "Dragon Projectile")
+	void CreateNiagaraExplosionEffect(FVector Location);
 }; 

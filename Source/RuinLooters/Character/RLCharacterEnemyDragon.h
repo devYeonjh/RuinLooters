@@ -59,6 +59,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	class UAnimMontage* SkyBreathMontage;
 
+	// 죽음 시퀀스
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	class ULevelSequence* DeathSequence;
+
 	UPROPERTY()
 	class UAnimInstance* AnimInstance;
 
@@ -110,6 +114,13 @@ protected:
 	UPROPERTY()
 	class URLProjectilePool* ProjectilePool;
 
+	// HP 위젯 관련 (전체 화면 표시)
+	UPROPERTY()
+	TObjectPtr<class UHPWidget> HpWidget;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UHPWidget> HpWidgetClass;
+
 public:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -151,6 +162,12 @@ public:
 
 	// 공격 사운드 재생
 	void PlayAttackSound();
+
+	// HP 위젯 설정 (전체 화면)
+	void SetupHealthBarWidget();
+
+	// HP 위젯 제거
+	void RemoveHealthBarWidget();
 
 protected:
 	// 몽타주 종료 콜백
