@@ -8,6 +8,7 @@
 #include "Components/WidgetComponent.h"
 #include "UI/HPWidget.h"
 #include "Engine/DamageEvents.h"
+#include "Weapon/RLSword.h"
 
 ARLCharacterEnemy::ARLCharacterEnemy()
 {
@@ -133,6 +134,20 @@ void ARLCharacterEnemy::Die()
     Super::Die();
 
     Player->SetMoney(Player->GetMoney() + GetMoney());
+
+    // 무기 정보를 가져와서 WeaponBP 스폰
+    if (GameInstance)
+    {
+        if (FWeaponTableRow* WeaponInfo = GameInstance->GetWeaponInformation(CharacterWeaponName))
+        {
+            if (WeaponInfo->WeaponBP)
+            {
+                FVector SpawnLocation = GetActorLocation();
+                FRotator SpawnRotation = GetActorRotation();
+                GetWorld()->SpawnActor<ARLSword>(WeaponInfo->WeaponBP, SpawnLocation, SpawnRotation);
+            }
+        }
+    }
 
     if (Controller)
     {
