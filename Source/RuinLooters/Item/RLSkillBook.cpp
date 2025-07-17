@@ -16,6 +16,10 @@ void ARLSkillBook::BeginPlay()
 	Super::BeginPlay();
 
 	DroppedItemOverlapBox->OnComponentBeginOverlap.AddDynamic(this, &ARLSkillBook::OnPlayerOverlap);
+
+	SkillBook = GameInstance->GetSkillBookInformation(DroppedItemName);
+
+	DroppedItemMainBody->SetStaticMesh(SkillBook->StaticMesh);
 }
 
 void ARLSkillBook::OnPlayerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -23,8 +27,6 @@ void ARLSkillBook::OnPlayerOverlap(UPrimitiveComponent* OverlappedComponent, AAc
 	ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(OtherActor);
 	if (Player)
 	{
-		SkillBook = GameInstance->GetSkillBookInformation(DroppedItemName);
-
 		UE_LOG(LogTemp, Warning, TEXT("MaxHp: %.1f ."), Player->GetMaxHp());
 		UE_LOG(LogTemp, Warning, TEXT("defence: %d ."), Player->GetDefence());
 

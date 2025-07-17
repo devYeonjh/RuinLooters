@@ -16,6 +16,10 @@ void ARLPotion::BeginPlay()
 	Super::BeginPlay();
 
 	DroppedItemOverlapBox->OnComponentBeginOverlap.AddDynamic(this, &ARLPotion::OnPlayerOverlap);
+
+	Potion = GameInstance->GetPotionInformation(DroppedItemName);
+
+	DroppedItemMainBody->SetStaticMesh(Potion->StaticMesh);
 }
 
 void ARLPotion::OnPlayerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -23,8 +27,6 @@ void ARLPotion::OnPlayerOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 	ARLCharacterPlayer* Player = Cast<ARLCharacterPlayer>(OtherActor);
 	if (Player)
 	{
-		Potion = GameInstance->GetPotionInformation(DroppedItemName);
-
 		Player->TakeCharacterHeal(Potion->HealAmount);
 
 		UE_LOG(LogTemp, Warning, TEXT("HealAmount: %d ."), Potion->HealAmount);
