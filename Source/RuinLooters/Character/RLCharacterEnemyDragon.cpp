@@ -20,6 +20,12 @@
 #include "AIController.h"
 #include "Engine/DamageEvents.h"
 #include "Particles/ParticleSystem.h"
+#include "Blueprint/UserWidget.h"
+#include "UI/HPWidget.h"
+#include "LevelSequence.h"
+#include "LevelSequenceActor.h"
+#include "LevelSequencePlayer.h"
+#include "MovieSceneSequencePlayer.h"
 
 ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 {
@@ -58,6 +64,9 @@ ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 	GroundBreathMontage = nullptr;
 	SkyBreathMontage = nullptr;
 	
+	// 죽음 시퀀스 초기화
+	DeathSequence = nullptr;
+	
 	// 사운드 초기화
 	AttackSound = nullptr;
 	HitSound = nullptr;
@@ -71,6 +80,9 @@ ARLCharacterEnemyDragon::ARLCharacterEnemyDragon()
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Block);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+
+	// HP 위젯 초기화 (전체 화면 표시로 변경)
+	HpWidget = nullptr;
 }
 
 void ARLCharacterEnemyDragon::BeginPlay()
@@ -103,6 +115,9 @@ void ARLCharacterEnemyDragon::BeginPlay()
 
 void ARLCharacterEnemyDragon::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	// HP 위젯 제거
+	RemoveHealthBarWidget();
+	
 	// 투사체 풀 정리
 	if (ProjectilePool)
 	{
@@ -136,6 +151,12 @@ float ARLCharacterEnemyDragon::TakeDamage(float DamageAmount, struct FDamageEven
 	if (HitSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, HitSound, GetActorLocation());
+	}
+	
+	// HP 위젯 업데이트
+	if (HpWidget)
+	{
+		HpWidget->CalculateHp(CurrentHp, MaxHp);
 	}
 	
 	// 데미지 로그 출력
@@ -178,6 +199,18 @@ void ARLCharacterEnemyDragon::Die()
 		UGameplayStatics::PlaySoundAtLocation(this, DieSound, GetActorLocation());
 	}
 	
+	// 죽음 시퀀스 재생
+	if (DeathSequence)
+	{
+		ALevelSequenceActor* SequenceActor = GetWorld()->SpawnActor<ALevelSequenceActor>(ALevelSequenceActor::StaticClass());
+		if (SequenceActor)
+		{
+			SequenceActor->SetSequence(DeathSequence);
+			SequenceActor->GetSequencePlayer()->Play();
+			UE_LOG(LogTemp, Warning, TEXT("Dragon death sequence started"));
+		}
+	}
+	
 	// 죽음 애니메이션 재생
 	if (DieMontage && AnimInstance)
 	{
@@ -195,6 +228,9 @@ void ARLCharacterEnemyDragon::Die()
 	{
 		DragonDie.Broadcast();
 	}
+	
+	// HP 위젯 제거
+	RemoveHealthBarWidget();
 	
 	// 3초 후 액터 파괴
 	FTimerHandle TimerHandle;
@@ -416,6 +452,65 @@ void ARLCharacterEnemyDragon::FireBreathProjectile()
 	// ARLProjectile::OnLifeTimeExpired()에서 자동으로 풀에 반환됨
 	
 	UE_LOG(LogTemp, Log, TEXT("Dragon breath projectile fired with auto-return on lifetime expiration"));
+}
+
+void ARLCharacterEnemyDragon::SetupHealthBarWidget()
+{
+	// HpWidgetClass가 설정되어 있는지 확인
+	if (!HpWidgetClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Dragon HpWidgetClass is not set for %s"), *GetName());
+		return;
+	}
+
+	// 이미 위젯이 설정되어 있다면 반환
+	if (HpWidget)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Dragon HP widget already set up for %s"), *GetName());
+		return;
+	}
+
+	// 플레이어 컨트롤러 가져오기
+	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+	if (!PlayerController)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to get PlayerController for Dragon %s"), *GetName());
+		return;
+	}
+
+	// 전체 화면 위젯 생성
+	HpWidget = CreateWidget<UHPWidget>(PlayerController, HpWidgetClass);
+	if (!HpWidget)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to create HP widget for Dragon %s"), *GetName());
+		return;
+	}
+
+	// 뷰포트에 추가 (전체 화면)
+	HpWidget->AddToViewport();
+	
+	// 초기 체력 값 설정
+	GetWorldTimerManager().SetTimerForNextTick([this]()
+	{
+		if (HpWidget)
+		{
+			HpWidget->CalculateHp(CurrentHp, MaxHp);
+		}
+	});
+
+	UE_LOG(LogTemp, Warning, TEXT("Successfully setup fullscreen HP widget for Dragon %s"), *GetName());
+}
+
+void ARLCharacterEnemyDragon::RemoveHealthBarWidget()
+{
+	if (HpWidget)
+	{
+		// 뷰포트에서 제거
+		HpWidget->RemoveFromViewport();
+		HpWidget = nullptr;
+		
+		UE_LOG(LogTemp, Warning, TEXT("Dragon HP widget removed from viewport"));
+	}
 }
 
 void ARLCharacterEnemyDragon::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)

@@ -7,6 +7,7 @@
 #include "GameFramework/Pawn.h"
 #include "Character/RLCharacterPlayer.h"
 #include "AI/RLEnemyAIController.h"
+#include "Character/RLCharacterEnemyDragon.h"
 
 void URLBTService_CheckDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
@@ -16,6 +17,7 @@ void URLBTService_CheckDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uin
     ARLCharacterPlayer* Target = Cast<ARLCharacterPlayer>(Blackboard->GetValueAsObject(TargetKey.SelectedKeyName));
     APawn* SelfPawn = OwnerComp.GetAIOwner()->GetPawn();
 
+    bool PrebInRange = Blackboard->GetValueAsBool(bInRangeKey.SelectedKeyName);
     bool bInRange = false;
 
     if (Target && SelfPawn)
@@ -23,6 +25,15 @@ void URLBTService_CheckDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uin
         const float Distance = FVector::Dist(SelfPawn->GetActorLocation(), Target->GetActorLocation());
         // 거리가 어택랜지보다 짧으면 true
         bInRange = (Distance <= AttackRange);
+    }
+
+    // bInRange 값이 true고, 빙의된 캐릭터가 ARLCharacterEnemyDragon이라면 HP 위젯 설정
+    if (bInRange != PrebInRange && bInRange == true)
+    {
+        if (ARLCharacterEnemyDragon* DragonPawn = Cast<ARLCharacterEnemyDragon>(SelfPawn))
+        {
+            DragonPawn->SetupHealthBarWidget();
+        }
     }
 
     // 거리에 따른 bInRange를 블랙보드에 반환

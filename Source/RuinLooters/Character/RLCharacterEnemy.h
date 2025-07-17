@@ -32,7 +32,7 @@ protected:
 	class ARLCharacterPlayer* Player;
 
 	// Enemy 체력 Hp 위젯
-	UPROPERTY(EditAnywhere, Category = "UI")
+	UPROPERTY()
 	TObjectPtr<class UHPWidget> HpWidget;
 
 	UPROPERTY(EditAnywhere, Category = "UI")

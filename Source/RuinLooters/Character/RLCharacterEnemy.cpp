@@ -38,7 +38,15 @@ FGenericTeamId ARLCharacterEnemy::GetGenericTeamId() const
 
 float ARLCharacterEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
+    float PreviousHp = CurrentHp;
     float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+    
+    // 체력이 감소했고 위젯이 아직 설정되지 않았다면 설정
+    if (MaxHp > CurrentHp && !HpWidget)
+    {
+        SetupHealthBarWidget();
+    }
+    
     EnemyHpChange.Broadcast(CurrentHp, MaxHp);
     return ActualDamage;
 }
@@ -56,8 +64,6 @@ void ARLCharacterEnemy::BeginPlay()
     // 필요한 플레이어 찾기
     Player = Cast<ARLCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(World, 0));
 
-    // HP 위젯 설정
-    SetupHealthBarWidget();
 }
 
 void ARLCharacterEnemy::SetupHealthBarWidget()

@@ -52,10 +52,24 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow Settings")
 	FRotator ArrowDirectionOffset;
 
+	// 파티클 이팩트 설정
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle Effects")
+	class UParticleSystem* TrailParticleTemplate;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle Effects")
+	class UParticleSystem* HitParticleTemplate;
+
+	// 파티클 위치 오프셋 (블루프린트에서 수정 가능)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle Effects")
+	FVector TrailParticleOffset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle Effects")
+	FVector HitParticleOffset;
+
 public:
-	// 화살 초기화
+	// 화살 초기화 (카메라 기준 목표 위치 사용)
 	UFUNCTION(BlueprintCallable, Category = "Arrow")
-	void InitializeArrow(FVector StartLocation, FVector Direction, int32 ArrowDamage = 30, float ArrowSpeed = 2500.0f);
+	void InitializeArrow(FVector StartLocation, class APlayerController* PlayerController, int32 ArrowDamage = 30, float ArrowSpeed = 2500.0f);
 	
 	// 소켓에 부착용 함수
 	UFUNCTION(BlueprintCallable, Category = "Arrow")
@@ -89,6 +103,14 @@ private:
 	// 라이프타임 타이머
 	FTimerHandle LifeTimeHandle;
 
+	// 파티클 시스템 컴포넌트들
+	UPROPERTY()
+	class UParticleSystemComponent* TrailParticleComponent;
+
 	// 라이프타임 만료 처리
 	void OnLifeTimeExpired();
+
+	// 파티클 이펙트 생성
+	void CreateTrailParticle();
+	void CreateHitParticle(FVector HitLocation);
 }; 

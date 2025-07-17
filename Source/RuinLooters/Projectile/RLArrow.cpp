@@ -3,6 +3,7 @@
 #include "RLArrow.h"
 #include "Character/RLCharacterEnemy.h"
 #include "Character/RLCharacterPlayer.h"
+#include "Character/RLCharacterEnemyDragon.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -10,6 +11,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "Engine/Engine.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "Engine/World.h"
+#include "Camera/CameraComponent.h"
 
 ARLArrow::ARLArrow()
 {
@@ -20,7 +25,7 @@ ARLArrow::ARLArrow()
 	RootComponent = SphereCollision;
 	
 	// 스피어 콜리전 설정 (오버랩용)
-	SphereCollision->SetSphereRadius(10.0f);
+	SphereCollision->SetSphereRadius(60.0f);
 	SphereCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	SphereCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
 	SphereCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
@@ -44,13 +49,20 @@ ARLArrow::ARLArrow()
 	ProjectileMovement->SetActive(false); // 초기에는 비활성화 상태
 	
 	// 기본 설정
-	Damage = 30;
+	Damage = 50;
 	Speed = 2500.0f;
 	LifeTime = 10.0f;
 	ArrowDirectionOffset = FRotator(0.0f, 0.0f, 0.0f);
 	bIsAttachedToSocket = false;
 	AttachedMeshComponent = nullptr;
 	AttachedSocketName = NAME_None;
+	
+	// 파티클 설정 초기화
+	TrailParticleTemplate = nullptr;
+	HitParticleTemplate = nullptr;
+	TrailParticleComponent = nullptr;
+	TrailParticleOffset = FVector(0.0f, 0.0f, 0.0f);
+	HitParticleOffset = FVector(0.0f, 0.0f, 0.0f);
 }
 
 void ARLArrow::BeginPlay()
@@ -61,28 +73,60 @@ void ARLArrow::BeginPlay()
 	SphereCollision->OnComponentBeginOverlap.AddDynamic(this, &ARLArrow::OnComponentBeginOverlap);
 }
 
-void ARLArrow::InitializeArrow(FVector StartLocation, FVector Direction, int32 ArrowDamage, float ArrowSpeed)
+void ARLArrow::InitializeArrow(FVector StartLocation, APlayerController* PlayerController, int32 ArrowDamage, float ArrowSpeed)
 {
 	// 설정 적용
 	Damage = ArrowDamage;
 	Speed = ArrowSpeed;
 	
+	// 카메라의 Forward Vector로 목표 위치 계산
+	FVector TargetLocation;
+	FVector Direction;
+	
+	if (PlayerController && PlayerController->GetPawn())
+	{
+		// 카메라 컴포넌트 가져오기
+		UCameraComponent* CameraComponent = PlayerController->GetPawn()->FindComponentByClass<UCameraComponent>();
+		if (CameraComponent)
+		{
+			FVector CameraLocation = CameraComponent->GetComponentLocation();
+			FVector CameraForward = CameraComponent->GetForwardVector();
+			
+			// 카메라 앞쪽으로 10000 거리만큼 떨어진 위치를 목표로 설정
+			TargetLocation = CameraLocation + (CameraForward * 10000.0f);
+			Direction = (TargetLocation - StartLocation).GetSafeNormal();
+		}
+		else
+		{
+			// 카메라 컴포넌트가 없으면 플레이어의 Forward Vector 사용
+			FVector PlayerForward = PlayerController->GetPawn()->GetActorForwardVector();
+			TargetLocation = StartLocation + (PlayerForward * 10000.0f);
+			Direction = PlayerForward;
+		}
+	}
+	else
+	{
+		// PlayerController가 없으면 앞쪽으로 발사
+		Direction = FVector::ForwardVector;
+		TargetLocation = StartLocation + (Direction * 10000.0f);
+	}
+	
 	// 위치와 회전 설정
 	SetActorLocation(StartLocation);
-	
-	// Direction이 FVector이므로 Rotation으로 변환
 	FRotator TargetRotation = Direction.Rotation();
 	SetActorRotation(TargetRotation);
-	// + FRotator(0.0f, 5.0f, 5.0f)
 
 	// 투사체 이동 설정 (발사 시에만 활성화)
 	if (ProjectileMovement)
 	{
 		ProjectileMovement->InitialSpeed = ArrowSpeed;
 		ProjectileMovement->MaxSpeed = ArrowSpeed;
-		ProjectileMovement->Velocity = Direction.GetSafeNormal() * ArrowSpeed;
+		ProjectileMovement->Velocity = Direction * ArrowSpeed;
 		ProjectileMovement->SetActive(true); // 발사 시에만 활성화
 	}
+	
+	// 트레일 파티클 생성
+	CreateTrailParticle();
 	
 	// 라이프타임 타이머 시작
 	GetWorldTimerManager().SetTimer(LifeTimeHandle, this, &ARLArrow::OnLifeTimeExpired, LifeTime, false);
@@ -157,6 +201,13 @@ void ARLArrow::DeactivateArrow()
 	// 타이머 정리
 	GetWorldTimerManager().ClearTimer(LifeTimeHandle);
 	
+	// 트레일 파티클 제거
+	if (TrailParticleComponent)
+	{
+		TrailParticleComponent->DestroyComponent();
+		TrailParticleComponent = nullptr;
+	}
+	
 	// 소켓 분리
 	if (bIsAttachedToSocket)
 	{
@@ -201,6 +252,23 @@ void ARLArrow::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 			
 			OtherActor->TakeDamage(Damage, DamageEvent, nullptr, this);
 			UE_LOG(LogTemp, Log, TEXT("Arrow overlapped with enemy for %d damage"), Damage);
+			
+			// 히트 파티클 생성
+			CreateHitParticle(SweepResult.Location);
+		}
+
+		// 적에게 데미지 적용
+		if (ARLCharacterEnemyDragon* Enemy = Cast<ARLCharacterEnemyDragon>(OtherActor))
+		{
+			FPointDamageEvent DamageEvent;
+			DamageEvent.Damage = Damage;
+			DamageEvent.HitInfo = SweepResult;
+
+			OtherActor->TakeDamage(Damage, DamageEvent, nullptr, this);
+			UE_LOG(LogTemp, Log, TEXT("Arrow overlapped with enemy for %d damage"), Damage);
+
+			// 히트 파티클 생성
+			CreateHitParticle(SweepResult.Location);
 		}
 		
 		// 화살 비활성화
@@ -213,4 +281,46 @@ void ARLArrow::OnLifeTimeExpired()
 	// 라이프타임 만료 시 화살 비활성화
 	DeactivateArrow();
 	UE_LOG(LogTemp, Log, TEXT("Arrow lifetime expired"));
+}
+
+void ARLArrow::CreateTrailParticle()
+{
+	if (TrailParticleTemplate)
+	{
+		// 기존 트레일 파티클이 있다면 제거
+		if (TrailParticleComponent)
+		{
+			TrailParticleComponent->DestroyComponent();
+		}
+		
+		// 트레일 파티클 컴포넌트 생성
+		TrailParticleComponent = UGameplayStatics::SpawnEmitterAttached(
+			TrailParticleTemplate,
+			ArrowMesh,
+			NAME_None,
+			TrailParticleOffset,
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset,
+			true
+		);
+		
+		UE_LOG(LogTemp, Log, TEXT("Arrow trail particle created"));
+	}
+}
+
+void ARLArrow::CreateHitParticle(FVector HitLocation)
+{
+	if (HitParticleTemplate)
+	{
+		// 히트 파티클 생성 (월드에 직접 스폰)
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			HitParticleTemplate,
+			HitLocation + HitParticleOffset,
+			FRotator::ZeroRotator,
+			true
+		);
+		
+		UE_LOG(LogTemp, Log, TEXT("Arrow hit particle created at location: %s"), *HitLocation.ToString());
+	}
 } 

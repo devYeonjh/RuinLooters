@@ -183,6 +183,9 @@ protected:
 
 	// 안전 타이머 핸들
 	FTimerHandle SafetyTimerHandle;
+	
+	// 화살 차징 타이머 핸들
+	FTimerHandle ChargingTimerHandle;
 
 public:
 	FORCEINLINE ARLCharacterPlayer* GetPlayer() { return this; };
@@ -304,6 +307,22 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
 	bool bIsArrowLoaded;
 	
+	// 화살 차징 시스템
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
+	bool bIsChargingArrow;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
+	float CurrentChargeTime;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow")
+	float MaxChargeTime;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow")
+	float MinArrowSpeed;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow")
+	float MaxArrowSpeed;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow")
 	TSubclassOf<class ARLArrow> ArrowClass;
 	
@@ -337,10 +356,17 @@ protected:
 	void StartLoadingArrow();
 	
 	UFUNCTION()
+	void StopChargingArrow();
+	
+	UFUNCTION()
 	void FireArrow();
 	
 	UFUNCTION()
 	void LoadArrowToSocket();
+	
+	// 차징 시스템 관련 함수
+	void UpdateCharging(float DeltaTime);
+	float CalculateArrowSpeed() const;
 	
 
 
