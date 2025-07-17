@@ -15,6 +15,9 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Engine/World.h"
 #include "Camera/CameraComponent.h"
+#include "NiagaraSystem.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 
 ARLArrow::ARLArrow()
 {
@@ -58,11 +61,11 @@ ARLArrow::ARLArrow()
 	AttachedSocketName = NAME_None;
 	
 	// 파티클 설정 초기화
-	TrailParticleTemplate = nullptr;
-	HitParticleTemplate = nullptr;
-	TrailParticleComponent = nullptr;
 	TrailParticleOffset = FVector(0.0f, 0.0f, 0.0f);
-	HitParticleOffset = FVector(0.0f, 0.0f, 0.0f);
+	
+	// 나이아가라 설정 초기화
+	TrailNiagaraEffect = nullptr;
+	TrailNiagaraComponent = nullptr;
 }
 
 void ARLArrow::BeginPlay()
@@ -125,8 +128,8 @@ void ARLArrow::InitializeArrow(FVector StartLocation, APlayerController* PlayerC
 		ProjectileMovement->SetActive(true); // 발사 시에만 활성화
 	}
 	
-	// 트레일 파티클 생성
-	CreateTrailParticle();
+	// 트레일 나이아가라 이펙트 생성
+	CreateTrailNiagaraEffect();
 	
 	// 라이프타임 타이머 시작
 	GetWorldTimerManager().SetTimer(LifeTimeHandle, this, &ARLArrow::OnLifeTimeExpired, LifeTime, false);
@@ -201,11 +204,11 @@ void ARLArrow::DeactivateArrow()
 	// 타이머 정리
 	GetWorldTimerManager().ClearTimer(LifeTimeHandle);
 	
-	// 트레일 파티클 제거
-	if (TrailParticleComponent)
+	// 트레일 나이아가라 컴포넌트 제거
+	if (TrailNiagaraComponent)
 	{
-		TrailParticleComponent->DestroyComponent();
-		TrailParticleComponent = nullptr;
+		TrailNiagaraComponent->DestroyComponent();
+		TrailNiagaraComponent = nullptr;
 	}
 	
 	// 소켓 분리
@@ -252,9 +255,6 @@ void ARLArrow::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 			
 			OtherActor->TakeDamage(Damage, DamageEvent, nullptr, this);
 			UE_LOG(LogTemp, Log, TEXT("Arrow overlapped with enemy for %d damage"), Damage);
-			
-			// 히트 파티클 생성
-			CreateHitParticle(SweepResult.Location);
 		}
 
 		// 적에게 데미지 적용
@@ -266,9 +266,6 @@ void ARLArrow::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 
 			OtherActor->TakeDamage(Damage, DamageEvent, nullptr, this);
 			UE_LOG(LogTemp, Log, TEXT("Arrow overlapped with enemy for %d damage"), Damage);
-
-			// 히트 파티클 생성
-			CreateHitParticle(SweepResult.Location);
 		}
 		
 		// 화살 비활성화
@@ -283,44 +280,30 @@ void ARLArrow::OnLifeTimeExpired()
 	UE_LOG(LogTemp, Log, TEXT("Arrow lifetime expired"));
 }
 
-void ARLArrow::CreateTrailParticle()
+
+void ARLArrow::CreateTrailNiagaraEffect()
 {
-	if (TrailParticleTemplate)
+	if (TrailNiagaraEffect)
 	{
-		// 기존 트레일 파티클이 있다면 제거
-		if (TrailParticleComponent)
+		// 기존 트레일 나이아가라 컴포넌트가 있다면 제거
+		if (TrailNiagaraComponent)
 		{
-			TrailParticleComponent->DestroyComponent();
+			TrailNiagaraComponent->DestroyComponent();
 		}
 		
-		// 트레일 파티클 컴포넌트 생성
-		TrailParticleComponent = UGameplayStatics::SpawnEmitterAttached(
-			TrailParticleTemplate,
+		// 트레일 나이아가라 컴포넌트 생성 (x축 90도 회전)
+		TrailNiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			TrailNiagaraEffect,
 			ArrowMesh,
 			NAME_None,
 			TrailParticleOffset,
-			FRotator::ZeroRotator,
+			FRotator(90.0f, 0.0f, 0.0f), // x축으로 90도 회전
 			EAttachLocation::KeepRelativeOffset,
-			true
+			true // Auto destroy
 		);
 		
-		UE_LOG(LogTemp, Log, TEXT("Arrow trail particle created"));
+		UE_LOG(LogTemp, Log, TEXT("Arrow trail Niagara effect created with 90-degree X rotation"));
 	}
 }
 
-void ARLArrow::CreateHitParticle(FVector HitLocation)
-{
-	if (HitParticleTemplate)
-	{
-		// 히트 파티클 생성 (월드에 직접 스폰)
-		UGameplayStatics::SpawnEmitterAtLocation(
-			GetWorld(),
-			HitParticleTemplate,
-			HitLocation + HitParticleOffset,
-			FRotator::ZeroRotator,
-			true
-		);
-		
-		UE_LOG(LogTemp, Log, TEXT("Arrow hit particle created at location: %s"), *HitLocation.ToString());
-	}
-} 
+ 

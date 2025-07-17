@@ -143,6 +143,22 @@ void ARLCharacterPlayer::BeginPlay()
 
     SkillCoolChange.AddUObject(PlayerUI, &URLPlayerUI::SkillCoolTime);
     PlayerHpChange.AddUObject(PlayerUI, &URLPlayerUI::PlayerCalculateHp);
+    
+    // 에이밍 상태 변화 델리게이트 바인딩
+    AimingStateChanged.AddLambda([this](bool bIsAiming)
+    {
+        if (PlayerUI)
+        {
+            if (bIsAiming)
+            {
+                PlayerUI->ShowArrowPoint();
+            }
+            else
+            {
+                PlayerUI->HideArrowPoint();
+            }
+        }
+    });
 
     PlayerHpChange.Broadcast(CurrentHp, MaxHp);
 
@@ -875,6 +891,9 @@ void ARLCharacterPlayer::StartAiming()
 
     bIsAiming = true;
     
+    // 에이밍 상태 변화 델리게이트 브로드캐스트
+    AimingStateChanged.Broadcast(true);
+    
     // 카메라 위치를 에이밍 모드로 변경 (FollowCamera의 상대적 위치)
     if (FollowCamera)
     {
@@ -911,6 +930,9 @@ void ARLCharacterPlayer::StopAiming()
     }
 
     bIsAiming = false;
+    
+    // 에이밍 상태 변화 델리게이트 브로드캐스트
+    AimingStateChanged.Broadcast(false);
     
     // 카메라 위치를 일반 모드로 복원 (FollowCamera의 상대적 위치)
     if (FollowCamera)

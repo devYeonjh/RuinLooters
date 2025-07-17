@@ -19,6 +19,9 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FPlayerCalculateHp, float /*CurrentHp*/, fl
 // 캐릭터 스킬 쿨타임 델리게이트
 DECLARE_MULTICAST_DELEGATE_OneParam(FSkillCoolTime, uint8 /*CoolCheck*/);
 
+// 에이밍 상태 변화 델리게이트
+DECLARE_MULTICAST_DELEGATE_OneParam(FAimingStateChanged, bool /*bIsAiming*/);
+
 UCLASS()
 class RUINLOOTERS_API ARLCharacterPlayer : public ARLCharacterBase, public IGenericTeamAgentInterface
 {
@@ -29,9 +32,10 @@ public:
 
 	uint8 bIsCharacterInteractWithNPC : 1;
 
-	// PlayerUI Widget -> Hp, SkillCool
+	// PlayerUI Widget -> Hp, SkillCool, Aiming
 	FPlayerCalculateHp PlayerHpChange;
 	FSkillCoolTime SkillCoolChange;
+	FAimingStateChanged AimingStateChanged;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Glider", meta = (AllowPrivateAccess = "true"))
 	URLGliderComponent* GliderComponent;
 

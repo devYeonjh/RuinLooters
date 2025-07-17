@@ -404,7 +404,7 @@ void ARLCharacterEnemyDragon::FireBreathProjectile()
 		if (AActor* FocusActor = AIController->GetFocusActor())
 		{
 			// 타겟의 위치로 방향 계산
-			FVector TargetLocation = FocusActor->GetActorLocation();
+			FVector TargetLocation = FocusActor->GetActorLocation() + FVector(0.0f, 0.0f, 100.0f);
 			FireDirection = (TargetLocation - DragonMouthLocation).GetSafeNormal();
 			
 			UE_LOG(LogTemp, Log, TEXT("Dragon firing at focus target: %s"), *TargetLocation.ToString());

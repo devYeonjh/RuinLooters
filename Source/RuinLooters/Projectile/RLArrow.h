@@ -9,6 +9,8 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Engine/Engine.h"
+#include "NiagaraSystem.h"
+#include "NiagaraFunctionLibrary.h"
 #include "RLArrow.generated.h"
 
 /**
@@ -52,19 +54,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow Settings")
 	FRotator ArrowDirectionOffset;
 
-	// 파티클 이팩트 설정
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle Effects")
-	class UParticleSystem* TrailParticleTemplate;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle Effects")
-	class UParticleSystem* HitParticleTemplate;
+	// 나이아가라 이펙트 설정
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Niagara Effects")
+	class UNiagaraSystem* TrailNiagaraEffect;
 
 	// 파티클 위치 오프셋 (블루프린트에서 수정 가능)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle Effects")
 	FVector TrailParticleOffset;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Particle Effects")
-	FVector HitParticleOffset;
 
 public:
 	// 화살 초기화 (카메라 기준 목표 위치 사용)
@@ -103,14 +99,13 @@ private:
 	// 라이프타임 타이머
 	FTimerHandle LifeTimeHandle;
 
-	// 파티클 시스템 컴포넌트들
+	// 나이아가라 컴포넌트들
 	UPROPERTY()
-	class UParticleSystemComponent* TrailParticleComponent;
+	class UNiagaraComponent* TrailNiagaraComponent;
 
 	// 라이프타임 만료 처리
 	void OnLifeTimeExpired();
 
-	// 파티클 이펙트 생성
-	void CreateTrailParticle();
-	void CreateHitParticle(FVector HitLocation);
+	// 나이아가라 이펙트 생성 (x축 90도 회전)
+	void CreateTrailNiagaraEffect();
 }; 
