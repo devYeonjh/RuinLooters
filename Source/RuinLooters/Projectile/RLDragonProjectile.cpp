@@ -23,7 +23,12 @@ ARLDragonProjectile::ARLDragonProjectile()
     // Block 충돌 이벤트 바인딩 (지형과의 충돌 처리용)
     if (CapsuleCollision)
     {
-        CapsuleCollision->OnComponentHit.AddDynamic(this, &ARLDragonProjectile::OnHit);
+        // 지형과의 Block 충돌만 명시적으로 설정
+        CapsuleCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
+        // 폰(플레이어, 적)과는 Overlap 유지
+        CapsuleCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+        // 활과의 충돌 방지를 위해 WorldDynamic 채널 무시
+        CapsuleCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Ignore);
     }
     
     UE_LOG(LogTemp, Log, TEXT("Dragon Projectile created with hit detection"));
@@ -52,6 +57,14 @@ void ARLDragonProjectile::SetExplosionParticleTemplate(UParticleSystem* InExplos
 {
     ExplosionParticleTemplate = InExplosionTemplate;
     UE_LOG(LogTemp, Log, TEXT("Dragon Projectile explosion particle template set"));
+}
+
+void ARLDragonProjectile::BeginPlay()
+{
+    Super::BeginPlay();
+
+    CapsuleCollision->OnComponentHit.AddDynamic(this, &ARLDragonProjectile::OnHit);
+    CapsuleCollision->OnComponentBeginOverlap.AddDynamic(this, &ARLDragonProjectile::OnOverlap);
 }
 
 void ARLDragonProjectile::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
