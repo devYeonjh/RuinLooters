@@ -22,6 +22,9 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FSkillCoolTime, uint8 /*CoolCheck*/);
 // 에이밍 상태 변화 델리게이트
 DECLARE_MULTICAST_DELEGATE_OneParam(FAimingStateChanged, bool /*bIsAiming*/);
 
+// 화살 갯수 변화 델리게이트
+DECLARE_MULTICAST_DELEGATE_TwoParams(FArrowCountChanged, int32 /*CurrentCount*/, int32 /*MaxCount*/);
+
 UCLASS()
 class RUINLOOTERS_API ARLCharacterPlayer : public ARLCharacterBase, public IGenericTeamAgentInterface
 {
@@ -32,10 +35,11 @@ public:
 
 	uint8 bIsCharacterInteractWithNPC : 1;
 
-	// PlayerUI Widget -> Hp, SkillCool, Aiming
+	// PlayerUI Widget -> Hp, SkillCool, Aiming, Arrow
 	FPlayerCalculateHp PlayerHpChange;
 	FSkillCoolTime SkillCoolChange;
 	FAimingStateChanged AimingStateChanged;
+	FArrowCountChanged ArrowCountChanged;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Glider", meta = (AllowPrivateAccess = "true"))
 	URLGliderComponent* GliderComponent;
 
@@ -190,6 +194,13 @@ protected:
 	
 	// 화살 차징 타이머 핸들
 	FTimerHandle ChargingTimerHandle;
+	
+	// 화살 갯수 시스템
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
+	int32 CurrentArrowCount;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow")
+	int32 MaxArrowCount;
 
 public:
 	FORCEINLINE ARLCharacterPlayer* GetPlayer() { return this; };
@@ -207,6 +218,8 @@ public:
 	FORCEINLINE void StageIndexUp() { StageIndex++; };
 	FORCEINLINE bool GetbIsSword() { return bIsSword; };
 	FORCEINLINE bool GetbIsAiming() { return bIsAiming; };
+	FORCEINLINE int32 GetCurrentArrowCount() { return CurrentArrowCount; };
+	FORCEINLINE int32 GetMaxArrowCount() { return MaxArrowCount; };
 
 	// 인터페이스의 메서드 오버라이드
 	virtual FGenericTeamId GetGenericTeamId() const override;

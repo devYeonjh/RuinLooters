@@ -121,12 +121,16 @@ void ARLCharacterBase::CallAttackCollision()
     FVector CapsuleCenter = StartLocation + ForwardVector * (Range * 0.5f);
     
     // 캡슐 콜리전 파라미터 설정 (둘레는 고정, 길이는 Range 값 사용)
-    float CapsuleRadius = 50.0f; // 고정된 둘레
+    float CapsuleRadius = 30.0f; // 고정된 둘레
     float CapsuleHalfHeight = Range * 0.5f; // Range 값을 길이로 사용
     
     // 콜리전 쿼리 파라미터 설정
     FCollisionQueryParams QueryParams;
     QueryParams.AddIgnoredActor(this); // 자신은 제외
+    
+    // 캐릭터의 로컬 Y축(Right Vector)을 기준으로 90도 회전된 쿼터니언 생성
+    FVector LocalRightVector = GetActorRightVector();
+    FQuat CapsuleRotation = FQuat(LocalRightVector, FMath::DegreesToRadians(90.0f));
     
     // 캡슐 모양으로 충돌 검사
     TArray<FHitResult> HitResults;
@@ -134,33 +138,11 @@ void ARLCharacterBase::CallAttackCollision()
         HitResults,
         StartLocation,
         CapsuleCenter + ForwardVector * CapsuleHalfHeight,
-        FQuat::Identity,
+        CapsuleRotation,
         ECC_Pawn,
         FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight),
         QueryParams
     );
-    
-    // 에디터에서만 디버그 캡슐 표시
-#if WITH_EDITOR
-        FColor DebugColor = bHit ? FColor::Red : FColor::Green;
-        DrawDebugCapsule(
-            GetWorld(),
-            CapsuleCenter,
-            CapsuleHalfHeight,
-            CapsuleRadius,
-            FQuat::Identity,
-            DebugColor,
-            false,
-            2.0f, // 2초간 표시
-            0,
-            2.0f // 선 두께
-        );
-        
-        // 공격 범위 정보 로그 출력
-        UE_LOG(LogTemp, Warning, TEXT("Attack Collision - Range: %.1f, Radius: %.1f, Hit: %s"), 
-            Range, CapsuleRadius, bHit ? TEXT("True") : TEXT("False"));
-    
-#endif
     
     if (bHit)
     {

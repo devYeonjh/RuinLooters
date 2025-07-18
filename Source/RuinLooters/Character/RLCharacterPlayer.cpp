@@ -89,6 +89,10 @@ ARLCharacterPlayer::ARLCharacterPlayer()
     MaxChargeTime = 1.0f;  // 최대 1초 차징
     MinArrowSpeed = 300.0f;  // 최소 속도
     MaxArrowSpeed = 4000.0f; // 최대 속도
+    
+    // 화살 갯수 초기화
+    MaxArrowCount = 30;      // 최대 화살 갯수
+    CurrentArrowCount = 30;  // 현재 화살 갯수 (기본값)
 
     // 카메라 위치 초기화
     NormalCameraPosition = FVector(0.0f, 0.0f, 0.0f);
@@ -143,6 +147,7 @@ void ARLCharacterPlayer::BeginPlay()
 
     SkillCoolChange.AddUObject(PlayerUI, &URLPlayerUI::SkillCoolTime);
     PlayerHpChange.AddUObject(PlayerUI, &URLPlayerUI::PlayerCalculateHp);
+    ArrowCountChanged.AddUObject(PlayerUI, &URLPlayerUI::UpdateArrowCount);
     
     // 에이밍 상태 변화 델리게이트 바인딩
     AimingStateChanged.AddLambda([this](bool bIsAiming)
@@ -159,6 +164,9 @@ void ARLCharacterPlayer::BeginPlay()
             }
         }
     });
+    
+    // 초기 화살 갯수 UI 업데이트
+    ArrowCountChanged.Broadcast(CurrentArrowCount, MaxArrowCount);
 
     PlayerHpChange.Broadcast(CurrentHp, MaxHp);
 
@@ -976,6 +984,23 @@ void ARLCharacterPlayer::ChangeForm()
         WeaponMeshComponent->SetVisibility(bIsSword); // 검 모드이면 표시, 활 모드이면 숨김
     }
     
+    // 화살 갯수 UI 표시/숨김 제어
+    if (PlayerUI)
+    {
+        if (!bIsSword) // 활 모드
+        {
+            PlayerUI->ShowArrowCount();
+            PlayerUI->ShowArrowIcon();
+            // 화살 갯수 업데이트
+            ArrowCountChanged.Broadcast(CurrentArrowCount, MaxArrowCount);
+        }
+        else // 검 모드
+        {
+            PlayerUI->HideArrowCount();
+            PlayerUI->HideArrowIcon();
+        }
+    }
+    
     // 에이밍 상태가 활성화되어 있다면 비활성화
     if (bIsAiming && bIsSword)
     {
@@ -1030,6 +1055,13 @@ void ARLCharacterPlayer::StartLoadingArrow()
     if (bIsLoadingArrow || bIsArrowLoaded || !bIsAiming)
     {
         return; // 이미 장전 중이거나 장전된 상태
+    }
+    
+    // 화살 갯수 확인
+    if (CurrentArrowCount <= 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No arrows remaining!"));
+        return; // 화살이 없으면 장전 불가
     }
 
     // 활 시위를 당기는 몽타주 실행
@@ -1111,6 +1143,13 @@ void ARLCharacterPlayer::FireArrow()
     
     // 화살 초기화 및 발사 (카메라 기준으로 수정)
     LoadedArrow->InitializeArrow(FireLocation, PlayerController, 50, ArrowSpeed);
+    
+    // 화살 갯수 감소
+    CurrentArrowCount--;
+    UE_LOG(LogTemp, Log, TEXT("Arrow fired! Remaining arrows: %d"), CurrentArrowCount);
+    
+    // 화살 갯수 UI 업데이트
+    ArrowCountChanged.Broadcast(CurrentArrowCount, MaxArrowCount);
 
     // 화살 자동 반환을 위한 타이머 설정 (10초 후 풀에 반환)
     ARLArrow* FiredArrow = LoadedArrow;
