@@ -304,9 +304,9 @@ void ARLCharacterEnemyDragon::CallAttackCollision()
 	);
 
 
-	FColor DebugColor = bHit ? FColor::Red : FColor::Green;
-	DrawDebugCapsule(GetWorld(), (StartLocation + EndLocation) / 2, CapsuleAttackHeight, CapsuleAttackRadius,
-		CapsuleRot, DebugColor, false, 2.0f);
+	//FColor DebugColor = bHit ? FColor::Red : FColor::Green;
+	//DrawDebugCapsule(GetWorld(), (StartLocation + EndLocation) / 2, CapsuleAttackHeight, CapsuleAttackRadius,
+	//	CapsuleRot, DebugColor, false, 2.0f);
 
 
 	// 피격된 액터들 처리
