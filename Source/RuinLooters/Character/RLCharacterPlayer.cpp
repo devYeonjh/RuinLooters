@@ -517,7 +517,7 @@ void ARLCharacterPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
     if (PlayerProjectilePool)
     {
         PlayerProjectilePool->CleanupActiveProjectiles();
-        UE_LOG(LogTemp, Warning, TEXT("Dragon EndPlay: Cleaned up projectile pool"));
+        UE_LOG(LogTemp, Warning, TEXT("Player EndPlay: Cleaned up projectile pool"));
     }
 
     // ü ʱȭ ƴ    ư ʹٸ CurrentHp > 0 ֱ
