@@ -30,8 +30,6 @@ public:
 	void SetExplosionParticleTemplate(UParticleSystem* InExplosionTemplate);
 
 protected:
-	virtual void BeginPlay() override;
-	
 	// 폭발 파티클 시스템 (발사체 파티클과 별개)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Explosion Effects")
 	UParticleSystem* ExplosionParticleTemplate;

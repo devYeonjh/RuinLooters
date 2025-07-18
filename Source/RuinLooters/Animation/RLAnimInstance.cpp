@@ -66,10 +66,6 @@ void URLAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 		FRotator DeltaRotation = (ActorRotation - BaseAimRotation).GetNormalized();
 		AimOffset = FMath::Clamp(DeltaRotation.Pitch, -55.0f, 55.0f);
 	}
-	else if (!bIsAiming && AimOffset != 0.0f)
-	{
-		AimOffset = 0.0f;
-	}
 
 
 	// 낙하 상태 판별
