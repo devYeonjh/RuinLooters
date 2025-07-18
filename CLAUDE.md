@@ -73,6 +73,29 @@ The codebase follows Unreal Engine conventions:
 - **Data Assets**: Used for configurable game data (combo attacks, player stats)
 - **Blueprints**: Referenced in C++ for visual scripting integration
 
+### Coding Standards
+
+#### Forward Declarations and Coupling Management
+- **Use forward declarations in header files**: Prefer forward declarations over #include statements in headers to reduce compilation dependencies
+- **Include only in implementation files**: Move #include statements to .cpp files whenever possible
+- **Minimize header dependencies**: Only include headers that are absolutely necessary for class declarations
+
+#### Object-Oriented Design Principles
+- **Low Coupling**: Classes should have minimal dependencies on other classes
+  - Use interfaces and abstract base classes to reduce direct dependencies
+  - Prefer composition over inheritance when appropriate
+  - Use dependency injection through constructors or setters
+- **High Cohesion**: Each class should have a single, well-defined responsibility
+  - Group related functionality within the same class
+  - Ensure all methods in a class serve the class's primary purpose
+  - Split classes that handle multiple unrelated responsibilities
+
+#### Development Workflow
+- **Auto Mode**: Always enable auto mode when working on coding tasks to ensure efficient and continuous development
+  - Use auto mode for implementing features, fixing bugs, and making code improvements
+  - Auto mode helps maintain development momentum and reduces manual intervention
+  - Only disable auto mode when explicit user confirmation is required for critical changes
+
 ### Key Directories
 - `/Character/`: All character-related classes and components
 - `/AI/`: Behavior trees, AI controllers, and AI tasks

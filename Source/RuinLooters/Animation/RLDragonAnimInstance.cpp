@@ -194,32 +194,6 @@ void URLDragonAnimInstance::CalculateFlightHeight()
 		QueryParams
 	);
 
-	// 디버그: 레이저(라인) 그리기 (에디터에서만 실행)
-	// 충돌했다면 충돌 지점까지, 아니면 EndLocation까지 라인을 그립니다.
-#if WITH_EDITOR
-	DrawDebugLine(
-		OwningPawn->GetWorld(),
-		StartLocation,
-		bHit ? HitResult.ImpactPoint : EndLocation,
-		FColor::Red,
-		false,          // 지속 시간 (0이면 한 프레임)
-		0,              // depth priority
-		2.0f            // 선 두께
-	);
-	if (bHit)
-	{
-		// 충돌 지점에 디버그 포인트 표시
-		DrawDebugPoint(
-			OwningPawn->GetWorld(),
-			HitResult.ImpactPoint,
-			10.0f,          // 크기
-			FColor::Yellow,
-			false,
-			0
-		);
-	}
-#endif
-
 	if (bHit)
 	{
 		// 충돌한 지점과의 거리가 비행 높이

@@ -19,6 +19,8 @@ void URLPlayerUI::NativeConstruct()
 	UpdatePlayerMoney();
 
 	HideArrowPoint();
+	HideArrowCount(); // 기본적으로 화살 갯수 숨김
+	HideArrowIcon(); // 기본적으로 화살 아이콘 숨김
 }
 
 void URLPlayerUI::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -72,5 +74,64 @@ void URLPlayerUI::HideArrowPoint()
 	{
 		ArrowPoint->SetVisibility(ESlateVisibility::Hidden);
 		UE_LOG(LogTemp, Log, TEXT("ArrowPoint hidden"));
+	}
+}
+
+void URLPlayerUI::UpdateArrowCount(int32 CurrentCount, int32 MaxCount)
+{
+	if (ArrowCountText)
+	{
+		FText ArrowCountFormat = FText::FromString(FString::Printf(TEXT("%d/%d"), CurrentCount, MaxCount));
+		ArrowCountText->SetText(ArrowCountFormat);
+		
+		// 화살 갯수에 따른 색상 변경
+		if (CurrentCount <= 0)
+		{
+			// 빨간색 (화살이 없을 때)
+			ArrowCountText->SetColorAndOpacity(FSlateColor(FLinearColor::Red));
+		}
+		else
+		{
+			// 하얀색 (기본 색상)
+			ArrowCountText->SetColorAndOpacity(FSlateColor(FLinearColor::White));
+		}
+		
+		UE_LOG(LogTemp, Log, TEXT("Arrow count updated: %d/%d"), CurrentCount, MaxCount);
+	}
+}
+
+void URLPlayerUI::ShowArrowCount()
+{
+	if (ArrowCountText)
+	{
+		ArrowCountText->SetVisibility(ESlateVisibility::Visible);
+		UE_LOG(LogTemp, Log, TEXT("Arrow count shown"));
+	}
+}
+
+void URLPlayerUI::HideArrowCount()
+{
+	if (ArrowCountText)
+	{
+		ArrowCountText->SetVisibility(ESlateVisibility::Hidden);
+		UE_LOG(LogTemp, Log, TEXT("Arrow count hidden"));
+	}
+}
+
+void URLPlayerUI::ShowArrowIcon()
+{
+	if (ArrowIcon)
+	{
+		ArrowIcon->SetVisibility(ESlateVisibility::Visible);
+		UE_LOG(LogTemp, Log, TEXT("Arrow icon shown"));
+	}
+}
+
+void URLPlayerUI::HideArrowIcon()
+{
+	if (ArrowIcon)
+	{
+		ArrowIcon->SetVisibility(ESlateVisibility::Hidden);
+		UE_LOG(LogTemp, Log, TEXT("Arrow icon hidden"));
 	}
 }
