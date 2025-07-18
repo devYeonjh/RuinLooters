@@ -513,6 +513,13 @@ void ARLCharacterPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
     // 타이머 클리어
     GetWorldTimerManager().ClearAllTimersForObject(this);
 
+    // 투사체 풀 정리
+    if (PlayerProjectilePool)
+    {
+        PlayerProjectilePool->CleanupActiveProjectiles();
+        UE_LOG(LogTemp, Warning, TEXT("Dragon EndPlay: Cleaned up projectile pool"));
+    }
+
     // ü ʱȭ ƴ    ư ʹٸ CurrentHp > 0 ֱ
     if (WorldAliveEnemys >= 1 && CurrentHp > 0)
     {
