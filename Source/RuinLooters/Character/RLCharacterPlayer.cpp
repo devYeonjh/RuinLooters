@@ -74,7 +74,11 @@ ARLCharacterPlayer::ARLCharacterPlayer()
     BowMeshComponent->SetupAttachment(GetMesh(), TEXT("hand_lBowSocket"));
     BowMeshComponent->SetSkeletalMesh(nullptr);
     BowMeshComponent->SetCastShadow(false);
+    // 물리적 상호작용 완전 제거
     BowMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    BowMeshComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+    BowMeshComponent->SetGenerateOverlapEvents(false);
+    BowMeshComponent->SetNotifyRigidBodyCollision(false);
     BowMeshComponent->SetVisibility(false); // 기본적으로 숨김 (검 모드이므로)
     BowMeshComponent->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.5f)); // 크기를 반으로 줄임
 
@@ -104,6 +108,16 @@ void ARLCharacterPlayer::BeginPlay()
     Super::BeginPlay();
 
     PlayerController = Cast<APlayerController>(GetController());
+    
+    // 활 메시 컴포넌트 충돌 설정 강제 적용 (블루프린트 재정의 방지)
+    if (BowMeshComponent)
+    {
+        BowMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        BowMeshComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+        BowMeshComponent->SetGenerateOverlapEvents(false);
+        BowMeshComponent->SetNotifyRigidBodyCollision(false);
+        UE_LOG(LogTemp, Warning, TEXT("BowMeshComponent collision forcibly disabled in BeginPlay"));
+    }
 
     RowWeapon = GameInstance->GetWeaponInformation(CharacterWeaponName);
 
