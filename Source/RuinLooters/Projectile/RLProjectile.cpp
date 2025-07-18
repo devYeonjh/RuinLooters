@@ -23,7 +23,7 @@ ARLProjectile::ARLProjectile()
     CapsuleCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
     CapsuleCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
     CapsuleCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-    CapsuleCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Overlap);
+    CapsuleCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
 
     // 파티클 시스템 컴포넌트 설정
     ParticleSystem = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleSystem"));
