@@ -153,6 +153,9 @@ void URLA2FComponent::OnAnimationCompleted(bool bSuccess)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("RLA2FComponent: Animation completed with failure"));
 	}
+	
+	// Broadcast completion event
+	OnA2FAnimationCompleted.Broadcast(bSuccess);
 }
 
 void URLA2FComponent::InitializeDefaultParameters()

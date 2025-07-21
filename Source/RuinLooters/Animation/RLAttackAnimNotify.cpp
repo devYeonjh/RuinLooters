@@ -5,9 +5,9 @@
 #include "Character/RLCharacterBase.h"
 #include "Character/RLCharacterAttackInterface.h"
 
-void URLAttackAnimNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void URLAttackAnimNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
-    Super::Notify(MeshComp, Animation);
+    Super::Notify(MeshComp, Animation, EventReference);
 
     if (!MeshComp) return;
 

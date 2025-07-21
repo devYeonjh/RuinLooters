@@ -4,9 +4,9 @@
 #include "Character/RLCharacterPlayer.h"
 #include "Character/RLCharacterEnemyDragon.h"
 
-void URLProjectileSkillAnimNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void URLProjectileSkillAnimNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
-    Super::Notify(MeshComp, Animation);
+    Super::Notify(MeshComp, Animation, EventReference);
 
     if (!MeshComp) return;
 

@@ -7,6 +7,8 @@
 #include "AsyncActionAnimateCharacter.h"
 #include "RLA2FComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnA2FAnimationCompleted, bool, bSuccess);
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class RUINLOOTERS_API URLA2FComponent : public UActorComponent
 {
@@ -37,6 +39,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RLA2F")
 	FName ProviderName = "Default";
+
+	UPROPERTY(BlueprintAssignable, Category = "RLA2F")
+	FOnA2FAnimationCompleted OnA2FAnimationCompleted;
+
+	UFUNCTION(BlueprintCallable, Category = "RLA2F")
+	bool IsAnimationInProgress() const { return CurrentAsyncAction != nullptr; }
 
 private:
 	UPROPERTY()

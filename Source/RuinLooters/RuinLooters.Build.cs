@@ -10,6 +10,6 @@ public class RuinLooters : ModuleRules
 
         PublicIncludePaths.AddRange(new string[] { "RuinLooters" });
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule", "UMG", "LevelSequence", "MovieScene", "Niagara", "ACERuntime", "ACECore", "A2FLocal" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule", "UMG", "LevelSequence", "MovieScene", "Niagara", "ACERuntime", "ACECore", "A2FLocal", "HTTP", "Json", "JsonUtilities", "RuntimeAudioImporter", "AudioCapture", "SlateCore" });
 	}
 }

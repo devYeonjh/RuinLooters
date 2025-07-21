@@ -39,7 +39,7 @@ RuinLooters is a 3D action RPG game built with Unreal Engine 5.5. Key features i
 
 ### Module Structure
 - **RuinLooters** - Main game module
-  - Dependencies: Core, CoreUObject, Engine, InputCore, EnhancedInput, AIModule, UMG, LevelSequence, MovieScene, Niagara
+  - Dependencies: Core, CoreUObject, Engine, InputCore, EnhancedInput, AIModule, UMG, LevelSequence, MovieScene, Niagara, ACERuntime, ACECore, A2FLocal, Http, Json, JsonUtilities, RuntimeAudioImporter
 
 ### Core Systems
 
@@ -71,6 +71,12 @@ RuinLooters is a 3D action RPG game built with Unreal Engine 5.5. Key features i
    - Store/merchant UI
    - Main menu and settings
    - Death and stage clear screens
+
+6. **TTS System** (`Source/RuinLooters/TTSxA2F/`)
+   - `RLCosyVoiceClient` - HTTP client for CosyVoice TTS server
+   - `RLTTSManager` - High-level TTS management with A2F integration
+   - `RLVoiceRecorder` - Voice recording for speaker presets
+   - `RLA2FComponent` - Audio2Face integration for facial animation
 
 ### Plugin Dependencies
 
@@ -131,6 +137,44 @@ Player (ECC_GameTraceChannel3)
 - Use `RLLevelTransferPortal` actors
 - Portals handle save game state before transition
 
+### TTS Integration
+1. **Server Setup**: Start CosyVoice server with `python run_server.py --port 50001`
+2. **Basic TTS**: Use `RLTTSManager` component for high-level TTS operations
+3. **Speaker Presets**: Record voice samples using `RLVoiceRecorder` component
+4. **A2F Integration**: Combine TTS with facial animation using `RLA2FComponent`
+
+#### TTS Component Usage Example
+```cpp
+// Get TTS manager component
+URLTTSManager* TTSManager = GetComponentByClass<URLTTSManager>();
+
+// Simple TTS
+TTSManager->SpeakText(TEXT("Hello world!"));
+
+// TTS with specific speaker and A2F
+TTSManager->SpeakText(TEXT("Welcome to the game!"), TEXT("my_voice"), true);
+
+// Queue multiple TTS requests
+TTSManager->QueueTextToSpeak(TEXT("First message"));
+TTSManager->QueueTextToSpeak(TEXT("Second message"));
+```
+
+#### Voice Recording Example
+```cpp
+// Get voice recorder
+ARLVoiceRecorder* VoiceRecorder = GetWorld()->SpawnActor<ARLVoiceRecorder>();
+
+// Record 3 seconds of audio
+VoiceRecorder->StartRecording(3.0f);
+
+// Save as voice preset when recording completes
+VoiceRecorder->OnRecordingComplete.AddDynamic(this, [](const TArray<uint8>& AudioData)
+{
+    // Save recorded audio as voice preset
+    VoiceRecorder->SaveAsVoicePreset(TEXT("player_voice"), TEXT("Hello world"));
+});
+```
+
 ## Important File Locations
 
 - **Blueprints**: `Content/Blueprints/`
@@ -139,6 +183,7 @@ Player (ECC_GameTraceChannel3)
 - **Data Tables**: `Content/DataTables/`
 - **Maps**: `Content/Model/MWLandscapeAutoMaterial/Maps/`
 - **Enemy AI**: `Content/Enemy/`
+- **TTS System**: `Source/RuinLooters/TTSxA2F/`
 
 ## Testing & Debugging
 
