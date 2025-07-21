@@ -31,6 +31,7 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UButton* ExitStageButton;
 
+	UPROPERTY();
 	class ARLCharacterPlayer* Player;
 
 

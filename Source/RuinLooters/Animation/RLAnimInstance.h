@@ -63,7 +63,8 @@ protected:
 
     // 매 프레임 델타타임만큼 호출
     virtual void NativeUpdateAnimation(float DeltaTimeX) override;
-	
+
+    UPROPERTY();
     APawn* OwningPawn = nullptr;
 };
 

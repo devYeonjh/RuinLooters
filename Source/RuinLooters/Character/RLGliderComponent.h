@@ -30,7 +30,9 @@ private:
     float OriginalAirControl;
     float OriginalMaxWalkSpeed;
     float GliderMaxFallSpeed = 600.0f;    // 글라이드 모드용 낙하속도(절반)
+    UPROPERTY();
     class ACharacter* OwnerCharacter;
+    UPROPERTY();
     class UCharacterMovementComponent* MovementComponent;
     UPROPERTY(VisibleAnywhere, Category="Glider")
     UStaticMeshComponent* GliderMesh;

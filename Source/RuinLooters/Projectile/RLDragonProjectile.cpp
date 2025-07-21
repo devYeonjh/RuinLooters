@@ -2,7 +2,6 @@
 #include "Engine/DamageEvents.h"
 #include "../Character/RLCharacterPlayer.h"
 #include "../Character/RLCharacterEnemyDragon.h"
-#include "../Pool/RLProjectilePool.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
 

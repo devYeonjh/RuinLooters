@@ -2,9 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "RLProjectile.h"
-#include "Particles/ParticleSystem.h"
-#include "Particles/ParticleSystemComponent.h"
-#include "NiagaraSystem.h"
+
 #include "NiagaraFunctionLibrary.h"
 #include "RLDragonProjectile.generated.h"
 

@@ -4,7 +4,6 @@
 #include "Animation/RLAnimInstance.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Character/RLCharacterBase.h"
 #include "Character/RLCharacterPlayer.h"
 
 void URLAnimInstance::NativeInitializeAnimation()

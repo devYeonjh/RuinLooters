@@ -73,6 +73,7 @@ protected:
 	bool bWasFlyingLastFrame;
 
 	// OwningPawn 참조 (URLAnimInstance에서 가져옴)
+	UPROPERTY();
 	APawn* OwningPawn = nullptr;
 
 public:

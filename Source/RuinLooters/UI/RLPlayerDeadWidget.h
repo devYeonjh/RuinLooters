@@ -24,6 +24,7 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UButton* QuitButton;
 
+	UPROPERTY();
 	class ARLCharacterPlayer* Player;
 
 protected:
