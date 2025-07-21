@@ -23,9 +23,16 @@ ARLArrow::ARLArrow()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	// 스피어 콜리전 컴포넌트 생성 (루트 컴포넌트)
+	// 스태틱 메시 컴포넌트 생성 (루트 컴포넌트로 변경)
+	ArrowMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArrowMesh"));
+	RootComponent = ArrowMesh;
+	
+	// 스피어 콜리전 컴포넌트 생성
 	SphereCollision = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollision"));
-	RootComponent = SphereCollision;
+	SphereCollision->SetupAttachment(ArrowMesh);
+	
+	// 스피어 콜리전의 상대적 위치를 x축으로 -50만큼 이동
+	SphereCollision->SetRelativeLocation(FVector(-50.0f, 0.0f, 0.0f));
 	
 	// 스피어 콜리전 설정 (오버랩용)
 	SphereCollision->SetSphereRadius(60.0f);
@@ -33,17 +40,13 @@ ARLArrow::ARLArrow()
 	SphereCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
 	SphereCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	
-	// 스태틱 메시 컴포넌트 생성
-	ArrowMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArrowMesh"));
-	ArrowMesh->SetupAttachment(SphereCollision);
-	
 	// 스태틱 메시 콜리전 설정 (비주얼용)
 	ArrowMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ArrowMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
 	
 	// 투사체 이동 컴포넌트 생성 (초기에는 비활성화)
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
-	ProjectileMovement->UpdatedComponent = SphereCollision;
+	ProjectileMovement->UpdatedComponent = ArrowMesh;
 	ProjectileMovement->InitialSpeed = 2500.0f;
 	ProjectileMovement->MaxSpeed = 2500.0f;
 	ProjectileMovement->bRotationFollowsVelocity = true;

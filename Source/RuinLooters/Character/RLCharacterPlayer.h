@@ -343,6 +343,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow")
 	TSubclassOf<class ARLArrow> ArrowClass;
 	
+	// 화살 데미지 스케일링 변수
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow")
+	int32 MinArrowDamage;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow")
+	int32 MaxArrowDamage;
+	
 	// 화살 풀링을 위한 변수
 	UPROPERTY()
 	class URLArrowPool* ArrowPool;
@@ -384,6 +391,9 @@ protected:
 	// 차징 시스템 관련 함수
 	void UpdateCharging(float DeltaTime);
 	float CalculateArrowSpeed() const;
+	
+	// 데미지 계산 함수
+	int32 CalculateArrowDamage() const;
 	
 
 

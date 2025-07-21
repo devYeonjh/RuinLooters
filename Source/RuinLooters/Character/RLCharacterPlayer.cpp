@@ -94,6 +94,10 @@ ARLCharacterPlayer::ARLCharacterPlayer()
     MinArrowSpeed = 300.0f;  // 최소 속도
     MaxArrowSpeed = 4000.0f; // 최대 속도
     
+    // 화살 데미지 스케일링 초기화
+    MinArrowDamage = 50;   // 최소 데미지
+    MaxArrowDamage = 150;  // 최대 데미지
+    
     // 화살 갯수 초기화
     MaxArrowCount = 30;      // 최대 화살 갯수
     CurrentArrowCount = 30;  // 현재 화살 갯수 (기본값)
@@ -1156,14 +1160,15 @@ void ARLCharacterPlayer::FireArrow()
     // 소켓에서 분리
     LoadedArrow->DetachFromSocket();
     
-    // 차징된 속도 계산
+    // 차징된 속도와 데미지 계산
     float ArrowSpeed = CalculateArrowSpeed();
+    int32 ArrowDamage = CalculateArrowDamage();
     
     // 차징 종료
     StopChargingArrow();
     
     // 화살 초기화 및 발사 (카메라 기준으로 수정)
-    LoadedArrow->InitializeArrow(FireLocation, PlayerController, 50, ArrowSpeed);
+    LoadedArrow->InitializeArrow(FireLocation, PlayerController, ArrowDamage, ArrowSpeed);
     
     // 화살 갯수 감소
     CurrentArrowCount--;
@@ -1224,6 +1229,26 @@ float ARLCharacterPlayer::CalculateArrowSpeed() const
     
     return CalculatedSpeed;
 }
+
+// 차징 시간에 따른 화살 데미지 계산
+int32 ARLCharacterPlayer::CalculateArrowDamage() const
+{
+    if (!bIsChargingArrow && CurrentChargeTime <= 0.0f)
+    {
+        return MinArrowDamage; // 차징하지 않았으면 최소 데미지
+    }
+    
+    // 차징 비율 계산 (0.0 ~ 1.0)
+    float ChargeRatio = FMath::Clamp(CurrentChargeTime / MaxChargeTime, 0.0f, 1.0f);
+    
+    // 선형 보간으로 데미지 계산
+    int32 CalculatedDamage = FMath::RoundToInt(FMath::Lerp(static_cast<float>(MinArrowDamage), static_cast<float>(MaxArrowDamage), ChargeRatio));
+    
+    UE_LOG(LogTemp, Log, TEXT("Charge ratio: %f, Arrow damage: %d"), ChargeRatio, CalculatedDamage);
+    
+    return CalculatedDamage;
+}
+
 
 
 
