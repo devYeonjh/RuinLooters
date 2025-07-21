@@ -30,7 +30,7 @@ protected:
 	// UI Components (to be bound in Blueprint)
 	UPROPERTY(meta = (BindWidget))
 	UEditableTextBox* MessageInputBox;
-
+	
 	UPROPERTY(meta = (BindWidget))
 	UButton* SendButton;
 
@@ -56,13 +56,13 @@ public:
 
 	// Configuration
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialogue Widget")
-	FLinearColor PlayerMessageColor = FLinearColor::Blue;
+	FLinearColor PlayerMessageColor = FLinearColor::Black;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialogue Widget")
-	FLinearColor NPCMessageColor = FLinearColor::Green;
+	FLinearColor NPCMessageColor = FLinearColor::Black;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialogue Widget")
-	FLinearColor SystemMessageColor = FLinearColor::Yellow;
+	FLinearColor SystemMessageColor = FLinearColor::Black;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialogue Widget")
 	int32 MaxDisplayedMessages = 20;

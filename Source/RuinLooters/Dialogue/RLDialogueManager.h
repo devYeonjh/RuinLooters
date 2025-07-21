@@ -5,6 +5,7 @@
 #include "RLDialogueTypes.h"
 #include "RLLLMServiceInterface.h"
 #include "TTSxA2F/RLTTSManager.h"
+#include "UOpenAIClient.h"
 #include "RLDialogueManager.generated.h"
 
 // Forward declarations
@@ -108,6 +109,10 @@ private:
 	UPROPERTY()
 	URLDialogueWidget* CurrentDialogueWidget = nullptr;
 
+	// OpenAIClient for Gemini T2T
+	UPROPERTY()
+	UOpenAIClient* OpenAIClient = nullptr;
+
 	// Timers
 	FTimerHandle ConversationTimeoutTimer;
 
@@ -123,6 +128,9 @@ private:
 
 	UFUNCTION()
 	void OnA2FAnimationCompleted(bool bSuccess, const FString& Text);
+
+	UFUNCTION()
+	void OnT2TResponseReceived(const FString& ResultText);
 
 	// Internal functions
 	void SetupEventBindings();

@@ -4,6 +4,8 @@
 #include "UI/RLDialogueWidget.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
+#include "UOpenAIClient.h"
+
 #include "Kismet/GameplayStatics.h"
 
 URLDialogueManager::URLDialogueManager()
@@ -43,6 +45,12 @@ void URLDialogueManager::BeginPlay()
 	
 	// Setup event bindings
 	SetupEventBindings();
+	
+	OpenAIClient = NewObject<UOpenAIClient>(this);
+	if (OpenAIClient)
+	{
+		OpenAIClient->OnT2TResponseReceived.BindUObject(this, &URLDialogueManager::OnT2TResponseReceived);
+	}
 	
 	UE_LOG(LogTemp, Log, TEXT("DialogueManager: Initialized successfully"));
 }
@@ -144,11 +152,13 @@ void URLDialogueManager::SendPlayerMessage(const FString& Message)
 	// Build prompt and send to LLM
 	FString FullPrompt = BuildLLMPrompt(Message);
 	FString Context = ConversationContext.GetFullContext();
-	
-	if (LLMService)
+
+	// ★ 프롬프트 로그 출력 추가
+	UE_LOG(LogTemp, Warning, TEXT("[LLM Prompt]\n%s"), *FullPrompt);
+
+	if (OpenAIClient)
 	{
-		UE_LOG(LogTemp, Log, TEXT("DialogueManager: Sending to LLM - Player: %s"), *Message);
-		LLMService->GenerateResponse(FullPrompt, Context);
+		OpenAIClient->SendPromptToGPT(FullPrompt);
 	}
 	else
 	{
@@ -251,30 +261,30 @@ FString URLDialogueManager::BuildLLMPrompt(const FString& PlayerMessage) const
 	FString Prompt;
 	
 	// Add personality and context
-	Prompt += FString::Printf(TEXT("Character Name: %s\n"), *ConversationContext.NPCPersonality.CharacterName);
-	Prompt += FString::Printf(TEXT("Personality: %s\n"), *ConversationContext.NPCPersonality.PersonalityPrompt);
+	Prompt += FString::Printf(TEXT("캐릭터 이름: %s\n"), *ConversationContext.NPCPersonality.CharacterName);
+	Prompt += FString::Printf(TEXT("성격 : %s\n"), *ConversationContext.NPCPersonality.PersonalityPrompt);
 	
 	if (!ConversationContext.NPCPersonality.BackgroundStory.IsEmpty())
 	{
-		Prompt += FString::Printf(TEXT("Background: %s\n"), *ConversationContext.NPCPersonality.BackgroundStory);
+		Prompt += FString::Printf(TEXT("배경: % s\n"), *ConversationContext.NPCPersonality.BackgroundStory);
 	}
 	
 	// Add recent conversation history
 	if (ConversationContext.ConversationHistory.Num() > 0)
 	{
-		Prompt += TEXT("\nRecent conversation:\n");
+		Prompt += TEXT("\n최근 대화:\n");
 		int32 StartIndex = FMath::Max(0, ConversationContext.ConversationHistory.Num() - 3);
 		for (int32 i = StartIndex; i < ConversationContext.ConversationHistory.Num(); i++)
 		{
 			const FDialogueExchange& Exchange = ConversationContext.ConversationHistory[i];
-			Prompt += FString::Printf(TEXT("Player: %s\n"), *Exchange.PlayerMessage);
+			Prompt += FString::Printf(TEXT("플레이어: %s\n"), *Exchange.PlayerMessage);
 			Prompt += FString::Printf(TEXT("%s: %s\n"), *ConversationContext.NPCPersonality.CharacterName, *Exchange.NPCResponse);
 		}
 	}
 	
 	// Add current player message
-	Prompt += FString::Printf(TEXT("\nPlayer says: %s\n"), *PlayerMessage);
-	Prompt += FString::Printf(TEXT("Respond as %s:"), *ConversationContext.NPCPersonality.CharacterName);
+	Prompt += FString::Printf(TEXT("\n플레이어 대화: %s\n"), *PlayerMessage);
+	Prompt += FString::Printf(TEXT("대답 %s:"), *ConversationContext.NPCPersonality.CharacterName);
 	
 	return Prompt;
 }
@@ -322,7 +332,9 @@ void URLDialogueManager::OnTTSCompleted(bool bSuccess, const FString& Text)
 	UE_LOG(LogTemp, Log, TEXT("DialogueManager: TTS completed for: %s"), *Text);
 	
 	// Return to waiting for player input
-	SetDialogueState(EDialogueState::WaitingForPlayer);
+	AsyncTask(ENamedThreads::GameThread, [this]() {
+		SetDialogueState(EDialogueState::WaitingForPlayer);
+	});
 }
 
 void URLDialogueManager::OnA2FAnimationCompleted(bool bSuccess, const FString& Text)
@@ -440,4 +452,9 @@ void URLDialogueManager::TrimConversationHistory()
 bool URLDialogueManager::ValidateConversationState() const
 {
 	return CurrentNPC != nullptr && LLMService != nullptr && TTSManager != nullptr;
+}
+
+void URLDialogueManager::OnT2TResponseReceived(const FString& ResultText)
+{
+    ProcessLLMResponse(ResultText);
 }

@@ -9,9 +9,9 @@
 URLDialogueWidget::URLDialogueWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	PlayerMessageColor = FLinearColor(0.3f, 0.6f, 1.0f, 1.0f); // Light blue
-	NPCMessageColor = FLinearColor(0.3f, 1.0f, 0.3f, 1.0f);    // Light green
-	SystemMessageColor = FLinearColor(1.0f, 1.0f, 0.3f, 1.0f); // Light yellow
+	PlayerMessageColor = FLinearColor(0.f, 0.0f, 0.f, 1.0f); // Light blue
+	NPCMessageColor = FLinearColor(0.f, 0.0f, 0.f, 1.0f);    // Light green
+	SystemMessageColor = FLinearColor(0.f, 0.0f, 0.f, 1.0f); // Light yellow
 	MaxDisplayedMessages = 20;
 }
 
@@ -79,7 +79,7 @@ void URLDialogueWidget::InitializeDialogue(URLDialogueManager* InDialogueManager
 	FocusInputBox();
 	
 	// Add welcome message
-	AddSystemMessage(FString::Printf(TEXT("Conversation started with %s"), *NPCName));
+	// AddSystemMessage(FString::Printf(TEXT("Conversation started with %s"), *NPCName));
 	
 	UE_LOG(LogTemp, Log, TEXT("DialogueWidget: Initialized for NPC: %s"), *NPCName);
 }
@@ -131,30 +131,29 @@ void URLDialogueWidget::EndConversation()
 
 void URLDialogueWidget::AddMessageToHistory(const FString& Speaker, const FString& Message, bool bIsPlayerMessage)
 {
-	if (!ConversationHistory)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("DialogueWidget: ConversationHistory widget not found"));
-		return;
-	}
-	
-	// Choose color based on speaker
-	FLinearColor MessageColor = bIsPlayerMessage ? PlayerMessageColor : NPCMessageColor;
-	
-	// Create speaker label
-	FString DisplayText = FString::Printf(TEXT("%s: %s"), *Speaker, *Message);
-	UTextBlock* MessageBlock = CreateMessageTextBlock(DisplayText, MessageColor);
-	
-	if (MessageBlock)
-	{
-		ConversationHistory->AddChild(MessageBlock);
-		CurrentMessageCount++;
-		
-		// Trim old messages if needed
-		TrimMessageHistory();
-		
-		// Scroll to bottom
-		ScrollToBottom();
-	}
+    if (!ConversationScrollBox)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("DialogueWidget: ConversationScrollBox widget not found"));
+        return;
+    }
+
+    // 플레이어 메시지는 무시 (T2T 답변만 표시)
+    if (bIsPlayerMessage)
+    {
+        return;
+    }
+
+    // 기존 메시지 모두 삭제
+    ConversationScrollBox->ClearChildren();
+
+    // NPC 이름 없이 답변만 표시
+    UTextBlock* MessageBlock = CreateMessageTextBlock(Message, NPCMessageColor);
+
+    if (MessageBlock)
+    {
+        ConversationScrollBox->AddChild(MessageBlock);
+        ScrollToBottom();
+    }
 }
 
 void URLDialogueWidget::AddSystemMessage(const FString& Message)
@@ -323,7 +322,7 @@ UTextBlock* URLDialogueWidget::CreateMessageTextBlock(const FString& Text, const
 		
 		// Set font and styling
 		FSlateFontInfo FontInfo = TextBlock->GetFont();
-		FontInfo.Size = 14;
+		FontInfo.Size = 30;
 		TextBlock->SetFont(FontInfo);
 	}
 	
