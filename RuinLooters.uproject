@@ -62,6 +62,11 @@
 				"Linux",
 				"Android"
 			]
+		},
+		{
+			"Name": "NvAudio2FaceMark",
+			"Enabled": false,
+			"MarketplaceURL": "https://www.unrealengine.com/marketplace/en-US/product/ace-unreal-engine-plugin"
 		}
 	]
 }

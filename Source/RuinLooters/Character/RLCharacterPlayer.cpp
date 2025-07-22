@@ -126,7 +126,7 @@ void ARLCharacterPlayer::BeginPlay()
         // 무기 변경 적용
         ChangeWeapon(RowWeapon);
 
-        WeaponMeshComponent->SetSkeletalMesh(RowWeapon->SkeletalMesh);
+       // WeaponMeshComponent->SetSkeletalMesh(RowWeapon->SkeletalMesh);
         UE_LOG(LogTemp, Warning, TEXT("RowWeapon :%s"), *CharacterWeaponName.ToString());
     }
     else
