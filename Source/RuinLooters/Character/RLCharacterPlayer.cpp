@@ -126,7 +126,7 @@ void ARLCharacterPlayer::BeginPlay()
         // 무기 변경 적용
         ChangeWeapon(RowWeapon);
 
-       // WeaponMeshComponent->SetSkeletalMesh(RowWeapon->SkeletalMesh);
+        WeaponMeshComponent->SetSkeletalMesh(RowWeapon->SkeletalMesh);
         UE_LOG(LogTemp, Warning, TEXT("RowWeapon :%s"), *CharacterWeaponName.ToString());
     }
     else
@@ -227,6 +227,8 @@ void ARLCharacterPlayer::BeginPlay()
     {
         UE_LOG(LogTemp, Warning, TEXT("ArrowClass is not set"));
     }
+    
+    WeaponMeshComponent->DestroyComponent();
 }
 
 void ARLCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
