@@ -1,152 +1,160 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
-#include "Http.h"
+#include "UObject/NoExportTypes.h"
+#include "HttpModule.h"
+#include "Interfaces/IHttpRequest.h"
+#include "Interfaces/IHttpResponse.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonSerializer.h"
-#include "Sound/ImportedSoundWave.h"
-#include "Sound/PCMProceduralSoundWave.h"
-#include "RuntimeAudioImporterLibrary.h"
+#include "Serialization/JsonWriter.h"
+#include "Misc/Base64.h"
 #include "RLCosyVoiceClient.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTTSResponse, bool, bSuccess, UImportedSoundWave*, SoundWave);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPCMTTSResponse, bool, bSuccess, UPCMProceduralSoundWave*, ProceduralSoundWave);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSpeakerListResponse, bool, bSuccess, const TArray<FString>&, SpeakerIDs);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSpeakerOperationResponse, bool, bSuccess, const FString&, Message);
+class URLA2FComponent;
+
+UENUM(BlueprintType)
+enum class ECosyVoiceError : uint8
+{
+	None,
+	NetworkTimeout,
+	ServerError,
+	AudioProcessingFailed,
+	InvalidResponse,
+	A2FComponentNull,
+	Base64DecodeFailed,
+	SoundWaveCreationFailed
+};
 
 USTRUCT(BlueprintType)
-struct FCosyVoiceSpeakerInfo
+struct FCosyVoiceSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, Category = "CosyVoice")
-	FString SpeakerID;
-
-	UPROPERTY(BlueprintReadWrite, Category = "CosyVoice")
-	FString PromptText;
-
-	UPROPERTY(BlueprintReadWrite, Category = "CosyVoice")
-	FString Description;
-
-	UPROPERTY(BlueprintReadWrite, Category = "CosyVoice")
-	FDateTime CreatedAt;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CosyVoice")
+	FString ServerURL = TEXT("http://localhost:50001");
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CosyVoice")
+	float RequestTimeout = 30.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CosyVoice")
+	FString DefaultSpeakerID = TEXT("");
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CosyVoice")
+	int32 SampleRate = 22050;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CosyVoice")
+	bool bLogVerbose = false;
 };
 
-UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class RUINLOOTERS_API URLCosyVoiceClient : public UActorComponent
+USTRUCT(BlueprintType)
+struct FCosyVoiceResult
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "CosyVoice")
+	bool bSuccess = false;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "CosyVoice")
+	ECosyVoiceError ErrorCode = ECosyVoiceError::None;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "CosyVoice")
+	FString ErrorMessage;
+	
+	// PCM data instead of SoundWave
+	UPROPERTY(BlueprintReadOnly, Category = "CosyVoice")
+	TArray<uint8> PCMData;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "CosyVoice")
+	int32 SampleRate = 0;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "CosyVoice")
+	int32 NumChannels = 0;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "CosyVoice")
+	float ProcessingTime = 0.0f;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "CosyVoice")
+	int32 AudioDataSize = 0;
+};
+
+// Delegate declarations (must be after struct definitions)
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTTSComplete, const TArray<uint8>&, PCMData, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTTSCompleteDetailed, FCosyVoiceResult, Result);
+
+UCLASS(BlueprintType, Blueprintable)
+class RUINLOOTERS_API URLCosyVoiceClient : public UObject
 {
 	GENERATED_BODY()
 
 public:
 	URLCosyVoiceClient();
 
-protected:
-	virtual void BeginPlay() override;
-
-public:
-	// Default server URL
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CosyVoice|Config")
-	FString ServerURL = TEXT("http://localhost:50001");
-
-	// Delegates
-	UPROPERTY(BlueprintAssignable, Category = "CosyVoice|Delegates")
-	FOnTTSResponse OnTTSResponse;
-
-	UPROPERTY(BlueprintAssignable, Category = "CosyVoice|Delegates")
-	FOnPCMTTSResponse OnPCMTTSResponse;
-
-	UPROPERTY(BlueprintAssignable, Category = "CosyVoice|Delegates")
-	FOnSpeakerListResponse OnSpeakerListResponse;
-
-	UPROPERTY(BlueprintAssignable, Category = "CosyVoice|Delegates")
-	FOnSpeakerOperationResponse OnSpeakerOperationResponse;
-
-	// Basic TTS Functions
-	UFUNCTION(BlueprintCallable, Category = "CosyVoice|TTS")
+	// Basic TTS functionality
+	UFUNCTION(BlueprintCallable, Category = "CosyVoice")
 	void GenerateTTS(const FString& Text, const FString& SpeakerID = TEXT(""));
+	
+	// Direct A2F integration 
+	UFUNCTION(BlueprintCallable, Category = "CosyVoice|A2F")
+	void GenerateTTSWithA2F(const FString& Text, URLA2FComponent* A2FComponent, 
+						   const FString& SpeakerID = TEXT(""));
 
-	UFUNCTION(BlueprintCallable, Category = "CosyVoice|TTS")
-	void GeneratePCMStreamingTTS(const FString& Text, const FString& SpeakerID = TEXT(""), int32 SampleRate = 24000, int32 NumChannels = 1, int32 BitsPerSample = 16);
+	// Configuration
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CosyVoice")
+	FCosyVoiceSettings Settings;
 
-	// Speaker Management
-	UFUNCTION(BlueprintCallable, Category = "CosyVoice|Speakers")
-	void GetSpeakerList();
+	// Events
+	UPROPERTY(BlueprintAssignable, Category = "CosyVoice")
+	FOnTTSComplete OnTTSComplete;
 
-	UFUNCTION(BlueprintCallable, Category = "CosyVoice|Speakers")
-	void CreateVoicePreset(const FString& PresetID, const FString& SampleText, const TArray<uint8>& AudioData, const FString& Description = TEXT(""));
+	UPROPERTY(BlueprintAssignable, Category = "CosyVoice")
+	FOnTTSCompleteDetailed OnTTSCompleteDetailed;
 
-	UFUNCTION(BlueprintCallable, Category = "CosyVoice|Speakers")
-	void DeleteSpeaker(const FString& SpeakerID);
+	// Utility functions
+	UFUNCTION(BlueprintCallable, Category = "CosyVoice")
+	bool IsRequestInProgress() const { return bRequestInProgress; }
 
-	// Zero-shot TTS (one-time without saving speaker)
-	UFUNCTION(BlueprintCallable, Category = "CosyVoice|TTS")
-	void GenerateZeroShotTTS(const FString& Text, const FString& PromptText, const TArray<uint8>& PromptAudioData);
+	UFUNCTION(BlueprintCallable, Category = "CosyVoice")
+	void CancelCurrentRequest();
 
-	// Health check
-	UFUNCTION(BlueprintCallable, Category = "CosyVoice|Utility")
-	void CheckServerHealth();
+	UFUNCTION(BlueprintCallable, Category = "CosyVoice")
+	void SetServerURL(const FString& NewURL) { Settings.ServerURL = NewURL; }
+
+protected:
+	virtual void BeginDestroy() override;
 
 private:
-	// HTTP Response Handlers
-	void OnTTSResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess);
-	void OnPCMTTSResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess);
-	void OnSpeakerListResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess);
-	void OnSpeakerOperationResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess);
-	void OnHealthCheckResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess);
-
-	// Helper Functions
-	TArray<uint8> DecodeBase64(const FString& Base64String);
-	void ProcessPCMAudioData(const TArray<uint8>& AudioData, int32 SampleRate, int32 NumChannels, int32 BitsPerSample);
+	// HTTP processing
+	void ProcessTTSRequest(const FString& Text, const FString& SpeakerID, 
+						  URLA2FComponent* A2FComponent = nullptr);
+	void OnTTSResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, 
+							  bool bSuccess, URLA2FComponent* A2FComponent, float RequestStartTime);
 	
-	// RuntimeAudioImporter delegate callback
-	UFUNCTION()
-	void OnAudioImportResult(URuntimeAudioImporterLibrary* Importer, UImportedSoundWave* ImportedSoundWave, ERuntimeImportStatus Status);
+	// Request management
+	TSharedPtr<IHttpRequest> CurrentRequest;
+	bool bRequestInProgress = false;
+	
+	// Helper functions
+	FString CreateRequestPayload(const FString& Text, const FString& SpeakerID);
+	FCosyVoiceResult ProcessResponse(FHttpResponsePtr Response, float ProcessingTime);
+	
+	// Logging
+	void LogVerbose(const FString& Message);
+	void LogError(const FString& Message);
+};
 
-	// Speaker fallback functionality
-	void RetryTTSWithFallbackSpeaker(const FString& OriginalText, const FString& FailedSpeaker);
-	FString GetNextFallbackSpeaker(const FString& CurrentSpeaker);
-	bool IsSpeakerNotFoundError(const FString& ErrorMessage);
-
-	// Cached components
-	UPROPERTY()
-	URuntimeAudioImporterLibrary* AudioImporter;
-
-	UPROPERTY()
-	UPCMProceduralSoundWave* CurrentPCMSoundWave;
-
-	// PCM Streaming parameters
-	struct FPCMStreamingParams
-	{
-		int32 SampleRate;
-		int32 NumChannels;
-		int32 BitsPerSample;
-	} CurrentPCMParams;
-
-	// Retry state tracking
-	struct FTTSRetryState
-	{
-		FString OriginalText;
-		FString OriginalSpeaker;
-		int32 RetryCount;
-		int32 MaxRetries;
-		bool bIsRetrying;
-
-		FTTSRetryState()
-		{
-			OriginalText = TEXT("");
-			OriginalSpeaker = TEXT("");
-			RetryCount = 0;
-			MaxRetries = 3;
-			bIsRetrying = false;
-		}
-
-		void Reset()
-		{
-			OriginalText = TEXT("");
-			OriginalSpeaker = TEXT("");
-			RetryCount = 0;
-			bIsRetrying = false;
-		}
-	} CurrentRetryState;
+// Static utility class for audio processing
+class RUINLOOTERS_API FCosyVoiceUtils
+{
+public:
+	// Base64 decoding
+	static bool DecodeBase64Audio(const FString& Base64Data, TArray<uint8>& OutPCMData);
+	
+	// Audio format validation
+	static bool ValidateAudioFormat(int32 SampleRate, int32 NumChannels, int32 BitDepth);
+	
+	// Constants
+	static constexpr int32 EXPECTED_SAMPLE_RATE = 22050;
+	static constexpr int32 EXPECTED_CHANNELS = 1;
+	static constexpr int32 EXPECTED_BIT_DEPTH = 16;
 };

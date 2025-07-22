@@ -4,8 +4,9 @@
 #include "Components/ActorComponent.h"
 #include "RLDialogueTypes.h"
 #include "RLLLMServiceInterface.h"
-#include "TTSxA2F/RLTTSManager.h"
 #include "UOpenAIClient.h"
+#include "TTSxA2F/RLCosyVoiceTTSComponent.h"
+#include "TTSxA2F/RLCosyVoiceClient.h"
 #include "RLDialogueManager.generated.h"
 
 // Forward declarations
@@ -40,9 +41,6 @@ public:
 	// Component references
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dialogue|Components")
 	URLLMServiceInterface* LLMService;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dialogue|Components")
-	URLTTSManager* TTSManager;
 
 	// Configuration
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dialogue|Config")
@@ -101,6 +99,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Dialogue")
 	bool CanStartNewConversation() const;
 
+	// TTS Component reference (cached from MetaHuman ChildActorComponent)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dialogue|Components")
+	URLCosyVoiceTTSComponent* TTSComponent = nullptr;
+
 private:
 	// Current conversation state
 	UPROPERTY()
@@ -124,10 +126,10 @@ private:
 	void OnLLMResponseReceived(bool bSuccess, const FString& Response);
 
 	UFUNCTION()
-	void OnTTSCompleted(bool bSuccess, const FString& Text);
+	void OnTTSCompleted(const TArray<uint8>& PCMData, bool bSuccess);
 
 	UFUNCTION()
-	void OnA2FAnimationCompleted(bool bSuccess, const FString& Text);
+	void OnA2FAnimationCompleted(FCosyVoiceResult Result);
 
 	UFUNCTION()
 	void OnT2TResponseReceived(const FString& ResultText);
@@ -145,4 +147,11 @@ private:
 	FString GetGreetingMessage() const;
 	void TrimConversationHistory();
 	bool ValidateConversationState() const;
+
+	// TTS Component management
+	URLCosyVoiceTTSComponent* GetOrCacheTTSComponent();
+	URLCosyVoiceTTSComponent* 
+	FindTTSComponentInMetaHuman(ARLAIDialogueNPC* NPC);
+	void ClearTTSComponentCache();
+	
 };

@@ -14,7 +14,7 @@ URLDialogueManager::URLDialogueManager()
 	
 	// Set default LLM service to mock for testing
 	LLMServiceClass = URLMockLLMService::StaticClass();
-	bUseA2FByDefault = true;
+	bUseA2FByDefault = true; // Use local GPU-based A2F
 	ConversationTimeoutSeconds = 300.0f;
 	MaxConversationHistory = 10;
 }
@@ -30,15 +30,17 @@ void URLDialogueManager::BeginPlay()
 		return;
 	}
 
-	// Get or create TTS Manager
-	TTSManager = Owner->FindComponentByClass<URLTTSManager>();
-	if (!TTSManager)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("DialogueManager: TTSManager not found on owner, creating new one"));
-		TTSManager = NewObject<URLTTSManager>(Owner);
-		Owner->AddInstanceComponent(TTSManager);
-		TTSManager->RegisterComponent();
-	}
+	// Initialize TTS Component - will be cached later when conversation starts
+	TTSComponent = nullptr;
+	
+	UE_LOG(LogTemp, Log, TEXT("DialogueManager: TTS Component will be cached when conversation starts"));
+	// if (!TTSComponent)
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("DialogueManager: CosyVoiceTTSComponent not found on owner, creating new one"));
+	// 	TTSComponent = NewObject<URLCosyVoiceTTSComponent>(Owner);
+	// 	Owner->AddInstanceComponent(TTSComponent);
+	// 	TTSComponent->RegisterComponent();
+	// }
 
 	// Initialize LLM service
 	InitializeLLMService();
@@ -95,11 +97,19 @@ bool URLDialogueManager::StartConversation(ARLAIDialogueNPC* NPC)
 	ConversationContext.ConversationStartTime = FDateTime::Now();
 	ConversationContext.CurrentLocation = TEXT("Game World"); // Could be enhanced with actual location
 	
-	// Set TTSManager target to the NPC for dynamic A2F resolution
-	if (TTSManager)
+	// Cache TTS Component from MetaHuman if not already cached
+	if (!TTSComponent)
 	{
-		TTSManager->SetTargetActor(NPC);
-		UE_LOG(LogTemp, Log, TEXT("DialogueManager: Set TTSManager target to NPC: %s"), *NPC->GetName());
+		TTSComponent = FindTTSComponentInMetaHuman(NPC);
+	}
+	
+	if (TTSComponent)
+	{
+		UE_LOG(LogTemp, Log, TEXT("DialogueManager: TTSComponent ready for NPC: %s"), *NPC->GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DialogueManager: No TTSComponent found for NPC: %s"), *NPC->GetName());
 	}
 	
 	// Clear previous conversation history
@@ -187,17 +197,11 @@ void URLDialogueManager::EndConversation()
 		LLMService->CancelRequest();
 	}
 	
-	// Stop any ongoing TTS
-	if (TTSManager && CurrentState == EDialogueState::Speaking)
+	// Cancel any ongoing TTS
+	URLCosyVoiceTTSComponent* CurrentTTSComponent = GetOrCacheTTSComponent();
+	if (CurrentTTSComponent && CurrentState == EDialogueState::Speaking)
 	{
-		TTSManager->StopCurrentTTS();
-	}
-	
-	// Clear TTSManager target
-	if (TTSManager)
-	{
-		TTSManager->SetTargetActor(nullptr);
-		UE_LOG(LogTemp, Log, TEXT("DialogueManager: Cleared TTSManager target"));
+		CurrentTTSComponent->CancelCurrentRequest();
 	}
 	
 	// Store final state
@@ -207,6 +211,7 @@ void URLDialogueManager::EndConversation()
 	CurrentNPC = nullptr;
 	CurrentDialogueWidget = nullptr;
 	CurrentPlayerMessage.Empty();
+	ClearTTSComponentCache();
 	SetDialogueState(EDialogueState::Idle);
 	
 	// Broadcast conversation ended event
@@ -266,7 +271,7 @@ FString URLDialogueManager::BuildLLMPrompt(const FString& PlayerMessage) const
 	
 	if (!ConversationContext.NPCPersonality.BackgroundStory.IsEmpty())
 	{
-		Prompt += FString::Printf(TEXT("배경: % s\n"), *ConversationContext.NPCPersonality.BackgroundStory);
+		Prompt += FString::Printf(TEXT("배경: %s\n"), *ConversationContext.NPCPersonality.BackgroundStory);
 	}
 	
 	// Add recent conversation history
@@ -322,14 +327,14 @@ void URLDialogueManager::OnLLMResponseReceived(bool bSuccess, const FString& Res
 	}
 }
 
-void URLDialogueManager::OnTTSCompleted(bool bSuccess, const FString& Text)
+void URLDialogueManager::OnTTSCompleted(const TArray<uint8>& PCMData, bool bSuccess)
 {
 	if (CurrentState != EDialogueState::Speaking)
 	{
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("DialogueManager: TTS completed for: %s"), *Text);
+	UE_LOG(LogTemp, Log, TEXT("DialogueManager: TTS completed, success: %s"), bSuccess ? TEXT("true") : TEXT("false"));
 	
 	// Return to waiting for player input
 	AsyncTask(ENamedThreads::GameThread, [this]() {
@@ -337,10 +342,11 @@ void URLDialogueManager::OnTTSCompleted(bool bSuccess, const FString& Text)
 	});
 }
 
-void URLDialogueManager::OnA2FAnimationCompleted(bool bSuccess, const FString& Text)
+void URLDialogueManager::OnA2FAnimationCompleted(FCosyVoiceResult Result)
 {
 	// A2F completion is handled by TTS completion for now
-	UE_LOG(LogTemp, Log, TEXT("DialogueManager: A2F animation completed for: %s"), *Text);
+	UE_LOG(LogTemp, Log, TEXT("DialogueManager: A2F animation completed, success: %s"), 
+		   Result.bSuccess ? TEXT("true") : TEXT("false"));
 }
 
 void URLDialogueManager::SetupEventBindings()
@@ -350,10 +356,10 @@ void URLDialogueManager::SetupEventBindings()
 		LLMService->OnLLMResponse.AddDynamic(this, &URLDialogueManager::OnLLMResponseReceived);
 	}
 	
-	if (TTSManager)
+	if (TTSComponent)
 	{
-		TTSManager->OnTTSCompleted.AddDynamic(this, &URLDialogueManager::OnTTSCompleted);
-		TTSManager->OnTTSWithA2FCompleted.AddDynamic(this, &URLDialogueManager::OnA2FAnimationCompleted);
+		TTSComponent->OnTTSComplete.AddDynamic(this, &URLDialogueManager::OnTTSCompleted);
+		TTSComponent->OnTTSCompleteDetailed.AddDynamic(this, &URLDialogueManager::OnA2FAnimationCompleted);
 	}
 }
 
@@ -364,10 +370,10 @@ void URLDialogueManager::CleanupEventBindings()
 		LLMService->OnLLMResponse.RemoveDynamic(this, &URLDialogueManager::OnLLMResponseReceived);
 	}
 	
-	if (TTSManager)
+	if (TTSComponent)
 	{
-		TTSManager->OnTTSCompleted.RemoveDynamic(this, &URLDialogueManager::OnTTSCompleted);
-		TTSManager->OnTTSWithA2FCompleted.RemoveDynamic(this, &URLDialogueManager::OnA2FAnimationCompleted);
+		TTSComponent->OnTTSComplete.RemoveDynamic(this, &URLDialogueManager::OnTTSCompleted);
+		TTSComponent->OnTTSCompleteDetailed.RemoveDynamic(this, &URLDialogueManager::OnA2FAnimationCompleted);
 	}
 }
 
@@ -400,9 +406,10 @@ void URLDialogueManager::ProcessLLMResponse(const FString& Response)
 
 void URLDialogueManager::PlayNPCResponse(const FString& Response)
 {
-	if (!TTSManager)
+	URLCosyVoiceTTSComponent* CurrentTTSComponent = GetOrCacheTTSComponent();
+	if (!CurrentTTSComponent)
 	{
-		UE_LOG(LogTemp, Error, TEXT("DialogueManager: No TTS Manager available"));
+		UE_LOG(LogTemp, Error, TEXT("DialogueManager: No TTS Component available"));
 		SetDialogueState(EDialogueState::WaitingForPlayer);
 		return;
 	}
@@ -414,7 +421,14 @@ void URLDialogueManager::PlayNPCResponse(const FString& Response)
 	FString SpeakerID = ConversationContext.NPCPersonality.SpeakerID;
 	
 	// Play TTS with A2F if available
-	TTSManager->SpeakText(Response, SpeakerID, bUseA2FByDefault);
+	if (bUseA2FByDefault)
+	{
+		CurrentTTSComponent->SpeakTextWithFacialAnimation(Response, SpeakerID);
+	}
+	else
+	{
+		CurrentTTSComponent->SpeakText(Response, SpeakerID);
+	}
 	
 	UE_LOG(LogTemp, Log, TEXT("DialogueManager: Playing NPC response: %s"), *Response);
 }
@@ -451,10 +465,59 @@ void URLDialogueManager::TrimConversationHistory()
 
 bool URLDialogueManager::ValidateConversationState() const
 {
-	return CurrentNPC != nullptr && LLMService != nullptr && TTSManager != nullptr;
+	return CurrentNPC != nullptr && LLMService != nullptr && TTSComponent != nullptr;
 }
 
 void URLDialogueManager::OnT2TResponseReceived(const FString& ResultText)
 {
     ProcessLLMResponse(ResultText);
+}
+
+URLCosyVoiceTTSComponent* URLDialogueManager::GetOrCacheTTSComponent()
+{
+	if (!TTSComponent && CurrentNPC)
+	{
+		TTSComponent = FindTTSComponentInMetaHuman(CurrentNPC);
+	}
+	return TTSComponent;
+}
+
+URLCosyVoiceTTSComponent* URLDialogueManager::FindTTSComponentInMetaHuman(ARLAIDialogueNPC* NPC)
+{
+	if (!NPC)
+	{
+		UE_LOG(LogTemp, Error, TEXT("DialogueManager: NPC is null"));
+		return nullptr;
+	}
+	
+	if (!NPC->MetaHumanComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DialogueManager: NPC has no MetaHumanComponent"));
+		return nullptr;
+	}
+	
+	// Get the child actor from ChildActorComponent
+	AActor* MetaHumanActor = NPC->MetaHumanComponent->GetChildActor();
+	if (!MetaHumanActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DialogueManager: MetaHumanComponent has no child actor"));
+		return nullptr;
+	}
+	
+	// Find TTS Component in the MetaHuman actor
+	URLCosyVoiceTTSComponent* FoundTTSComponent = MetaHumanActor->FindComponentByClass<URLCosyVoiceTTSComponent>();
+	if (!FoundTTSComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DialogueManager: No TTSComponent found in MetaHuman actor"));
+		return nullptr;
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("DialogueManager: Successfully found TTSComponent in MetaHuman"));
+	return FoundTTSComponent;
+}
+
+void URLDialogueManager::ClearTTSComponentCache()
+{
+	TTSComponent = nullptr;
+	UE_LOG(LogTemp, Log, TEXT("DialogueManager: TTS Component cache cleared"));
 }

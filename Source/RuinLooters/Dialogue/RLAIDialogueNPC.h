@@ -35,7 +35,6 @@ public:
 	// UI Configuration
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI Dialogue|UI")
 	TSubclassOf<URLDialogueWidget> DialogueWidgetClass;
-
 	// Dialogue settings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI Dialogue|Settings")
 	bool bUseA2FByDefault = true;
@@ -84,6 +83,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AI Dialogue")
 	FString GetRandomGreeting() const;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI Dialogue")
+	UChildActorComponent* MetaHumanComponent;
+	
+	
 protected:
 	// Override base NPC interaction
 	virtual void OnDetectPlayerBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
@@ -114,3 +117,4 @@ private:
 	void RestoreGameInputMode();
 	bool ValidateDialogueSetup() const;
 };
+

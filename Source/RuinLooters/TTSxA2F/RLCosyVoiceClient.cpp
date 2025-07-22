@@ -1,536 +1,447 @@
 #include "RLCosyVoiceClient.h"
+#include "RLA2FComponent.h"
 #include "HttpModule.h"
+#include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
-#include "Dom/JsonObject.h"
-#include "Serialization/JsonReader.h"
-#include "Misc/Base64.h"
+#include "Engine/Engine.h"
 #include "Engine/World.h"
-#include "Components/AudioComponent.h"
-#include "Kismet/GameplayStatics.h"
+#include "Misc/DateTime.h"
+#include "Async/Async.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogRLCosyVoice, Log, All);
 
 URLCosyVoiceClient::URLCosyVoiceClient()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	bRequestInProgress = false;
+	CurrentRequest = nullptr;
 }
 
-void URLCosyVoiceClient::BeginPlay()
+void URLCosyVoiceClient::BeginDestroy()
 {
-	Super::BeginPlay();
+	if (bRequestInProgress && CurrentRequest.IsValid())
+	{
+		LogVerbose(TEXT("Canceling request during object destruction"));
+		CurrentRequest->CancelRequest();
+		CurrentRequest.Reset();
+		bRequestInProgress = false;
+	}
 	
-	// Create audio importer instance
-	AudioImporter = URuntimeAudioImporterLibrary::CreateRuntimeAudioImporter();
+	Super::BeginDestroy();
 }
 
 void URLCosyVoiceClient::GenerateTTS(const FString& Text, const FString& SpeakerID)
 {
-	// Store original request info for potential retry
-	if (!CurrentRetryState.bIsRetrying)
+	if (Text.IsEmpty() || Text.TrimStartAndEnd().IsEmpty())
 	{
-		CurrentRetryState.OriginalText = Text;
-		CurrentRetryState.OriginalSpeaker = SpeakerID;
-		CurrentRetryState.RetryCount = 0;
-	}
-
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
-	
-	// Select endpoint based on whether speaker ID is provided
-	FString URL = ServerURL;
-	if (SpeakerID.IsEmpty())
-	{
-		URL += TEXT("/tts");
-	}
-	else
-	{
-		URL += TEXT("/tts/speaker");
-	}
-	
-	Request->SetURL(URL);
-	Request->SetVerb("POST");
-	Request->SetHeader("Content-Type", "application/json");
-	
-	// Create JSON payload
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-	JsonObject->SetStringField("text", Text);
-	JsonObject->SetStringField("return_format", "pcm");
-	JsonObject->SetNumberField("sample_rate", 22050);
-	
-	if (!SpeakerID.IsEmpty())
-	{
-		JsonObject->SetStringField("speaker_id", SpeakerID);
-	}
-	
-	FString RequestBody;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
-	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
-	
-	Request->SetContentAsString(RequestBody);
-	Request->OnProcessRequestComplete().BindUObject(this, &URLCosyVoiceClient::OnTTSResponseReceived);
-	Request->ProcessRequest();
-
-	UE_LOG(LogTemp, Log, TEXT("CosyVoice: TTS request sent - Text: %s, Speaker: %s"), *Text, SpeakerID.IsEmpty() ? TEXT("[none]") : *SpeakerID);
-}
-
-void URLCosyVoiceClient::GeneratePCMStreamingTTS(const FString& Text, const FString& SpeakerID, int32 SampleRate, int32 NumChannels, int32 BitsPerSample)
-{
-	// Store PCM parameters
-	CurrentPCMParams.SampleRate = SampleRate;
-	CurrentPCMParams.NumChannels = NumChannels;
-	CurrentPCMParams.BitsPerSample = BitsPerSample;
-	
-	// Create PCM procedural sound wave
-	CurrentPCMSoundWave = UPCMProceduralSoundWave::CreatePCMProceduralSoundWave(SampleRate, NumChannels);
-	CurrentPCMSoundWave->ConfigureForAudioComponent();
-	
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
-	
-	// Select endpoint based on whether speaker ID is provided
-	FString URL = ServerURL;
-	if (SpeakerID.IsEmpty())
-	{
-		URL += TEXT("/tts");
-	}
-	else
-	{
-		URL += TEXT("/tts/speaker");
-	}
-	
-	Request->SetURL(URL);
-	Request->SetVerb("POST");
-	Request->SetHeader("Content-Type", "application/json");
-	
-	// Create JSON payload
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-	JsonObject->SetStringField("text", Text);
-	JsonObject->SetStringField("return_format", "pcm");
-	JsonObject->SetNumberField("sample_rate", SampleRate);
-	
-	if (!SpeakerID.IsEmpty())
-	{
-		JsonObject->SetStringField("speaker_id", SpeakerID);
-	}
-	
-	FString RequestBody;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
-	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
-	
-	Request->SetContentAsString(RequestBody);
-	Request->OnProcessRequestComplete().BindUObject(this, &URLCosyVoiceClient::OnPCMTTSResponseReceived);
-	Request->ProcessRequest();
-}
-
-void URLCosyVoiceClient::GetSpeakerList()
-{
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
-	Request->SetURL(ServerURL + TEXT("/speakers"));
-	Request->SetVerb("GET");
-	Request->OnProcessRequestComplete().BindUObject(this, &URLCosyVoiceClient::OnSpeakerListResponseReceived);
-	Request->ProcessRequest();
-}
-
-void URLCosyVoiceClient::CreateVoicePreset(const FString& PresetID, const FString& SampleText, const TArray<uint8>& AudioData, const FString& Description)
-{
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
-	Request->SetURL(ServerURL + TEXT("/speakers"));
-	Request->SetVerb("POST");
-	
-	// Create multipart form data
-	FString Boundary = FGuid::NewGuid().ToString();
-	Request->SetHeader("Content-Type", FString::Printf(TEXT("multipart/form-data; boundary=%s"), *Boundary));
-	
-	// Build form data
-	TArray<uint8> RequestContent;
-	FString FormData;
-	
-	// speaker_id
-	FormData += FString::Printf(TEXT("--%s\r\n"), *Boundary);
-	FormData += TEXT("Content-Disposition: form-data; name=\"speaker_id\"\r\n\r\n");
-	FormData += PresetID + TEXT("\r\n");
-	
-	// prompt_text
-	FormData += FString::Printf(TEXT("--%s\r\n"), *Boundary);
-	FormData += TEXT("Content-Disposition: form-data; name=\"prompt_text\"\r\n\r\n");
-	FormData += SampleText + TEXT("\r\n");
-	
-	// description (optional)
-	if (!Description.IsEmpty())
-	{
-		FormData += FString::Printf(TEXT("--%s\r\n"), *Boundary);
-		FormData += TEXT("Content-Disposition: form-data; name=\"description\"\r\n\r\n");
-		FormData += Description + TEXT("\r\n");
-	}
-	
-	// prompt_audio
-	FormData += FString::Printf(TEXT("--%s\r\n"), *Boundary);
-	FormData += TEXT("Content-Disposition: form-data; name=\"prompt_audio\"; filename=\"voice.wav\"\r\n");
-	FormData += TEXT("Content-Type: audio/wav\r\n\r\n");
-	
-	// Convert text to bytes
-	RequestContent.Append((uint8*)TCHAR_TO_UTF8(*FormData), FormData.Len());
-	// Add audio data
-	RequestContent.Append(AudioData);
-	// End boundary
-	FString EndBoundary = FString::Printf(TEXT("\r\n--%s--\r\n"), *Boundary);
-	RequestContent.Append((uint8*)TCHAR_TO_UTF8(*EndBoundary), EndBoundary.Len());
-	
-	Request->SetContent(RequestContent);
-	Request->OnProcessRequestComplete().BindUObject(this, &URLCosyVoiceClient::OnSpeakerOperationResponseReceived);
-	Request->ProcessRequest();
-}
-
-void URLCosyVoiceClient::DeleteSpeaker(const FString& SpeakerID)
-{
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
-	Request->SetURL(ServerURL + TEXT("/speakers/") + SpeakerID);
-	Request->SetVerb("DELETE");
-	Request->OnProcessRequestComplete().BindUObject(this, &URLCosyVoiceClient::OnSpeakerOperationResponseReceived);
-	Request->ProcessRequest();
-}
-
-void URLCosyVoiceClient::GenerateZeroShotTTS(const FString& Text, const FString& PromptText, const TArray<uint8>& PromptAudioData)
-{
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
-	Request->SetURL(ServerURL + TEXT("/tts/zero-shot"));
-	Request->SetVerb("POST");
-	
-	// Create multipart form data
-	FString Boundary = FGuid::NewGuid().ToString();
-	Request->SetHeader("Content-Type", FString::Printf(TEXT("multipart/form-data; boundary=%s"), *Boundary));
-	
-	// Build form data
-	TArray<uint8> RequestContent;
-	FString FormData;
-	
-	// text
-	FormData += FString::Printf(TEXT("--%s\r\n"), *Boundary);
-	FormData += TEXT("Content-Disposition: form-data; name=\"text\"\r\n\r\n");
-	FormData += Text + TEXT("\r\n");
-	
-	// prompt_text
-	FormData += FString::Printf(TEXT("--%s\r\n"), *Boundary);
-	FormData += TEXT("Content-Disposition: form-data; name=\"prompt_text\"\r\n\r\n");
-	FormData += PromptText + TEXT("\r\n");
-	
-	// return_format
-	FormData += FString::Printf(TEXT("--%s\r\n"), *Boundary);
-	FormData += TEXT("Content-Disposition: form-data; name=\"return_format\"\r\n\r\n");
-	FormData += TEXT("pcm\r\n");
-	
-	// prompt_audio
-	FormData += FString::Printf(TEXT("--%s\r\n"), *Boundary);
-	FormData += TEXT("Content-Disposition: form-data; name=\"prompt_audio\"; filename=\"prompt.wav\"\r\n");
-	FormData += TEXT("Content-Type: audio/wav\r\n\r\n");
-	
-	// Convert text to bytes
-	RequestContent.Append((uint8*)TCHAR_TO_UTF8(*FormData), FormData.Len());
-	// Add audio data
-	RequestContent.Append(PromptAudioData);
-	// End boundary
-	FString EndBoundary = FString::Printf(TEXT("\r\n--%s--\r\n"), *Boundary);
-	RequestContent.Append((uint8*)TCHAR_TO_UTF8(*EndBoundary), EndBoundary.Len());
-	
-	Request->SetContent(RequestContent);
-	Request->OnProcessRequestComplete().BindUObject(this, &URLCosyVoiceClient::OnTTSResponseReceived);
-	Request->ProcessRequest();
-}
-
-void URLCosyVoiceClient::CheckServerHealth()
-{
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
-	Request->SetURL(ServerURL + TEXT("/health"));
-	Request->SetVerb("GET");
-	Request->OnProcessRequestComplete().BindUObject(this, &URLCosyVoiceClient::OnHealthCheckResponseReceived);
-	Request->ProcessRequest();
-}
-
-void URLCosyVoiceClient::OnTTSResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess)
-{
-	if (bSuccess && Response.IsValid() && Response->GetResponseCode() == 200)
-	{
-		// Success - reset retry state and process audio
-		CurrentRetryState.Reset();
+		LogError(TEXT("GenerateTTS: Text is empty"));
 		
-		// Parse JSON response
-		TSharedPtr<FJsonObject> JsonObject;
-		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+		FCosyVoiceResult Result;
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::InvalidResponse;
+		Result.ErrorMessage = TEXT("Input text is empty");
 		
-		if (FJsonSerializer::Deserialize(Reader, JsonObject))
-		{
-			FString AudioDataBase64;
-			int32 SampleRate = 22050;
-			
-			if (JsonObject->TryGetStringField(TEXT("audio_data"), AudioDataBase64))
-			{
-				JsonObject->TryGetNumberField(TEXT("sample_rate"), SampleRate);
-				
-				// Decode Base64 audio data
-				TArray<uint8> AudioData = DecodeBase64(AudioDataBase64);
-				
-				// Process PCM audio data using RuntimeAudioImporter
-				ProcessPCMAudioData(AudioData, SampleRate, 1, 16);
-			}
-		}
-	}
-	else
-	{
-		// Check if this is a speaker not found error and we can retry
-		bool bShouldRetry = false;
-		FString ResponseBody;
-		
-		if (Response.IsValid())
-		{
-			ResponseBody = Response->GetContentAsString();
-			int32 ResponseCode = Response->GetResponseCode();
-			
-			// Check for speaker not found error (400 with specific message)
-			if (ResponseCode == 400 && IsSpeakerNotFoundError(ResponseBody))
-			{
-				if (CurrentRetryState.RetryCount < CurrentRetryState.MaxRetries)
-				{
-					bShouldRetry = true;
-				}
-			}
-		}
-		
-		if (bShouldRetry)
-		{
-			// Try fallback speaker
-			FString CurrentSpeaker = CurrentRetryState.bIsRetrying ? 
-				GetNextFallbackSpeaker(CurrentRetryState.OriginalSpeaker) : 
-				CurrentRetryState.OriginalSpeaker;
-			
-			RetryTTSWithFallbackSpeaker(CurrentRetryState.OriginalText, CurrentSpeaker);
-		}
-		else
-		{
-			// Final failure - log error and reset retry state
-			FString ErrorMsg = TEXT("CosyVoice TTS request failed");
-			
-			if (Response.IsValid())
-			{
-				int32 ResponseCode = Response->GetResponseCode();
-				ErrorMsg += FString::Printf(TEXT(" - Status: %d, Body: %s"), ResponseCode, *ResponseBody);
-			}
-			else if (!bSuccess)
-			{
-				ErrorMsg += TEXT(" - Network connection failed");
-			}
-			else
-			{
-				ErrorMsg += TEXT(" - Invalid response");
-			}
-			
-			if (CurrentRetryState.RetryCount > 0)
-			{
-				ErrorMsg += FString::Printf(TEXT(" (after %d retries)"), CurrentRetryState.RetryCount);
-			}
-			
-			UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMsg);
-			UE_LOG(LogTemp, Error, TEXT("Server URL: %s"), *ServerURL);
-			
-			CurrentRetryState.Reset();
-			OnTTSResponse.Broadcast(false, nullptr);
-		}
-	}
-}
-
-void URLCosyVoiceClient::OnPCMTTSResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess)
-{
-	if (bSuccess && Response.IsValid() && Response->GetResponseCode() == 200)
-	{
-		// Parse JSON response
-		TSharedPtr<FJsonObject> JsonObject;
-		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-		
-		if (FJsonSerializer::Deserialize(Reader, JsonObject))
-		{
-			FString AudioDataBase64;
-			
-			if (JsonObject->TryGetStringField(TEXT("audio_data"), AudioDataBase64))
-			{
-				// Decode Base64 audio data
-				TArray<uint8> AudioData = DecodeBase64(AudioDataBase64);
-				
-				// Add PCM data to procedural sound wave
-				if (CurrentPCMSoundWave)
-				{
-					CurrentPCMSoundWave->AddPCMData(AudioData);
-					OnPCMTTSResponse.Broadcast(true, CurrentPCMSoundWave);
-				}
-			}
-		}
-	}
-	else
-	{
-		OnPCMTTSResponse.Broadcast(false, nullptr);
-		UE_LOG(LogTemp, Error, TEXT("CosyVoice PCM TTS request failed"));
-	}
-}
-
-void URLCosyVoiceClient::OnSpeakerListResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess)
-{
-	TArray<FString> SpeakerIDs;
-	
-	if (bSuccess && Response.IsValid() && Response->GetResponseCode() == 200)
-	{
-		// Parse JSON response
-		TSharedPtr<FJsonObject> JsonObject;
-		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-		
-		if (FJsonSerializer::Deserialize(Reader, JsonObject))
-		{
-			const TSharedPtr<FJsonObject>* SpeakersObject;
-			if (JsonObject->TryGetObjectField(TEXT("speakers"), SpeakersObject))
-			{
-				for (const auto& SpeakerPair : (*SpeakersObject)->Values)
-				{
-					SpeakerIDs.Add(SpeakerPair.Key);
-				}
-			}
-		}
-		
-		OnSpeakerListResponse.Broadcast(true, SpeakerIDs);
-	}
-	else
-	{
-		OnSpeakerListResponse.Broadcast(false, SpeakerIDs);
-		UE_LOG(LogTemp, Error, TEXT("CosyVoice speaker list request failed"));
-	}
-}
-
-void URLCosyVoiceClient::OnSpeakerOperationResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess)
-{
-	FString Message;
-	
-	if (bSuccess && Response.IsValid())
-	{
-		int32 ResponseCode = Response->GetResponseCode();
-		if (ResponseCode == 200 || ResponseCode == 201)
-		{
-			Message = TEXT("Operation completed successfully");
-			OnSpeakerOperationResponse.Broadcast(true, Message);
-		}
-		else
-		{
-			Message = FString::Printf(TEXT("Operation failed with code: %d"), ResponseCode);
-			OnSpeakerOperationResponse.Broadcast(false, Message);
-		}
-	}
-	else
-	{
-		Message = TEXT("Request failed");
-		OnSpeakerOperationResponse.Broadcast(false, Message);
-	}
-}
-
-void URLCosyVoiceClient::OnHealthCheckResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess)
-{
-	if (bSuccess && Response.IsValid() && Response->GetResponseCode() == 200)
-	{
-		UE_LOG(LogTemp, Log, TEXT("✅ CosyVoice server is healthy (URL: %s)"), *ServerURL);
-	}
-	else
-	{
-		FString ErrorDetails;
-		if (Response.IsValid())
-		{
-			ErrorDetails = FString::Printf(TEXT("Status: %d, Response: %s"), Response->GetResponseCode(), *Response->GetContentAsString());
-		}
-		else
-		{
-			ErrorDetails = TEXT("No response - server may be offline or unreachable");
-		}
-		
-		UE_LOG(LogTemp, Error, TEXT("❌ CosyVoice server health check failed"));
-		UE_LOG(LogTemp, Error, TEXT("Server URL: %s"), *ServerURL);
-		UE_LOG(LogTemp, Error, TEXT("Error Details: %s"), *ErrorDetails);
-	}
-}
-
-TArray<uint8> URLCosyVoiceClient::DecodeBase64(const FString& Base64String)
-{
-	TArray<uint8> DecodedData;
-	FBase64::Decode(Base64String, DecodedData);
-	return DecodedData;
-}
-
-void URLCosyVoiceClient::ProcessPCMAudioData(const TArray<uint8>& AudioData, int32 SampleRate, int32 NumChannels, int32 BitsPerSample)
-{
-	if (!AudioImporter)
-	{
-		OnTTSResponse.Broadcast(false, nullptr);
+		OnTTSCompleteDetailed.Broadcast(Result);
+		OnTTSComplete.Broadcast(TArray<uint8>(), false);
 		return;
 	}
 	
-	// Bind to the delegate first (RuntimeAudioImporter requires this)
-	AudioImporter->OnResult.AddDynamic(this, &URLCosyVoiceClient::OnAudioImportResult);
-	
-	// Import audio from RAW PCM buffer
-	AudioImporter->ImportAudioFromRAWBuffer(AudioData, ERuntimeRAWAudioFormat::Int16, SampleRate, NumChannels);
-}
-
-void URLCosyVoiceClient::OnAudioImportResult(URuntimeAudioImporterLibrary* Importer, UImportedSoundWave* ImportedSoundWave, ERuntimeImportStatus Status)
-{
-	bool bSuccess = (Status == ERuntimeImportStatus::SuccessfulImport);
-	
-	if (bSuccess && ImportedSoundWave)
+	if (Text.Len() > 1000)
 	{
-		// Configure sound wave properties
-		ImportedSoundWave->SetLooping(false);
-		ImportedSoundWave->SetVolume(1.0f);
+		LogError(FString::Printf(TEXT("GenerateTTS: Text too long (%d chars, max 1000)"), Text.Len()));
 		
-		UE_LOG(LogTemp, Log, TEXT("✅ CosyVoice: Audio imported successfully - Duration: %.2fs"), ImportedSoundWave->GetDuration());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("❌ CosyVoice: Audio import failed - Status: %d"), (int32)Status);
+		FCosyVoiceResult Result;
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::InvalidResponse;
+		Result.ErrorMessage = FString::Printf(TEXT("Text too long (%d characters, max 1000)"), Text.Len());
+		
+		OnTTSCompleteDetailed.Broadcast(Result);
+		OnTTSComplete.Broadcast(TArray<uint8>(), false);
+		return;
 	}
 	
-	// Broadcast the result to TTSManager
-	OnTTSResponse.Broadcast(bSuccess, ImportedSoundWave);
+	ProcessTTSRequest(Text, SpeakerID);
 }
 
-void URLCosyVoiceClient::RetryTTSWithFallbackSpeaker(const FString& OriginalText, const FString& FailedSpeaker)
+void URLCosyVoiceClient::GenerateTTSWithA2F(const FString& Text, URLA2FComponent* A2FComponent, const FString& SpeakerID)
 {
-	FString NextSpeaker = GetNextFallbackSpeaker(FailedSpeaker);
-	CurrentRetryState.RetryCount++;
-	CurrentRetryState.bIsRetrying = true;
+	if (!A2FComponent)
+	{
+		LogError(TEXT("GenerateTTSWithA2F: A2FComponent is null"));
+		
+		FCosyVoiceResult Result;
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::A2FComponentNull;
+		Result.ErrorMessage = TEXT("A2FComponent is null");
+		
+		OnTTSCompleteDetailed.Broadcast(Result);
+		OnTTSComplete.Broadcast(TArray<uint8>(), false);
+		return;
+	}
 	
-	UE_LOG(LogTemp, Warning, TEXT("CosyVoice: Speaker '%s' failed, retrying with '%s' (attempt %d/%d)"), 
-		*FailedSpeaker, 
-		NextSpeaker.IsEmpty() ? TEXT("[default]") : *NextSpeaker,
-		CurrentRetryState.RetryCount, 
-		CurrentRetryState.MaxRetries);
+	if (Text.IsEmpty() || Text.TrimStartAndEnd().IsEmpty())
+	{
+		LogError(TEXT("GenerateTTSWithA2F: Text is empty"));
+		
+		FCosyVoiceResult Result;
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::InvalidResponse;
+		Result.ErrorMessage = TEXT("Input text is empty");
+		
+		OnTTSCompleteDetailed.Broadcast(Result);
+		OnTTSComplete.Broadcast(TArray<uint8>(), false);
+		return;
+	}
 	
-	// Retry with fallback speaker
-	GenerateTTS(OriginalText, NextSpeaker);
+	if (Text.Len() > 1000)
+	{
+		LogError(FString::Printf(TEXT("GenerateTTSWithA2F: Text too long (%d chars, max 1000)"), Text.Len()));
+		
+		FCosyVoiceResult Result;
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::InvalidResponse;
+		Result.ErrorMessage = FString::Printf(TEXT("Text too long (%d characters, max 1000)"), Text.Len());
+		
+		OnTTSCompleteDetailed.Broadcast(Result);
+		OnTTSComplete.Broadcast(TArray<uint8>(), false);
+		return;
+	}
+	
+	ProcessTTSRequest(Text, SpeakerID, A2FComponent);
 }
 
-FString URLCosyVoiceClient::GetNextFallbackSpeaker(const FString& CurrentSpeaker)
+void URLCosyVoiceClient::CancelCurrentRequest()
 {
-	// Fallback chain: specific_speaker -> "default" -> "" (empty/basic)
-	if (CurrentSpeaker == TEXT("sample"))
+	if (bRequestInProgress && CurrentRequest.IsValid())
 	{
-		return TEXT("default");
-	}
-	else if (CurrentSpeaker == TEXT("default"))
-	{
-		return TEXT(""); // Empty string for basic TTS
-	}
-	else if (!CurrentSpeaker.IsEmpty())
-	{
-		return TEXT("default"); // Try default first for any other speaker
-	}
-	else
-	{
-		return TEXT(""); // Already at basic TTS, no more fallbacks
+		LogVerbose(TEXT("Canceling current TTS request"));
+		CurrentRequest->CancelRequest();
+		CurrentRequest.Reset();
+		bRequestInProgress = false;
+		
+		FCosyVoiceResult Result;
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::NetworkTimeout;
+		Result.ErrorMessage = TEXT("Request cancelled by user");
+		
+		OnTTSCompleteDetailed.Broadcast(Result);
+		OnTTSComplete.Broadcast(TArray<uint8>(), false);
 	}
 }
 
-bool URLCosyVoiceClient::IsSpeakerNotFoundError(const FString& ErrorMessage)
+void URLCosyVoiceClient::ProcessTTSRequest(const FString& Text, const FString& SpeakerID, URLA2FComponent* A2FComponent)
 {
-	// Check for common speaker not found error patterns
-	return ErrorMessage.Contains(TEXT("Speaker")) && 
-		   (ErrorMessage.Contains(TEXT("not found")) || 
-			ErrorMessage.Contains(TEXT("sample not found")) ||
-			ErrorMessage.Contains(TEXT("does not exist")));
+	if (bRequestInProgress)
+	{
+		LogError(TEXT("ProcessTTSRequest: Request already in progress"));
+		
+		FCosyVoiceResult Result;
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::InvalidResponse;
+		Result.ErrorMessage = TEXT("Request already in progress");
+		
+		OnTTSCompleteDetailed.Broadcast(Result);
+		OnTTSComplete.Broadcast(TArray<uint8>(), false);
+		return;
+	}
+	
+	if (!FHttpModule::Get().IsHttpEnabled())
+	{
+		LogError(TEXT("ProcessTTSRequest: HTTP module is not enabled"));
+		
+		FCosyVoiceResult Result;
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::ServerError;
+		Result.ErrorMessage = TEXT("HTTP module is not enabled");
+		
+		OnTTSCompleteDetailed.Broadcast(Result);
+		OnTTSComplete.Broadcast(TArray<uint8>(), false);
+		return;
+	}
+	
+	// Create HTTP request
+	CurrentRequest = FHttpModule::Get().CreateRequest();
+	if (!CurrentRequest.IsValid())
+	{
+		LogError(TEXT("ProcessTTSRequest: Failed to create HTTP request"));
+		
+		FCosyVoiceResult Result;
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::ServerError;
+		Result.ErrorMessage = TEXT("Failed to create HTTP request");
+		
+		OnTTSCompleteDetailed.Broadcast(Result);
+		OnTTSComplete.Broadcast(TArray<uint8>(), false);
+		return;
+	}
+	
+	// Configure request
+	const FString Endpoint = SpeakerID.IsEmpty() ? TEXT("/tts") : TEXT("/tts/speaker");
+	const FString FullURL = Settings.ServerURL + Endpoint;
+	
+	CurrentRequest->SetURL(FullURL);
+	CurrentRequest->SetVerb(TEXT("POST"));
+	CurrentRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+	CurrentRequest->SetHeader(TEXT("User-Agent"), TEXT("RuinLooters-CosyVoiceClient/1.0"));
+	CurrentRequest->SetTimeout(Settings.RequestTimeout);
+	
+	// Create JSON payload
+	const FString RequestPayload = CreateRequestPayload(Text, SpeakerID);
+	CurrentRequest->SetContentAsString(RequestPayload);
+	
+	LogVerbose(FString::Printf(TEXT("Sending TTS request to: %s"), *FullURL));
+	LogVerbose(FString::Printf(TEXT("Request payload: %s"), *RequestPayload));
+	
+	// Set callback
+	const float RequestStartTime = FPlatformTime::Seconds();
+	CurrentRequest->OnProcessRequestComplete().BindUObject(this, &URLCosyVoiceClient::OnTTSResponseReceived, A2FComponent, RequestStartTime);
+	
+	// Send request
+	bRequestInProgress = true;
+	if (!CurrentRequest->ProcessRequest())
+	{
+		LogError(TEXT("ProcessTTSRequest: Failed to process HTTP request"));
+		
+		bRequestInProgress = false;
+		CurrentRequest.Reset();
+		
+		FCosyVoiceResult Result;
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::NetworkTimeout;
+		Result.ErrorMessage = TEXT("Failed to process HTTP request");
+		
+		OnTTSCompleteDetailed.Broadcast(Result);
+		OnTTSComplete.Broadcast(TArray<uint8>(), false);
+	}
+}
+
+void URLCosyVoiceClient::OnTTSResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, 
+											  bool bSuccess, URLA2FComponent* A2FComponent, float RequestStartTime)
+{
+	// Reset request state
+	bRequestInProgress = false;
+	CurrentRequest.Reset();
+	
+	const float ProcessingTime = FPlatformTime::Seconds() - RequestStartTime;
+	
+	if (!bSuccess || !Response.IsValid())
+	{
+		LogError(TEXT("OnTTSResponseReceived: HTTP request failed"));
+		
+		FCosyVoiceResult Result;
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::NetworkTimeout;
+		Result.ErrorMessage = TEXT("HTTP request failed");
+		Result.ProcessingTime = ProcessingTime;
+		
+		OnTTSCompleteDetailed.Broadcast(Result);
+		OnTTSComplete.Broadcast(TArray<uint8>(), false);
+		return;
+	}
+	
+	const int32 ResponseCode = Response->GetResponseCode();
+	if (ResponseCode != 200)
+	{
+		// Get detailed error message from server response
+		FString ServerResponse = Response->GetContentAsString();
+		LogError(FString::Printf(TEXT("OnTTSResponseReceived: Server returned error code %d"), ResponseCode));
+		LogError(FString::Printf(TEXT("Server response: %s"), *ServerResponse));
+		
+		// Try to parse JSON error message
+		FString DetailedError = FString::Printf(TEXT("Server error: %d"), ResponseCode);
+		TSharedPtr<FJsonObject> JsonResponse;
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ServerResponse);
+		
+		if (FJsonSerializer::Deserialize(Reader, JsonResponse) && JsonResponse.IsValid())
+		{
+			FString Detail;
+			if (JsonResponse->TryGetStringField(TEXT("detail"), Detail))
+			{
+				DetailedError = FString::Printf(TEXT("Server error (%d): %s"), ResponseCode, *Detail);
+			}
+		}
+		
+		FCosyVoiceResult Result;
+		Result.bSuccess = false;
+		Result.ErrorCode = (ResponseCode == 400) ? ECosyVoiceError::InvalidResponse : ECosyVoiceError::ServerError;
+		Result.ErrorMessage = DetailedError;
+		Result.ProcessingTime = ProcessingTime;
+		
+		OnTTSCompleteDetailed.Broadcast(Result);
+		OnTTSComplete.Broadcast(TArray<uint8>(), false);
+		return;
+	}
+	
+	// Process response
+	FCosyVoiceResult Result = ProcessResponse(Response, ProcessingTime);
+	
+	// Integrate with A2F if component provided using direct PCM processing
+	if (Result.bSuccess && A2FComponent && Result.PCMData.Num() > 0)
+	{
+		LogVerbose(TEXT("Integrating with A2F component using direct PCM processing"));
+		bool bA2FSuccess = A2FComponent->ExecuteA2FAnimationFromPCMDataSync(
+			Result.PCMData, 
+			Result.SampleRate, 
+			Result.NumChannels
+		);
+		
+		if (!bA2FSuccess)
+		{
+			LogError(TEXT("A2F integration failed"));
+		}
+	}
+	
+	// Broadcast results
+	OnTTSCompleteDetailed.Broadcast(Result);
+	OnTTSComplete.Broadcast(Result.PCMData, Result.bSuccess);
+}
+
+FString URLCosyVoiceClient::CreateRequestPayload(const FString& Text, const FString& SpeakerID)
+{
+	TSharedPtr<FJsonObject> JsonPayload = MakeShareable(new FJsonObject);
+	
+	JsonPayload->SetStringField(TEXT("text"), Text);
+	JsonPayload->SetStringField(TEXT("return_format"), TEXT("pcm"));
+	JsonPayload->SetNumberField(TEXT("sample_rate"), Settings.SampleRate);
+	
+	if (!SpeakerID.IsEmpty())
+	{
+		JsonPayload->SetStringField(TEXT("speaker_id"), SpeakerID);
+	}
+	
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	FJsonSerializer::Serialize(JsonPayload.ToSharedRef(), Writer);
+	
+	return OutputString;
+}
+
+FCosyVoiceResult URLCosyVoiceClient::ProcessResponse(FHttpResponsePtr Response, float ProcessingTime)
+{
+	FCosyVoiceResult Result;
+	Result.ProcessingTime = ProcessingTime;
+	
+	// Parse JSON response
+	TSharedPtr<FJsonObject> JsonResponse;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	
+	if (!FJsonSerializer::Deserialize(Reader, JsonResponse) || !JsonResponse.IsValid())
+	{
+		LogError(TEXT("ProcessResponse: Failed to parse JSON response"));
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::InvalidResponse;
+		Result.ErrorMessage = TEXT("Failed to parse JSON response");
+		return Result;
+	}
+	
+	// Extract audio data
+	FString AudioDataBase64;
+	if (!JsonResponse->TryGetStringField(TEXT("audio_data"), AudioDataBase64))
+	{
+		LogError(TEXT("ProcessResponse: Missing audio_data field in response"));
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::InvalidResponse;
+		Result.ErrorMessage = TEXT("Missing audio_data field in response");
+		return Result;
+	}
+	
+	int32 SampleRate;
+	if (!JsonResponse->TryGetNumberField(TEXT("sample_rate"), SampleRate))
+	{
+		LogError(TEXT("ProcessResponse: Missing sample_rate field in response"));
+		SampleRate = Settings.SampleRate; // Use default
+	}
+	
+	// Decode Base64 audio
+	TArray<uint8> PCMData;
+	if (!FCosyVoiceUtils::DecodeBase64Audio(AudioDataBase64, PCMData))
+	{
+		LogError(TEXT("ProcessResponse: Failed to decode Base64 audio data"));
+		Result.bSuccess = false;
+		Result.ErrorCode = ECosyVoiceError::Base64DecodeFailed;
+		Result.ErrorMessage = TEXT("Failed to decode Base64 audio data");
+		return Result;
+	}
+	
+	// Store PCM data directly in result (no SoundWave creation)
+	Result.bSuccess = true;
+	Result.ErrorCode = ECosyVoiceError::None;
+	Result.PCMData = PCMData;
+	Result.SampleRate = SampleRate;
+	const int32 NumChannels = 1; // CosyVoice outputs mono audio by default
+	Result.NumChannels = NumChannels;
+	Result.AudioDataSize = PCMData.Num();
+	
+	// Calculate audio duration for logging
+	float AudioDuration = 0.0f;
+	if (SampleRate > 0 && NumChannels > 0)
+	{
+		int32 NumSamples = PCMData.Num() / (2 * NumChannels); // 16-bit = 2 bytes per sample
+		AudioDuration = static_cast<float>(NumSamples) / SampleRate;
+	}
+	
+	LogVerbose(FString::Printf(TEXT("Successfully generated TTS audio: %d bytes, %.2fs duration (%d Hz, %d channels)"), 
+							  PCMData.Num(), AudioDuration, SampleRate, NumChannels));
+	
+	return Result;
+}
+
+void URLCosyVoiceClient::LogVerbose(const FString& Message)
+{
+	if (Settings.bLogVerbose)
+	{
+		UE_LOG(LogRLCosyVoice, Verbose, TEXT("%s"), *Message);
+	}
+}
+
+void URLCosyVoiceClient::LogError(const FString& Message)
+{
+	UE_LOG(LogRLCosyVoice, Error, TEXT("%s"), *Message);
+}
+
+// Static utility functions implementation
+bool FCosyVoiceUtils::DecodeBase64Audio(const FString& Base64Data, TArray<uint8>& OutPCMData)
+{
+	if (Base64Data.IsEmpty())
+	{
+		UE_LOG(LogRLCosyVoice, Error, TEXT("DecodeBase64Audio: Base64 data is empty"));
+		return false;
+	}
+	
+	if (!FBase64::Decode(Base64Data, OutPCMData))
+	{
+		UE_LOG(LogRLCosyVoice, Error, TEXT("DecodeBase64Audio: Failed to decode Base64 data"));
+		return false;
+	}
+	
+	if (OutPCMData.Num() == 0)
+	{
+		UE_LOG(LogRLCosyVoice, Error, TEXT("DecodeBase64Audio: Decoded data is empty"));
+		return false;
+	}
+	
+	return true;
+}
+
+
+bool FCosyVoiceUtils::ValidateAudioFormat(int32 SampleRate, int32 NumChannels, int32 BitDepth)
+{
+	if (SampleRate <= 0 || SampleRate > 96000)
+	{
+		UE_LOG(LogRLCosyVoice, Error, TEXT("ValidateAudioFormat: Invalid sample rate %d"), SampleRate);
+		return false;
+	}
+	
+	if (NumChannels <= 0 || NumChannels > 8)
+	{
+		UE_LOG(LogRLCosyVoice, Error, TEXT("ValidateAudioFormat: Invalid channel count %d"), NumChannels);
+		return false;
+	}
+	
+	if (BitDepth != 8 && BitDepth != 16 && BitDepth != 24 && BitDepth != 32)
+	{
+		UE_LOG(LogRLCosyVoice, Error, TEXT("ValidateAudioFormat: Invalid bit depth %d"), BitDepth);
+		return false;
+	}
+	
+	return true;
 }

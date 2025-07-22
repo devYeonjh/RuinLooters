@@ -1,6 +1,7 @@
 #include "RLAIDialogueNPC.h"
 #include "Character/RLCharacterPlayer.h"
 #include "Controller/RLPlayerController.h"
+#include "TTSxA2F/RLCosyVoiceTTSComponent.h"
 #include "Engine/World.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
@@ -12,6 +13,9 @@ ARLAIDialogueNPC::ARLAIDialogueNPC()
 {
 	// Create dialogue manager component
 	DialogueManager = CreateDefaultSubobject<URLDialogueManager>(TEXT("DialogueManager"));
+
+	MetaHumanComponent = CreateDefaultSubobject<UChildActorComponent>(TEXT("MyChildActorComponent"));
+	MetaHumanComponent->SetupAttachment(RootComponent); // Attach to the root or another component
 	
 	// Set default values
 	bUseA2FByDefault = true;
@@ -148,9 +152,16 @@ void ARLAIDialogueNPC::PlayGreeting()
 	FString Greeting = GetRandomGreeting();
 	
 	// Play greeting through TTS if dialogue manager is available
-	if (DialogueManager && DialogueManager->TTSManager)
+	if (DialogueManager && DialogueManager->TTSComponent)
 	{
-		DialogueManager->TTSManager->SpeakText(Greeting, Personality.SpeakerID, bUseA2FByDefault);
+		if (bUseA2FByDefault)
+		{
+			DialogueManager->TTSComponent->SpeakTextWithFacialAnimation(Greeting, Personality.SpeakerID);
+		}
+		else
+		{
+			DialogueManager->TTSComponent->SpeakText(Greeting, Personality.SpeakerID);
+		}
 		UE_LOG(LogTemp, Log, TEXT("AIDialogueNPC: Playing greeting: %s"), *Greeting);
 	}
 }
