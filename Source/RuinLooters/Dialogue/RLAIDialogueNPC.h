@@ -7,6 +7,9 @@
 #include "UI/RLDialogueWidget.h"
 #include "RLAIDialogueNPC.generated.h"
 
+// Forward declarations
+class ARLCharacterEnemyDragon;
+
 /**
  * AI-powered dialogue NPC that extends the base RLNPC
  * Supports intelligent conversations using LLM integration
@@ -116,5 +119,8 @@ private:
 	void SwitchToDialogueInputMode();
 	void RestoreGameInputMode();
 	bool ValidateDialogueSetup() const;
+	
+	// Dragon death event handler
+	UFUNCTION()
+	void OnDragonDeath();
 };
-
