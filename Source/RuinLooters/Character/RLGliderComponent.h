@@ -66,6 +66,7 @@ private:
     bool bGliderScaling = false;
     UPROPERTY(EditDefaultsOnly, Category="Glider|Effect")
     TSoftClassPtr<AActor> PortalEffectClass;
+    UPROPERTY()
     TArray<AActor*> ActivePortalEffects;
     FVector LastGlideInputDirection = FVector::ZeroVector; // 글라이드 관성 회전용
     bool OriginalUseControllerRotationYaw = false;
