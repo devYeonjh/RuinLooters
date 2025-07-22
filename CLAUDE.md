@@ -4,117 +4,158 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-RuinLooters is an Unreal Engine 5.5 action RPG game featuring combat, character progression, and item collection mechanics. The game includes multiple character types, AI-controlled enemies, weapon systems, and a stage-based progression system.
+RuinLooters is a 3D action RPG game built with Unreal Engine 5.5. Key features include:
+- Third-person combat with melee and ranged weapons
+- Enemy AI with behavior trees
+- Gliding/flying mechanics
+- Save/load system
+- Inventory and merchant NPCs
+- Level progression through portals
 
-## Development Commands
+## Build & Development Commands
+
+### Opening the Project
+```bash
+# Open project in UE5 Editor (adjust path as needed)
+"C:\Program Files\Epic Games\UE_5.5\Engine\Binaries\Win64\UnrealEditor.exe" "D:\UE5\RuinLooters\RuinLooters.uproject"
+```
 
 ### Building the Project
-- Use Unreal Engine Editor to build the project (File -> Compile or hot reload via Live Coding)
-- For full rebuilds: right-click on the .uproject file and select "Generate Visual Studio Project Files"
-- Build configurations: DebugGame, Development, Shipping
+```bash
+# Generate Visual Studio project files
+"C:\Program Files\Epic Games\UE_5.5\Engine\Build\BatchFiles\GenerateProjectFiles.bat" "D:\UE5\RuinLooters\RuinLooters.uproject"
 
-### Testing
-- Use Unreal Engine's PIE (Play in Editor) for quick testing
-- Package the game for standalone testing: File -> Package Project
+# Build from Visual Studio
+# Open RuinLooters.sln and build the RuinLooters project
+```
+
+### Packaging
+```bash
+# Package for Windows (from UE5 Editor)
+# File -> Package Project -> Windows -> Windows (64-bit)
+```
 
 ## Architecture Overview
 
-### Core Character System
-The game uses a hierarchical character system with clear inheritance:
+### Module Structure
+- **RuinLooters** - Main game module
+  - Dependencies: Core, CoreUObject, Engine, InputCore, EnhancedInput, AIModule, UMG, LevelSequence, MovieScene, Niagara
 
-- **ARuinLootersCharacter**: Base Unreal character class
-- **ARLCharacterBase**: Core game character with combat, stats, and weapon systems
-  - Implements IRLCharacterAttackInterface for combat interactions
-  - Manages HP, damage, defense, money, and weapon systems
-  - Handles combo attacks, rolling mechanics, and invincibility frames
-- **ARLCharacterPlayer**: Player character extending RLCharacterBase
-  - Implements IGenericTeamAgentInterface for team-based AI
-  - Adds input handling, UI management, skill systems, and glider mechanics
-  - Features dual weapon forms (sword/bow) with aiming system
-- **ARLCharacterEnemy**: Enemy base class with AI integration
-- **ARLCharacterEnemyDragon**: Specialized dragon enemy with unique abilities
+### Core Systems
 
-### Key Systems
+1. **Character System** (`Source/RuinLooters/Character/`)
+   - `RLCharacterBase` - Base class for all characters
+   - `RLCharacterPlayer` - Player character with input handling
+   - `RLCharacterEnemy` - Base enemy class
+   - `RLCharacterEnemyDragon` - Dragon boss enemy
+   - NPCs: `RLWeaponNPC`, `RLPotionNPC`, `RLSkillBookNPC`
 
-#### Data Management
-- **URLGameInstance**: Central data hub managing all DataTables (weapons, potions, skill books, enemy abilities)
-- **URLSaveGame**: Persistent save system for player progression
-- Data-driven design using UDataTable for all item and enemy configurations
+2. **Combat System**
+   - Combo attack system using `URLPlayerComboAttackDataAsset`
+   - Projectile system with object pooling (`RLProjectilePool`, `RLArrowPool`)
+   - Weapon switching between sword and bow
+   - Roll/dodge mechanics with invincibility frames
 
-#### Combat System
-- Interface-based attack system (IRLCharacterAttackInterface)
-- Combo attack system with data assets (URLPlayerComboAttackDataAsset)
-- Dual weapon forms: sword (melee) and bow (ranged with aiming)
-- Projectile system with object pooling for performance
+3. **AI System** (`Source/RuinLooters/AI/`)
+   - Behavior Trees: `BT_HumanEnemy`, `BT_DragonEnemyGround`, `BT_DragonEnemySky`
+   - Custom BT tasks for attacking, flying, landing
+   - AI Controllers: `RLEnemyAIController`, `RLHumanEnemyAIController`, `RLDragonEnemyAIController`
 
-#### AI System
-Located in `/AI/` directory:
-- Behavior Tree tasks for enemy actions (attack, movement, face target)
-- AI services for distance checking and HP monitoring
-- Specialized dragon AI with flying mechanics
+4. **Data Management**
+   - DataTables for weapons, potions, skill books, enemy abilities
+   - Save/Load system using `URLSaveGame`
+   - Game instance (`URLGameInstance`) manages persistent data
 
-#### Item and Weapon System
-- DataTable-driven weapon system with dynamic weapon changing
-- Item boxes and NPCs for trading (weapons, potions, skill books)
-- Object pooling for arrows and projectiles
+5. **UI System** (`Source/RuinLooters/UI/`)
+   - HUD with HP bar and skill icons
+   - Store/merchant UI
+   - Main menu and settings
+   - Death and stage clear screens
 
-#### UI System
-Located in `/UI/` directory:
-- Player HUD with HP bars and skill cooldowns
-- NPC store interfaces for item trading
-- Settings and death screen management
-- Stage progression widgets
+### Plugin Dependencies
 
-### Code Organization
+1. **NV_ACE_Reference** - NVIDIA AI Character Engine
+   - Audio2Face for facial animation
+   - GPT integration for AI dialogue
+   - Live Link support
 
-The codebase follows Unreal Engine conventions:
-- **Header files (.h)**: Class declarations with UPROPERTY/UFUNCTION macros
-- **Implementation files (.cpp)**: Method implementations
-- **Data Assets**: Used for configurable game data (combo attacks, player stats)
-- **Blueprints**: Referenced in C++ for visual scripting integration
+2. **RuntimeAudioImporter** - Dynamic audio loading
 
-### Coding Standards
+3. **NvAudio2Face[Claire/James/Mark]** - Character-specific A2F models
 
-#### Forward Declarations and Coupling Management
-- **Use forward declarations in header files**: Prefer forward declarations over #include statements in headers to reduce compilation dependencies
-- **Include only in implementation files**: Move #include statements to .cpp files whenever possible
-- **Minimize header dependencies**: Only include headers that are absolutely necessary for class declarations
+## Key Development Patterns
 
-#### Object-Oriented Design Principles
-- **Low Coupling**: Classes should have minimal dependencies on other classes
-  - Use interfaces and abstract base classes to reduce direct dependencies
-  - Prefer composition over inheritance when appropriate
-  - Use dependency injection through constructors or setters
-- **High Cohesion**: Each class should have a single, well-defined responsibility
-  - Group related functionality within the same class
-  - Ensure all methods in a class serve the class's primary purpose
-  - Split classes that handle multiple unrelated responsibilities
+### Collision Profiles
+```cpp
+// Custom collision channels defined in DefaultEngine.ini
+Enemy (ECC_GameTraceChannel1)
+Arrow (ECC_GameTraceChannel2) 
+Player (ECC_GameTraceChannel3)
+```
 
-#### Development Workflow
-- **Auto Mode**: Always enable auto mode when working on coding tasks to ensure efficient and continuous development
-  - Use auto mode for implementing features, fixing bugs, and making code improvements
-  - Auto mode helps maintain development momentum and reduces manual intervention
-  - Only disable auto mode when explicit user confirmation is required for critical changes
+### Character Stats Structure
+```cpp
+// Weapons use FWeaponTableRow
+// Potions use FPotionTableRow
+// Skill books use FSkillBookTableRow
+// Enemies use FEnemyAbilityTableRow
+```
 
-### Key Directories
-- `/Character/`: All character-related classes and components
-- `/AI/`: Behavior trees, AI controllers, and AI tasks
-- `/Weapon/`: Weapon base classes and implementations
-- `/Item/`: Collectible items and item boxes
-- `/Projectile/`: Arrow and projectile systems with pooling
-- `/UI/`: User interface widgets and HUD elements
-- `/GameInstance/`: Game instance and data management
-- `/Pool/`: Object pooling systems for performance
+### Input System
+- Uses Enhanced Input with `IMC_Default` input mapping context
+- Player controller manages input through `RLPlayerController`
 
-### Important Design Patterns
-- **Data-driven design**: Heavy use of DataTables for configuration
-- **Object pooling**: Used for frequently spawned objects (arrows, projectiles)
-- **Interface segregation**: Combat and team interfaces for clean interactions
-- **Delegate system**: Used for character death and UI updates
-- **Component-based**: Glider system implemented as a component
+### Object Pooling
+- Projectiles and arrows are pooled for performance
+- Pools managed by game mode
 
-## Korean Language Notes
-The codebase contains Korean comments and variable names. Key terms:
-- 체력 (HP), 공격력 (Attack Power), 방어력 (Defense)
-- 무기 (Weapon), 적 (Enemy), 플레이어 (Player)
-- 스킬 (Skill), 스테이지 (Stage), 레벨 (Level)
+## Common Development Tasks
+
+### Adding New Weapons
+1. Add entry to `DT_Weapon` DataTable
+2. Create skeletal mesh and assign to table
+3. Weapon stats (damage, range, speed) configured in table
+
+### Creating New Enemies
+1. Inherit from `RLCharacterEnemy`
+2. Create behavior tree and blackboard
+3. Add entry to `DT_EnemyAbility` DataTable
+4. Set up AI controller
+
+### Implementing New Skills
+1. Create animation montage
+2. Add skill to player's skill set
+3. Create UI icon and bind to input
+
+### Level Transitions
+- Use `RLLevelTransferPortal` actors
+- Portals handle save game state before transition
+
+## Important File Locations
+
+- **Blueprints**: `Content/Blueprints/`
+- **Character Assets**: `Content/Characters/`, `Content/MetaHumans/`
+- **UI Widgets**: `Content/UMG/`
+- **Data Tables**: `Content/DataTables/`
+- **Maps**: `Content/Model/MWLandscapeAutoMaterial/Maps/`
+- **Enemy AI**: `Content/Enemy/`
+
+## Testing & Debugging
+
+### Console Commands
+- Access console with ` (tilde) key
+- Common commands:
+  - `stat fps` - Show FPS
+  - `stat unit` - Show frame timing
+  - `show collision` - Visualize collision
+
+### AI Debugging
+- Use AI Debug mode in editor (apostrophe key)
+- Behavior tree visualization available in editor
+
+## Performance Considerations
+
+- Object pooling used for projectiles to reduce GC
+- LOD settings configured for characters and environment
+- Niagara used for particle effects
+- Audio streaming handled by RuntimeAudioImporter

@@ -10,7 +10,7 @@
 URLStageClearPortalWidget::URLStageClearPortalWidget(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
 	// 키 입력 받아올지 설정
-	bIsFocusable = true;
+	SetIsFocusable(true);
 }
 
 void URLStageClearPortalWidget::NativeConstruct()
