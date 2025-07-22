@@ -286,8 +286,10 @@ void URLA2FComponent::EnsureInitialized()
 	
 	InitializeDefaultParameters();
 	
-	// Force setup local provider to avoid RPC connection issues
-	SetupLocalProvider(LocalModelType);
+	if (!bUseRemoteProvider)
+	{
+		SetupLocalProvider(LocalModelType);
+	}
 	
 	// Pre-allocate A2F resources for optimal performance
 	FName CurrentProvider = GetCurrentProviderName();
